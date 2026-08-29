@@ -1,0 +1,258 @@
+// FeedbackHub — the nine tables of SRS part 12. No more, no fewer.
+//
+// Two things are deliberately absent: a vote-count column and a comment-count
+// column. Both are counted from the real rows on every read, so they can never
+// drift out of step with the truth (R-28). If counting ever becomes too slow, a
+// counter goes behind the same repository interface (R-147) — a small change,
+// not a new design.
+//
+// Some promises cannot be written in Prisma's schema language and live in the
+// migration as raw SQL instead. They are marked "SQL:" below and every one has
+// an integration test that proves the *database* refuses, not the code (R-145).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AppLanguage {
+  en
+  ar
+
+  @@map("app_language")
+}
+
+enum UserRole {
+  user
+  admin
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  active
+  deleted
+
+  @@map("user_status")
+}
+
+enum RegistrationPolicy {
+  open
+  invite_only
+  domain_restricted
+
+  @@map("registration_policy")
+}
+
+enum CommentState {
+  published
+  pending
+  deleted
+
+  @@map("comment_state")
+}
+
+/// A copy of the person we get from the identity provider. No password here, ever (R-1).
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  /// The id the identity provider gave. This is how we know it is the same person.
+  externalId    String     @unique @map("external_id")
+  /// Used for the domain rule and for emails. Never shown to other people (R-99).
+  email         String     @unique
+  /// Only a checked email counts for the domain rule (R-67).
+  emailVerified Boolean    @default(false) @map("email_verified")
+  displayName   String     @map("display_name") @db.VarChar(80)
+  /// Empty means we draw initials (R-54).
+  avatarUrl     String?    @map("avatar_url")
+  role          UserRole   @default(user)
+  /// `deleted` means the account was wiped (R-61).
+  status        UserStatus @default(active)
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt     DateTime?  @map("deleted_at") @db.Timestamptz(3)
+
+  settings UserSettings?
+  requests FeedbackRequest[]
+  comments Comment[]
+  votes    Vote[]
+
+  /// The sign-up rate limit counts accounts made in a window, for the whole app (R-130).
+  @@index([createdAt])
+  @@map("users")
+}
+
+/// One row per person, holding only what they changed. Empty = use the code default (R-51).
+model UserSettings {
+  userId               String       @id @map("user_id") @db.Uuid
+  /// Empty = the code default. Kept on the server because the email is written
+  /// at the moment the event happens, possibly while the person is signed out.
+  language             AppLanguage?
+  notifyOnComment      Boolean      @default(true) @map("notify_on_comment")
+  notifyOnStatusChange Boolean      @default(true) @map("notify_on_status_change")
+  updatedAt            DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  /// Settings mean nothing without the person.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+/// Exactly one row. SQL: CHECK (id = 1) makes a second row impossible.
+model AppSettings {
+  id                      Int                @id @default(1)
+  registrationPolicy      RegistrationPolicy @default(open) @map("registration_policy")
+  /// Kept in small letters.
+  allowedEmailDomains     String[]           @default([]) @map("allowed_email_domains")
+  commentsRequireApproval Boolean            @default(false) @map("comments_require_approval")
+
+  /// The three sliding windows (R-130). Every one is 1 or more: 0 would mean
+  /// nobody can write at all. SQL: CHECK on each.
+  signupLimitCount       Int @default(20) @map("signup_limit_count")
+  signupLimitMinutes     Int @default(60) @map("signup_limit_minutes")
+  submissionLimitCount   Int @default(10) @map("submission_limit_count")
+  submissionLimitMinutes Int @default(60) @map("submission_limit_minutes")
+  voteLimitCount         Int @default(100) @map("vote_limit_count")
+  voteLimitMinutes       Int @default(60) @map("vote_limit_minutes")
+
+  /// The one feature switch (R-42). Default true, so a broken row can never
+  /// switch something on by accident.
+  featureCommentsEnabled Boolean  @default(true) @map("feature_comments_enabled")
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("app_settings")
+}
+
+/// Rows, not fixed words in the code. The admin changes them while the app runs (R-43).
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// SQL: unique on lower(name) — two cannot match even with different capitals (R-44).
+  name        String   @unique @db.VarChar(40)
+  slug        String   @unique @db.VarChar(40)
+  /// Always shown with the text too, never colour alone (R-111).
+  color       String   @db.VarChar(9)
+  description String?
+  /// false = retired: gone from the picker, still correct on old requests (R-45).
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  requests FeedbackRequest[]
+
+  /// Both lists are read in created_at order (R-49).
+  @@index([isActive, createdAt])
+  @@map("categories")
+}
+
+model Status {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// SQL: unique on lower(name) (R-44).
+  name      String   @unique @db.VarChar(40)
+  slug      String   @unique @db.VarChar(40)
+  color     String   @db.VarChar(9)
+  /// The status every new request gets (R-11).
+  /// SQL: partial unique index WHERE is_default — exactly one, enforced by the
+  /// database, so marking a new one must un-mark the old one in the same step (R-47).
+  isDefault Boolean  @default(false) @map("is_default")
+  /// The default status can never be retired (R-48).
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  requests FeedbackRequest[]
+
+  @@index([isActive, createdAt])
+  @@map("statuses")
+}
+
+model FeedbackRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  title       String    @db.VarChar(120)
+  /// Plain text. Line breaks kept, no formatting read (R-98).
+  description String
+  categoryId  String    @map("category_id") @db.Uuid
+  statusId    String    @map("status_id") @db.Uuid
+  authorId    String    @map("author_id") @db.Uuid
+  isPinned    Boolean   @default(false) @map("is_pinned")
+  pinnedAt    DateTime? @map("pinned_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Changes only when the text changes — not on a vote or a comment.
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  /// Restrict: a category or status in use can never be deleted, only retired (R-46).
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  status   Status   @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  /// Restrict: deleting an account wipes the name but keeps the content (R-61).
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  votes    Vote[]
+  comments Comment[]
+
+  /// An index for every filter and every sort the board offers (R-106).
+  @@index([statusId])
+  @@index([categoryId])
+  @@index([createdAt])
+  /// Pinned first, in a fixed order (R-23).
+  @@index([isPinned, pinnedAt])
+  /// The submission rate limit counts one person's requests in a window (R-130).
+  @@index([authorId, createdAt])
+  @@map("feedback_requests")
+}
+
+model Vote {
+  id        String   @id @default(uuid()) @db.Uuid
+  requestId String   @map("request_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  /// Votes belong to the request: delete the request and they go too.
+  request FeedbackRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  /// A vote is a personal signal, not content: it goes with the person (R-61).
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// This one line is what makes R-26 true, even with ten clicks in the same
+  /// second. The database stops the second vote, not the code (R-115).
+  @@unique([requestId, userId])
+  @@index([requestId])
+  /// The vote rate limit counts one person's votes in a window (R-130).
+  @@index([userId, createdAt])
+  @@map("votes")
+}
+
+model Comment {
+  id        String       @id @default(uuid()) @db.Uuid
+  requestId String       @map("request_id") @db.Uuid
+  authorId  String       @map("author_id") @db.Uuid
+  /// Empty when deleted: the text is gone for good, the row stays so the thread
+  /// still makes sense (R-38).
+  body      String       @db.VarChar(2000)
+  /// `pending` only when approval is on. `deleted` is the grey line (R-38, R-40).
+  state     CommentState @default(published)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime?    @map("deleted_at") @db.Timestamptz(3)
+
+  request FeedbackRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author  User            @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  /// The newest-first cursor read (R-33b, R-106). created_at and id both
+  /// descending, because id is the tie-breaker that keeps the order stable.
+  @@index([requestId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([requestId, state])
+  @@map("comments")
+}
+
+/// Only used when the sign-up rule is invite-only. No foreign key: the email
+/// matches users.email, and both are unique.
+model Invitation {
+  id         String    @id @default(uuid()) @db.Uuid
+  email      String    @unique
+  /// Filled in when that email signs in for the first time.
+  acceptedAt DateTime? @map("accepted_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("invitations")
+}

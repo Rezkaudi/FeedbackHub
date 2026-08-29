@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "_comment": "What ships. Tests are excluded so the production image never carries them, and so a test's import of test/support cannot break the build.",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/tests/**",
+    "**/*.spec.ts",
+    "prisma/seed/**"
+  ]
+}
