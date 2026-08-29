@@ -1,0 +1,37 @@
+# R-82: database changes run as their own step that finishes before the app
+# starts. Never while the app is starting, because two copies would fight.
+#
+# The Deployment below does not wait on this Job by itself — Kubernetes has no
+# such dependency — so the API's initContainer blocks until this Job reports
+# complete. That is what makes "the migration finishes before the app is marked
+# ready" true rather than hoped for.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: feedbackhub-migrate
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      name: feedbackhub-migrate
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: migrate
+          image: feedbackhub-migrate:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: feedbackhub-config
+            - secretRef:
+                name: feedbackhub-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

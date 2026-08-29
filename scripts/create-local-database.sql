@@ -1,0 +1,32 @@
+-- Creates the FeedbackHub database inside a PostgreSQL you already run.
+--
+-- Use this when you would rather not run a second Postgres in a container: the
+-- database then sits on the normal port 5432, beside your other ones, and
+-- appears in whatever client you already have pointed at that server.
+--
+-- Run it as a superuser, against any database on the server — in pgAdmin:
+--   right-click the `postgres` database -> Query Tool -> paste -> run (F5).
+-- Or from a terminal:
+--   psql -h localhost -U postgres -c "CREATE DATABASE feedbackhub;"
+
+CREATE DATABASE feedbackhub;
+
+-- That is the whole of it. There is no role to create: the app connects as the
+-- server's existing superuser, which is how the other projects on this machine
+-- are set up, and the connection string in .env says so:
+--
+--   DATABASE_URL=postgresql://postgres:root@localhost:5432/feedbackhub
+--
+-- Worth knowing, rather than a reason to change it: a superuser can reach every
+-- database on the server, so a mistake in a migration is not fenced in the way
+-- it would be with an owner role of its own. That is a fair trade on a
+-- development machine and a bad one on a real server, where the app should get
+-- a role that owns its database and nothing else.
+--
+-- Prisma creates the tables, so nothing further belongs here. Next:
+--
+--   cd apps/api
+--   npx prisma migrate deploy        -- the nine tables, indexes, constraints
+--   npx ts-node prisma/seed/seed.ts  -- the example data
+--
+-- Both are safe to run again; the seed is upserts only.

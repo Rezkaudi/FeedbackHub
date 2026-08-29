@@ -1,0 +1,88 @@
+# R-162: CI runs lint, the dependency-rule check and every test layer on every
+# push. A red pipeline is never merged.
+#
+# The end-to-end suite (R-159) is deliberately absent: it needs the front end,
+# which does not exist yet. It joins here when it does.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+
+      - run: npm ci
+      - run: npx prisma generate
+
+      # Fast gates first: a formatting or seam failure should not wait for
+      # containers to boot.
+      - name: Lint
+        run: npm run lint
+
+      - name: The module seams and the dependency rule (R-143)
+        run: npm run depcruise
+
+      - name: Types
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm test
+
+      # These start real Postgres and Redis containers via Testcontainers, which
+      # works on the GitHub runner's Docker with no configuration (D-23).
+      - name: Integration tests (real Postgres and Redis)
+        run: npm run test:integration
+
+      - name: API tests (the whole guard chain)
+        run: npm run test:api
+
+      - name: No secrets in the repository (R-102)
+        working-directory: .
+        run: |
+          if git grep -nEi "(client_secret|password)\s*[:=]\s*['\"][A-Za-z0-9/+_-]{16,}" \
+               -- ':!*.example*' ':!**/package-lock.json' ':!.github/**'; then
+            echo "A value that looks like a real secret is committed."
+            exit 1
+          fi
+
+  images:
+    name: Container images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # R-79: both images must build. They are not pushed anywhere from CI.
+      - name: Build the API image
+        run: docker build -f infra/docker/api/Dockerfile -t feedbackhub-api:ci .
+
+      - name: Build the migration image
+        run: docker build -f infra/docker/api/migrate.Dockerfile -t feedbackhub-migrate:ci .
+
+      - name: The API image does not run as root (R-79, R-102)
+        run: |
+          user=$(docker run --rm --entrypoint sh feedbackhub-api:ci -c 'id -u')
+          if [ "$user" = "0" ]; then
+            echo "The image runs as root."
+            exit 1
+          fi
+          echo "Runs as uid $user."

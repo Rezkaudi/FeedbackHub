@@ -1,0 +1,21 @@
+# A small local cluster (kind). R-81.
+#
+#   kind create cluster --name feedbackhub
+#   docker build -t feedbackhub-api:local     -f infra/docker/api/Dockerfile .
+#   docker build -t feedbackhub-migrate:local -f infra/docker/api/migrate.Dockerfile .
+#   kind load docker-image feedbackhub-api:local feedbackhub-migrate:local --name feedbackhub
+#   kubectl apply -f infra/k8s/base/secret.example.yaml   # local values only
+#   kubectl apply -k infra/k8s/overlays/local
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# One replica locally: two is what production wants (R-118), not a laptop.
+patches:
+  - target: { kind: Deployment, name: feedbackhub-api }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1

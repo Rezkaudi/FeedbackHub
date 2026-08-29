@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedbackhub-api
+  labels: { app: feedbackhub, component: api }
+spec:
+  # R-118: the API keeps nothing in its own memory between calls, so any copy
+  # can answer any call and more than one is safe.
+  replicas: 2
+  selector:
+    matchLabels: { app: feedbackhub, component: api }
+  template:
+    metadata:
+      labels: { app: feedbackhub, component: api }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      initContainers:
+        # R-82: wait for the migration Job, so no API pod ever serves a request
+        # against a database that has not been migrated.
+        - name: wait-for-migration
+          image: bitnami/kubectl:1.31
+          command:
+            - sh
+            - -c
+            - kubectl wait --for=condition=complete --timeout=300s job/feedbackhub-migrate
+      containers:
+        - name: api
+          image: feedbackhub-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: feedbackhub-config
+            - secretRef:
+                name: feedbackhub-secrets
+          # R-83: two health checks that tell the truth. Liveness never touches a
+          # dependency, so a database blip restarts nothing; readiness does, so a
+          # pod that cannot reach Postgres stops receiving traffic.
+          livenessProbe:
+            httpGet: { path: /health/live, port: 3000 }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 3000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: '1'
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+      # Long enough for in-flight requests to finish: main.ts closes gracefully.
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feedbackhub-api
+spec:
+  selector: { app: feedbackhub, component: api }
+  ports:
+    - port: 80
+      targetPort: 3000

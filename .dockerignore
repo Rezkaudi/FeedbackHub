@@ -1,0 +1,11 @@
+# Keep the build context small and the image clean.
+**/node_modules
+**/dist
+**/.angular
+**/coverage
+.git
+.github
+e2e
+references
+*.md
+!apps/api/package.json

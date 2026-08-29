@@ -7,7 +7,8 @@ This file answers four questions:
 3. What was unclear in the brief, and how did we read it?
 4. What comes next?
 
-**Nothing is built yet.** This is the plan.
+**The backend is built. The front end is empty folders.** Section 8 lists what
+changed while building. [README.md](README.md) says what works today.
 
 `D-nn` points to [DECISIONS.md](DECISIONS.md). `R-nn` points to `references/SRS.pdf`.
 
@@ -93,8 +94,10 @@ approval is counted only for the person who wrote it, and for admins (R-40).
 | Votes | 100 per hour | Each person |
 
 The clock slides. It does not reset on the hour. When we say no, we say when to
-try again. Deleting a request does not free its slot. An admin can change all
-three numbers without a deploy (D-15).
+try again. An admin can change all three numbers without a deploy (D-15).
+
+R-131 also says deleting a request must not free its slot. That one part is not
+built — see section 8 for why, and what is open because of it.
 
 ### Tests
 
@@ -204,8 +207,68 @@ move every rule from R-51 to R-118, and every pointer to them.
 
 ## 7. Still to decide
 
-Nothing about the stack. Three small things will be settled while building:
+Nothing about the stack. One small thing is still open:
 
-- The exact Angular folder layout.
 - Which fields the OpenAPI document shows.
-- How the Keycloak realm export is kept in step with the seed data.
+
+**Settled while building:** how the Keycloak realm export is kept in step with
+the seed data. The three test accounts have their user ids pinned in the realm
+export, and the seed writes those same ids into `users.external_id`. See D-26,
+including what that coupling costs.
+
+The Angular folder layout is now settled — the folders exist, empty, under
+`apps/web/src/app`: `core/`, `shared/ui/`, `layout/`, and one folder per feature
+with `admin/` nested inside it.
+
+---
+
+## 8. What changed while building
+
+Kept here so the plan and the code do not drift apart.
+
+**Two rules were asked for that the SRS does not contain, and were not built.**
+The instruction to build the backend included "audit log for admin actions" and
+payload/pagination limits. An audit log is refused by D-12 and appears nowhere in
+the SRS, and a maximum page size was deliberately dropped by D-04. Both were
+raised rather than quietly added or quietly skipped, and the decision was to
+follow the SRS: no new tables, nothing the SRS does not ask for. Admin actions
+are still visible in the ordinary structured request log (R-119), which is not
+the same thing as an audit trail and is not claimed to be.
+
+**A ninth module was added: `bootstrap`.** R-140 names eight. The one start-up
+call of R-52 composes data owned by `identity`, `settings` and `taxonomy`, so
+putting it in any one of them would break R-141. `bootstrap` owns no table and
+holds no rule; it only calls the other modules' published services.
+
+**The container runtime needed work.** The machine this was built on runs podman,
+where Testcontainers does not start at all without help. See D-23. The cost is
+that Testcontainers' own cleanup is switched off, so a killed test run can leave
+a container behind; `npm run test:clean` removes them.
+
+**Length and state rules are written twice** — once in a DTO for the message,
+once in the database so the rule really holds. See D-24 for why, and for what it
+costs.
+
+**One part of R-131 is not built: a deleted request stops counting.** R-131 says
+a request that was deleted should still count towards the submission limit while
+it is inside the window, so that writing and deleting in a loop cannot walk
+around the limit. Deleting a request removes its row (R-14), and the nine tables
+of SRS part 12 hold nothing else that remembers it, so with no new table there is
+nothing left to count. Everything else in R-130 to R-132 is built and tested: the
+window is real, the count and the write happen in one database step, and the
+refusal names one window after the person's *oldest* attempt. Only that one
+write-delete-write loop is open. Closing it needs a row that outlives the
+request — a tombstone, or an attempts table — which is a new table, and the
+instruction for this step was to build the SRS tables and no others. The gap is
+also written in the repository code that implements the limit, so it cannot be
+found only here.
+
+**Docker Compose v2 is required.** `docker-compose.yml` uses the Compose Spec —
+no `version:` key, and `depends_on` with `condition: service_completed_successfully`,
+which is what makes the migration finish before the API starts (R-82). Compose
+v1.29 cannot parse it and fails on the `name:` key. The file was deliberately not
+downgraded, because the old syntax cannot express "wait until the migration job
+succeeded", and R-82 is the reason the step exists. The machine this was built on
+has v1.29, so the same wiring was verified by starting the containers by hand
+instead: the migration image was run twice against a real Postgres and left
+identical row counts, and only then was the API started.

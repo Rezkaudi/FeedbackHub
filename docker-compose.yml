@@ -1,0 +1,161 @@
+# R-80: one written command starts everything, with example data, from a fresh
+# copy of the repository:
+#
+#     docker compose up --build
+#
+# There is no secret to set first. Every value here is a development value and
+# is safe to read — real deployments get theirs from the environment (R-53).
+#
+# The front end is not in here yet: it has no code. When it exists it joins as
+# one more service behind the same compose file.
+
+name: feedbackhub
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: feedbackhub
+      POSTGRES_PASSWORD: feedbackhub
+      POSTGRES_DB: feedbackhub
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Nothing that needs the database starts before it can answer.
+      test: ['CMD-SHELL', 'pg_isready -U feedbackhub -d feedbackhub']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      # 5433 on the outside, 5432 on the inside. Plenty of machines already run
+      # a PostgreSQL on 5432, and publishing there would either refuse to start
+      # or — worse — leave you looking at the wrong database in a client. The
+      # services talk to each other over the compose network on 5432 regardless;
+      # this line only exists so you can attach pgAdmin or psql from outside.
+      - '5433:5432'
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      - '6379:6379'
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ['start-dev', '--import-realm']
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: 'true'
+      # Two different addresses reach the same Keycloak, and both must be right.
+      # The browser can only resolve localhost:8080, and the API can only
+      # resolve keycloak:8080 — so Keycloak is told to publish the first as its
+      # public face (the sign-in page, and the `iss` inside every token) while
+      # answering server-to-server calls on whichever name they arrived at.
+      # Without this the sign-in redirect sends the person to a host that does
+      # not exist outside the container network.
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: 'true'
+    volumes:
+      # The realm, its client and the test accounts, so the reviewer has an
+      # account to sign in with and no step to perform (R-80, R-160).
+      - ./infra/keycloak/realm:/opt/keycloak/data/import:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q 'UP'"
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    ports:
+      - '8080:8080'
+
+  mailpit:
+    # R-129: a local mail catcher, so the whole system runs with no real mail
+    # server and the email can be read in a browser at http://localhost:8025.
+    image: axllent/mailpit:latest
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
+  # R-82: its own step, finished before the API starts. Never during start-up,
+  # because two API copies would fight over the same migration.
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/docker/api/migrate.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://feedbackhub:feedbackhub@postgres:5432/feedbackhub
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api/Dockerfile
+    environment: &api-environment
+      NODE_ENV: production
+      PORT: '3000'
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://feedbackhub:feedbackhub@postgres:5432/feedbackhub
+      REDIS_URL: redis://redis:6379
+      APP_BASE_URL: http://localhost:4200
+      AUTH_ALLOWED_ORIGINS: http://localhost:4200
+      # Development only: cookies must be sendable over plain http on localhost.
+      AUTH_COOKIE_SECURE: 'false'
+      OIDC_ISSUER_URL: http://keycloak:8080/realms/feedbackhub
+      OIDC_CLIENT_ID: feedbackhub-api
+      # A development secret, matching the realm import. Never a real one (R-102).
+      OIDC_CLIENT_SECRET: local-development-only-secret
+      OIDC_REDIRECT_URI: http://localhost:3000/v1/auth/callback
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      SMTP_FROM: FeedbackHub <no-reply@feedbackhub.local>
+      SMTP_TIMEOUT: '10'
+      MAIL_ENABLED: 'true'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # CMD-SHELL, not the exec form: podman-compose flattens ['CMD', ...] into
+      # one shell string, and the parentheses then break /bin/sh. Keycloak above
+      # already uses this form for the same reason.
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    ports:
+      - '3000:3000'
+
+  worker:
+    # R-144: the same image, a different command, and no HTTP at all.
+    build:
+      context: .
+      dockerfile: infra/docker/api/Dockerfile
+    command: ['node', 'dist/worker.js']
+    environment: *api-environment
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:

@@ -1,0 +1,42 @@
+# R-144: the same image as the API, a different command, and no HTTP at all —
+# so it has no readiness probe and no Service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedbackhub-worker
+  labels: { app: feedbackhub, component: worker }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: feedbackhub, component: worker }
+  template:
+    metadata:
+      labels: { app: feedbackhub, component: worker }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: worker
+          image: feedbackhub-api:local
+          imagePullPolicy: IfNotPresent
+          command: ['node', 'dist/worker.js']
+          envFrom:
+            - configMapRef:
+                name: feedbackhub-config
+            - secretRef:
+                name: feedbackhub-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+      # It finishes the job in hand on SIGTERM, then stops.
+      terminationGracePeriodSeconds: 30

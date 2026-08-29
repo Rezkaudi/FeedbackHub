@@ -1,0 +1,80 @@
+# ---- Dependencies ----
+node_modules/
+.pnp/
+.pnp.js
+.yarn/
+jspm_packages/
+
+# ---- Build output ----
+dist/
+build/
+out/
+tmp/
+.angular/
+.next/
+.nuxt/
+*.tsbuildinfo
+
+# ---- Tests and coverage ----
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+/e2e/screenshots/
+/e2e/videos/
+
+# ---- Environment and secrets ----
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# ---- Prisma ----
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+apps/api/prisma/migrations/dev.db*
+
+# ---- Logs ----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ---- Caches ----
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.turbo/
+.vite/
+.sass-cache/
+
+# ---- Editors ----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- OS ----
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---- Docker / infra local state ----
+docker-compose.override.yml

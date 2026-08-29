@@ -1,0 +1,21 @@
+# R-81: settings and secrets kept apart. Nothing in here is secret — every value
+# is safe to read in a cluster dashboard or a git history.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feedbackhub-config
+data:
+  NODE_ENV: production
+  PORT: '3000'
+  LOG_LEVEL: info
+  APP_BASE_URL: http://feedbackhub.localtest.me
+  AUTH_ALLOWED_ORIGINS: http://feedbackhub.localtest.me
+  AUTH_COOKIE_SECURE: 'false'
+  OIDC_ISSUER_URL: http://keycloak:8080/realms/feedbackhub
+  OIDC_CLIENT_ID: feedbackhub-api
+  OIDC_REDIRECT_URI: http://feedbackhub.localtest.me/v1/auth/callback
+  SMTP_HOST: mailpit
+  SMTP_PORT: '1025'
+  SMTP_FROM: FeedbackHub <no-reply@feedbackhub.local>
+  SMTP_TIMEOUT: '10'
+  MAIL_ENABLED: 'true'
