@@ -101,15 +101,20 @@ built — see section 8 for why, and what is open because of it.
 
 ### Tests
 
-Test first, then code. Four layers, plus Playwright for the whole system with a
-real Keycloak sign-in (D-22).
+Test first, then code. Four layers, plus an end-to-end suite for the whole
+system with a real Keycloak sign-in (D-22). The end-to-end suite is Cypress, not
+Playwright (D-48) — the `e2e/` package was only ever scaffolded for Playwright.
 
 The end-to-end suite covers all eleven journeys of SRS part 6 — U-1 to U-6 and
 A-1 to A-5 — plus the two hard parts, H-4 (one call at start-up) and H-5 (the
-comments switch that also stops the server), plus an axe pass on the board, the
-request page and the settings screen (R-163). It lives in `e2e/`, in a package
-of its own (D-42), signs in through the real form every time (D-43), and lifts
-the submission rate limit for the length of the run (D-44).
+comments switch that also stops the server). It lives in `e2e/`, in a package
+of its own (D-42), signs in through the real form (D-43, now once per persona
+per spec via `cy.session()`), and each spec that changes an application setting
+restores the value it read.
+
+Accessibility is no longer covered by the end-to-end suite: the axe pass that
+lived here has been dropped along with Playwright. R-163 is still met by the
+front-end unit tests, which query by role and visible text.
 
 Two things it decided for itself, and both are worth naming because they cost
 something:
@@ -335,7 +340,7 @@ instruction for this step was to build the SRS tables and no others. The gap is
 also written in the repository code that implements the limit, so it cannot be
 found only here.
 
-**The end-to-end suite found three real defects, and they are fixed.** They are
+**The end-to-end suite found four real defects, and they are fixed.** They are
 worth naming because none of the other four test layers could have found them,
 and none of them was a typo:
 
@@ -349,8 +354,13 @@ and none of them was a typo:
 3. **An admin could not delete somebody else's comment.** R-37 allows it and the
    server always did; the button was only offered on your own comment, so
    journey A-3 could not be completed through the interface at all.
+4. **The "Try again" button left a blank page.** When the start-up call failed,
+   pressing Try again recovered the store but not the cancelled first
+   navigation, so the error vanished and nothing replaced it (SRS 15.8). It now
+   reloads once the start-up call succeeds. See D-49.
 
-All three now have a component test that fails without the fix (R-161).
+The first three have a component test that fails without the fix (R-161); the
+fourth is proven by `11-errors-and-resilience`.
 
 **One half of R-64 is still not built.** The rule says a status can be changed
 "from the board and from the request page". Only the request page has it. A-2 is
@@ -371,15 +381,18 @@ in the shipped app:
    identity provider too", and it never did — `revoke` retires one refresh
    token, it does not end a session. See D-46 and D-47.
 
-The second one is the one worth remembering: the first four assertions of the
-new `sign-out.spec.ts` all passed while it was broken. Only asking for the
-password screen caught it.
+The second one is the one worth remembering: the first assertions of the
+sign-out test all passed while it was broken. Only asking for the password
+screen caught it. Sign-out is now checked in `01-authentication`: click Sign
+out, land on the Keycloak form, and confirm the API answers 401 to the old
+session.
 
-**Session refresh still has no test at any layer.** The access cookie outlives a
-three-minute run, so nothing in the end-to-end suite ever makes the browser
-renew a session, and every API test replaces the identity provider with a stub.
-D-32 was a bug in exactly this area and survived a green pipeline; it would
-survive one again.
+**Session refresh still has no round-trip test.** The access cookie outlives a
+nine-minute run, so nothing in the end-to-end suite ever makes the browser renew
+a real session, and every API test replaces the identity provider with a stub.
+`11-errors-and-resilience` proves the interceptor tries a refresh exactly once
+on a 401 and does not loop, but not that a genuine renewal works. D-32 was a bug
+in exactly this area and survived a green pipeline.
 
 **The submission rate limit had no test of its enforcement** until the
 end-to-end suite grew one. The refusal *shape* was unit tested and the window

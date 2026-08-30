@@ -1,6 +1,6 @@
 # DECISIONS
 
-The 22 choices that mattered. Each one has four short parts:
+The choices that mattered. Each one has four short parts:
 
 - **Problem** — what we had to solve.
 - **Options** — what else we could have picked.
@@ -340,3 +340,21 @@ Rule numbers (R-nn) point into `references/SRS.pdf`.
 - **Options** — Send the browser to the provider's end-session endpoint with an `id_token_hint`. Send it there with `client_id` and a post-logout redirect. Call the end-session endpoint from our server with the client's own credentials and the refresh token.
 - **We picked** — The back-channel call, from our server.
 - **What we get** — `id_token_hint` was rejected outright: it puts a token in a URL, and R-3c forbids that in as many words. The `client_id` variant avoids the token but makes the provider show its own "Do you want to log out?" confirmation, which is a screen we would be adding to our product without owning it. The back-channel call needs no redirect at all and keeps every token on our side, which is the same principle as the rest of the handshake (R-3a). One trap, and it cost a build to find: **Keycloak publishes a different host for front-channel and back-channel endpoints.** The token endpoint comes back as `keycloak:8080`, the end-session endpoint as `localhost:8080`, because Keycloak counts the latter as somewhere a browser goes. Posting to it from inside the container reached the container itself, the connection was refused, and the error was swallowed — a sign-out must not fail — so it looked exactly like the original bug. The path is now taken from the discovery document and only the origin replaced with the issuer URL we were configured with. The cost: one more place that knows the difference between the address a browser uses and the address we use, which is the same lesson D-35 taught about the authorization endpoint.
+
+### D-48 — The end-to-end suite is Cypress, not Playwright
+
+This supersedes the Playwright half of D-22 and D-42. The four-layer test
+pyramid below Cypress is unchanged, and D-43 (sign in through the real Keycloak
+form) still holds — it is now `cy.session()` per persona per spec.
+
+- **Problem** — The `e2e/` package was scaffolded for Playwright but never filled in past a config file and a few stubs. It had to become a real suite.
+- **Options** — Finish it in Playwright, as D-22 assumed. Rewrite it in Cypress. Rewrite it in WebdriverIO.
+- **We picked** — Cypress, one browser (Electron), no retries, 15 spec files numbered by area, ~80 tests.
+- **What we get** — `cy.origin()` handles the cross-origin Keycloak login as a first-class thing, and `cy.session()` caches a persona's cookies so each of admin/sam/rae signs in once per file rather than once per test — the cost D-43 worried about is now about six logins per run, not eighty. `cy.request()` shares the browser session, so the same test can drive the UI and then hit the API directly to prove the server enforces the same rule (R-70, R-3g). The costs: Cypress bundles its own Electron and will not start if the shell exports `ELECTRON_RUN_AS_NODE=1` (it reads the flag and runs as plain Node, then rejects its own `--smoke-test` arguments) — the README says to unset it; and `cy.request()` sends no `Origin` header of its own, so every write helper in `support/commands.ts` sets one explicitly or the OriginGuard answers 403. Playwright was not wrong, it was just never written; switching cost nothing already built.
+
+### D-49 — Try again reloads the page once the start-up call succeeds
+
+- **Problem** — When `/v1/bootstrap` fails, the app shows an error with a Try again button (SRS 15.8). The button called `bootstrap.load()` again, which did recover the store — but the router had already cancelled its first navigation when the guard saw a failed start-up, and a signal turning `ready` does not re-run a cancelled navigation. The person pressed Try again, the error vanished, and they were left looking at an empty page. Found by `11-errors-and-resilience`.
+- **Options** — Have the guard return a redirect instead of `false` while the start-up is not ready. Re-trigger a navigation to the current URL from an effect once the store turns `ready`. Reload the page after a successful retry.
+- **We picked** — Reload, from the button handler, only when `bootstrap.load()` left the store `ready`.
+- **What we get** — A reload runs the whole start-up sequence again from a clean slate — the initializer, the guard, the first navigation — which is exactly the sequence that was interrupted, so there is no second code path to keep correct. The costs: a full page load rather than an in-place recovery, and the button handler now knows about `location`, which the component did not before. Re-navigating from an effect was the in-place answer and was rejected as more moving parts for a path taken only after a server error.

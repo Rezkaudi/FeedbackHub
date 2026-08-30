@@ -11,11 +11,11 @@ what is actually being worked on.
 
 > **Status: the backend and the front end are built, and the eleven journeys
 > from the brief run end to end.** `npm run verify` passes 297 backend tests
-> against a real PostgreSQL and a real Redis; the front end has 243; and 61
-> Playwright tests drive a real browser against the whole compose stack,
-> signing in through the real Keycloak. What is still *not* proven is real
-> outgoing mail, session refresh and sign-out, and Arabic — which is not built
-> at all. The two lists below say exactly which is which.
+> against a real PostgreSQL and a real Redis; the front end has 243; and ~80
+> Cypress tests (15 spec files) drive a real browser against the whole compose
+> stack, signing in through the real Keycloak. What is still *not* proven is
+> real outgoing mail, and Arabic — which is not built at all. The two lists
+> below say exactly which is which.
 
 ---
 
@@ -30,7 +30,7 @@ what is actually being worked on.
 | Shared state | Redis 7 | D-20 |
 | Sign-in | Keycloak, self-hosted | D-21 |
 | Mail | SMTP + local mail catcher | D-21 |
-| Tests | Jest, Testcontainers, Supertest, ATL, Playwright | D-22 |
+| Tests | Jest, Testcontainers, Supertest, ATL, Cypress | D-22, D-48 |
 | Packaging | Docker, Docker Compose, Kubernetes manifests | D-18 |
 
 ## What works
@@ -162,11 +162,15 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
 - **All three start-up outcomes are handled.** Ready shows the app; a failure
   shows what happened with a Try again button and the request id to quote; 401
   is treated as signed out, not as an error, and sends the person to Keycloak
-  remembering the page they wanted.
+  remembering the page they wanted. Try again now reloads the page once the
+  start-up call succeeds — recovering the store alone left the router's
+  cancelled first navigation stuck, so the error cleared to a blank page (D-49).
 - **The session renews itself.** A 401 mid-use triggers one call to
   `/v1/auth/refresh` and the original request goes again. Requests that fail
   together share one renewal, because the provider rotates the refresh token and
   three parallel renewals would end the session they were trying to save.
+  `11-errors-and-resilience` proves the one-attempt, no-loop behaviour; a real
+  token expiry is still only in the "not proven" list below.
 - **Theme works with no flash.** Read from `localStorage` before the first paint
   by an inline script, and light/dark/system all apply (R-55, R-56).
 - **Sign-in failures are told apart.** "You may not join" and "you were unlucky
@@ -192,9 +196,10 @@ Nothing in this list is hidden.
   API test replaces the identity provider with a stub. That is how D-32 went
   unnoticed — the refresh cookie was scoped to a path that did not exist, so
   refresh and sign-out were both broken while every test passed. Sign-in and
-  sign-out are now covered end to end in a real browser; **refresh is still
-  untested**, because the access cookie outlives a three-minute run and nothing
-  ever makes the browser renew a session.
+  sign-out are now covered end to end in a real browser; **refresh is only
+  covered indirectly** — `11-errors-and-resilience` proves a 401 triggers exactly
+  one refresh attempt and does not loop, but no test watches a real expired
+  access cookie be renewed, because it outlives a nine-minute run.
 - **No social sign-in has been seen to work.** Google has been switched on once
   with real credentials and got as far as returning a code to our callback,
   which then failed on D-35 — so the provider side is proven and ours is not.
@@ -211,9 +216,12 @@ Nothing in this list is hidden.
   containers by hand. See [SCOPE.md](SCOPE.md) §8.
 - **A deleted request frees its rate-limit slot**, which R-131 says it should
   not. Everything else about the three limits is built and tested.
-- **Session refresh is still unproven.** The access cookie outlives every test
-  run, so nothing has ever made the browser renew a session. Sign-out was in
-  this list too and is now proven — see `e2e/specs/sign-out.spec.ts`.
+- **Session refresh is still unproven at the round-trip level.** The access
+  cookie outlives every test run, so nothing has ever made the browser renew a
+  real session; `11-errors-and-resilience` only proves the interceptor tries
+  once and does not loop. Sign-out was in this list too and is now proven —
+  `01-authentication` signs out for real and confirms the API refuses the old
+  session.
 
 Known limits that are choices, not omissions, are in
 [SCOPE.md](SCOPE.md) §2 — no audit log (D-12), no maximum page size (D-04), no
@@ -311,8 +319,10 @@ comment threading (D-05), and search without ranking (D-11).
 What is left, now that the request form, the admin screens and the moderation
 queue are built and driven end to end:
 
-- **Editing your own comment** (R-35) is not built. Deleting one is (R-37), and
-  an admin can delete any (R-38).
+- **Editing your own comment has no UI** (R-35). The `PATCH /v1/comments/:id`
+  endpoint works and refuses everyone but the author — `04-comments` proves it —
+  but the request page offers only Delete, never an inline edit. Deleting is
+  built (R-37), and an admin can delete any (R-38).
 - **Arabic and RTL are not done.** The decision is recorded, the fonts load, the
   language saves to the server and the `dir` attribute is set before the first
   paint — but no string is translated, so the interface is English only. This is
@@ -600,52 +610,62 @@ message about Node, not about the code.
 
 ### The end-to-end tests (R-159)
 
-These run a real browser against the whole stack from `docker-compose.yml`: the
-real Angular build served by nginx, the real API, the real Postgres, the real
-Redis and the real Keycloak. Nothing is mocked, and sign-in goes through the
-real Keycloak login form with a seeded account (R-160) — a faked cookie would
-remove the one thing these tests exist to prove.
+These run a real browser (Cypress) against the whole stack from
+`docker-compose.yml`: the real Angular build served by nginx, the real API, the
+real Postgres, the real Redis and the real Keycloak. Nothing is mocked, and
+sign-in goes through the real Keycloak login form with a seeded account
+(R-160) — a faked cookie would remove the one thing these tests exist to prove.
 
 ```bash
 docker compose up --build -d --wait   # from the root; --wait holds until healthy
 
 cd e2e
-npm install
-npx playwright install --with-deps chromium
-
-npm test            # the whole suite
-npm run test:ui     # the same thing, watchable, for writing one
-npm run typecheck   # Playwright does not type-check across files; this does
-npm run report      # open the last HTML report
+npm ci
+npm run typecheck   # the specs are type-checked as one program
+npm test            # the whole suite, headless
+npm run test:open   # the Cypress runner, for writing or debugging one
 ```
 
-**61 tests, about three minutes.** What they cover:
+**80 tests across 15 spec files, about nine minutes.** Sign-in cost is real —
+each persona signs in once per spec through Keycloak — but a `cy.session` cache
+keeps it to one login per persona per file. What they cover:
 
 | File | What it proves |
 |---|---|
-| `sign-out.spec.ts` | R-9, both halves: our cookies are cleared, the API refuses the old session, **and** the provider's session really ends — so signing in again asks for the password instead of waving the person straight back through. |
-| `sign-in.spec.ts` | U-1, and the two things only a browser can show: no token in `localStorage` or `sessionStorage` (R-3c), both cookies HttpOnly with the right `SameSite` and path (R-3d, R-3e), and exactly one `/bootstrap` call to draw the app (H-4). |
-| `user-journeys.spec.ts` | U-2 to U-6: the board and its address, reading and voting and commenting, submitting, editing and deleting your own, profile and preferences. |
-| `admin-journeys.spec.ts` | A-1 to A-5: the saved board link, status and pin, moderating a comment and approving a waiting one, categories and statuses, the application settings. |
-| `comments-switch.spec.ts` | H-5. With the switch off the box and the thread are gone, the counts leave the board, **and** the server refuses a comment posted straight to the endpoint with a 403 and a clear message. |
-| `authorization.spec.ts` | R-70 and R-66 from the other side: signed in as an ordinary person, calling every admin endpoint by hand and being refused with a 403. Plus the origin check (R-3g) and 401 with no session. |
-| `rate-limits.spec.ts` | R-130 to R-132: the limit refuses the one past it, says when to try again, and applies to an admin too. |
-| `accessibility.spec.ts` | R-163: an axe pass (WCAG 2.x A and AA) on the board, both its empty states, the request page, the settings screen, the admin screens, and the board in dark mode. |
+| `00-smoke-and-navigation` | Every route loads: board, request, new-request form, settings, not-found, not-allowed, deep links, a retired taxonomy value still labelled on an old request. |
+| `01-authentication` | U-1: sign-in through Keycloak, no token in `localStorage`/`sessionStorage` (R-3c), both cookies HttpOnly with the right `SameSite` and path (R-3d, R-3e), exactly one `/bootstrap` call (H-4), sign-out clears the session, a signed-out call is 401. |
+| `02-board` | R-16 to R-25: search by title and description, sort and its URL, a category filter that survives reload, pinned-first ordering, an honest empty state, a bookmarked empty page. |
+| `03-requests` | R-10 to R-14: validation, create, owner edit, no owner controls on someone else's, and the API refusing a cross-user edit or delete with 403. |
+| `04-comments` | R-32 to R-42: publish when approval is off, the author editing their own at the API, admin moderation, approve and reject a waiting comment, and the feature switch removing the thread **and** making the server refuse a comment with `FEATURE_DISABLED`. |
+| `05-votes-and-interactions` | R-26 to R-31: vote and un-vote in the UI, idempotent double-vote at `POST /v1/requests/:id/vote`, and the vote rate limit with `retryAt`. |
+| `06-settings` | R-54 to R-60: display name persists, an explicit theme survives reload, a notification toggle saves. |
+| `07-admin-taxonomy` | R-43 to R-49, R-64, R-65: usage counts, add/retire/restore/delete an unused category, no Delete for one in use, the first status protected from retirement, status change and pin. |
+| `08-admin-settings-and-invitations` | R-66 to R-70, R-130: a limit that takes effect with no restart, a zero refused in the UI, invite-only, create and cancel an invitation, and 403 for an ordinary user. |
+| `09-authorization` | R-70, R-66 from the other side: an ordinary session calling every admin endpoint by hand and being refused. Plus the origin check (R-3g). |
+| `10-rate-limits` | R-130 to R-132: the submission limit refuses the one past it, says when to try again, and applies to an admin too. |
+| `11-errors-and-resilience` | SRS 15.8: a failed start-up shows an error with a working Try again, no stack leaks, a board error does not trigger the auth refresh, and a 401 does not loop. |
+| `12-api-contracts-and-state` | The real `/bootstrap` and request-detail shapes, and payload validation on comments and requests. |
+| `13-admin-comments-and-workflow` | The review board filter, an admin inspecting a comment without an inline rewrite control (R-36), and the waiting-comments nav appearing only with approval on. |
+| `14-complete-critical-journeys` | The two headline journeys end to end: a user creating, voting, commenting, editing and signing out; an admin reviewing, changing status, pinning and touching settings and taxonomy. |
 
 Two things worth knowing before you read the code:
 
-- **One worker, no retries.** These tests share one database, so two workers
+- **One run, no retries.** These tests share one database, so parallel runs
   would make failures that depend on the order things happened to run. A retry
   would hide a flake, and a flake in a suite this small is a real defect.
-- **The suite lifts the submission rate limit while it runs**, and puts it back
-  afterwards. R-130 allows ten requests an hour and the suite files two of them,
-  so on a machine where it has already run a few times the limit would start
-  refusing tests that are not about limits. `rate-limits.spec.ts` sets a limit
-  of its own instead, so the rule is still proven — by the one test that is
-  about it.
+- **Some specs change an application setting and put it back.** The comment
+  specs toggle the approval and feature switches; the rate-limit specs set a
+  limit of their own. Each restores the value it read at the start, so a
+  half-finished run can leave a setting changed — re-seeding (`docker compose
+  up`) resets it.
 
-If the stack is not up, the run stops before the first test with a message
-naming the command to start it.
+If the stack is not up, sign-in fails on the first spec with a Keycloak
+connection error.
+
+**Environment gotcha:** if your shell exports `ELECTRON_RUN_AS_NODE=1`, Cypress's
+bundled Electron refuses to start (`bad option: --no-sandbox`). Unset it for the
+run: `env -u ELECTRON_RUN_AS_NODE npm test`. On a headless machine, wrap the
+command in `xvfb-run -a`.
 
 ## Configuration
 

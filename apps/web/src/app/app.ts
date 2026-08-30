@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DOCUMENT, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { BootstrapStore } from './core/bootstrap/bootstrap.store';
 
@@ -47,7 +47,7 @@ import { BootstrapStore } from './core/bootstrap/bootstrap.store';
             <button
               type="button"
               class="bg-accent text-on-accent min-h-11 rounded px-4 font-medium"
-              (click)="bootstrap.load()"
+              (click)="retry()"
             >
               Try again
             </button>
@@ -64,4 +64,19 @@ import { BootstrapStore } from './core/bootstrap/bootstrap.store';
 })
 export class App {
   protected readonly bootstrap = inject(BootstrapStore);
+  private readonly document = inject(DOCUMENT);
+
+  /**
+   * SRS 15.8: the Try again button must actually recover the app, not just clear
+   * the message. The router cancelled its first navigation when the guard saw a
+   * failed start-up, and a signal turning 'ready' does not re-run it — so once
+   * the one start-up call succeeds, reload the page to let the router resolve
+   * the route cleanly.
+   */
+  protected async retry(): Promise<void> {
+    await this.bootstrap.load();
+    if (this.bootstrap.status() === 'ready') {
+      this.document.defaultView?.location.reload();
+    }
+  }
 }

@@ -1,26 +1,19 @@
 {
-  // Playwright compiles each spec on the fly and does not type-check across
-  // files, so a spec can be wrong in a way the run never notices — a helper
-  // called with the wrong shape still executes, and the test fails later with a
-  // puzzle instead of a type error. `npm run typecheck` is the missing gate,
-  // and CI runs it before the browsers ever start.
   "compilerOptions": {
     "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
-    "types": ["node"],
-
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true,
-
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["cypress", "node"]
   },
-  "include": ["specs/**/*.ts", "support/**/*.ts", "playwright.config.ts"]
+  "include": ["cypress/**/*.ts", "cypress.config.ts"]
 }

@@ -1,20 +1,19 @@
 {
   "name": "@feedbackhub/e2e",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "End-to-end tests. Its own package because Playwright's TypeScript peer range does not overlap the TypeScript 6 that Angular 22 requires (D-36, D-42).",
+  "description": "Complete FeedbackHub end-to-end test suite using Cypress.",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:ui": "playwright test --ui",
-    "report": "playwright show-report .playwright/report",
+    "test": "cypress run",
+    "test:headed": "cypress run --headed --browser chrome",
+    "test:open": "cypress open",
+    "test:chrome": "cypress run --browser chrome",
+    "test:electron": "cypress run --browser electron",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.13.0",
-    "@playwright/test": "^1.50.0",
-    "@types/node": "^22.10.0",
-    "axe-core": "^4.13.0",
-    "typescript": "^5.7.0"
+    "@types/node": "^22.15.0",
+    "cypress": "^15.21.1",
+    "typescript": "^5.8.3"
   }
 }

@@ -1,2 +1,6 @@
 node_modules/
-.playwright/
+coverage/
+cypress/screenshots/
+cypress/videos/
+.DS_Store
+*.local
