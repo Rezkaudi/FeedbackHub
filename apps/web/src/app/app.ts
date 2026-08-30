@@ -40,13 +40,18 @@ import { BootstrapStore } from './core/bootstrap/bootstrap.store';
               <span class="font-mono">{{ requestId }}</span>
             </p>
           }
-          <button
-            type="button"
-            class="bg-accent text-on-accent min-h-11 rounded px-4 font-medium"
-            (click)="bootstrap.load()"
-          >
-            Try again
-          </button>
+          <!-- R-87: only when trying again can actually help. A button that
+               cannot work is worse than no button — the person keeps pressing
+               it. -->
+          @if (bootstrap.error()?.isRetryable) {
+            <button
+              type="button"
+              class="bg-accent text-on-accent min-h-11 rounded px-4 font-medium"
+              (click)="bootstrap.load()"
+            >
+              Try again
+            </button>
+          }
         </main>
       }
       @case ('loading') {

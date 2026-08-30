@@ -5,14 +5,17 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { BootstrapStore } from './core/bootstrap/bootstrap.store';
+import { refreshInterceptor } from './core/auth/refresh.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(withFetch()),
+    // One interceptor, and it does both jobs the cookies imply: send them on
+    // every call, and renew them quietly when they expire (R-3c, R-9a).
+    provideHttpClient(withFetch(), withInterceptors([refreshInterceptor])),
     provideRouter(
       routes,
       withComponentInputBinding(),

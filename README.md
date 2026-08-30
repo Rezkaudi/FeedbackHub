@@ -153,6 +153,25 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
 - CI runs lint, the dependency rules, the type check, all three test layers, a
   secret scan, and both image builds.
 
+### The front end — the shell
+
+- **The app boots with one call.** `GET /v1/bootstrap` and nothing else before
+  the app appears (R-52, H-4). A test asserts no other request is made.
+- **All three start-up outcomes are handled.** Ready shows the app; a failure
+  shows what happened with a Try again button and the request id to quote; 401
+  is treated as signed out, not as an error, and sends the person to Keycloak
+  remembering the page they wanted.
+- **The session renews itself.** A 401 mid-use triggers one call to
+  `/v1/auth/refresh` and the original request goes again. Requests that fail
+  together share one renewal, because the provider rotates the refresh token and
+  three parallel renewals would end the session they were trying to save.
+- **Theme works with no flash.** Read from `localStorage` before the first paint
+  by an inline script, and light/dark/system all apply (R-55, R-56).
+- **Sign-in failures are told apart.** "You may not join" and "you were unlucky
+  with the timing" are different pages, because the second person *is* allowed.
+- Skip link, visible focus, lazy routes, and a design-token file whose every
+  colour pair was measured against WCAG AA in both themes.
+
 ## What does not work
 
 Nothing in this list is hidden.
@@ -199,6 +218,30 @@ Nothing in this list is hidden.
 Known limits that are choices, not omissions, are in
 [SCOPE.md](SCOPE.md) §2 — no audit log (D-12), no maximum page size (D-04), no
 comment threading (D-05), and search without ranking (D-11).
+
+### The front end — everything else
+
+Only the shell is built. These routes exist and say so on the page rather than
+rendering blank:
+
+- **The board** is a placeholder. No list, no search, no filters, no sorting, no
+  pagination.
+- **A request page** does not exist. No comments, no voting.
+- **Creating, editing and deleting a request** does not exist.
+- **Profile and settings** does not exist. The nav links to `/settings`, which
+  currently falls through to the "page does not exist" screen.
+- **Admin** is a placeholder behind a working guard.
+- **Arabic and RTL** are decided and the fonts are loaded, but no string is
+  translated yet — the UI is English only.
+- **No end-to-end tests.** Playwright is not set up.
+
+Two smaller things that are true and easy to miss:
+
+- `docker compose up --build` may fail to *rebuild* on a snap-installed
+  `docker-compose`, which cannot read files under `/media` (permission denied).
+  `podman-compose` is the workaround. Containers already built run fine.
+- The API image currently running may serve an older OpenAPI document than the
+  source produces. Rebuild it before regenerating the front-end types.
 
 ## How to run it
 
@@ -369,6 +412,29 @@ Everything above was run and checked, up to and including the login page
 rendering. Typing the password and coming back through the callback is the one
 step nobody has done yet.
 
+### The front end
+
+The web app needs a newer Node than the API does: Angular 22 requires
+`^22.22.3 || ^24.15.0 || >=26.0.0`, and 22.18 is **not** enough — the CLI
+refuses to start. `nvm install 22` gets a version that works.
+
+```bash
+cd apps/web
+npm install
+npm start          # http://localhost:4200
+```
+
+`npm start` proxies `/v1` and `/health` to `http://localhost:3000`, so the
+browser sees one origin and the auth cookies behave the way they will in
+production (R-3h). The API must already be running.
+
+The typed API client is generated from the live API, not hand-written:
+
+```bash
+npm run api:types        # regenerate src/app/core/api/schema.d.ts
+npm run api:types:check  # regenerate and fail if it has drifted (CI)
+```
+
 ## How to run the tests
 
 These all work now, from a fresh clone, on a machine with Node 22 and a
@@ -419,6 +485,18 @@ part-way can leave a container behind:
 npm run test:clean        # remove leftover test containers
 ```
 
+### The front-end tests
+
+```bash
+cd apps/web
+npm test           # Vitest, through Angular's own unit-test builder
+```
+
+64 tests. They cover the pieces that carry a rule: the browser-side
+preferences, the error shape, the one start-up call, the session renewal, the
+guards, and the four start-up states of the root component. There are no
+end-to-end tests yet.
+
 ## Configuration
 
 Every variable, what it is for, and its default: [`apps/api/.env.example`](apps/api/.env.example).
@@ -433,9 +511,14 @@ Two rules that will not bend:
 
 ## Commit convention
 
-AI-heavy commits carry the trailer `AI-Assisted: <tool>` in the commit message.
-Commits without it are hand-written. The convention starts from the first code
-commit; the initial docs commit predates it.
+AI-heavy commits carry the trailer `Co-Authored-By: Claude Opus 5` in the commit
+message. Commits without it are hand-written. The convention starts from the
+first code commit; the initial docs commit predates it.
+
+This section used to say the trailer was `AI-Assisted: <tool>`. It never was —
+no commit has ever carried that trailer. The README was describing a convention
+the history did not follow, which is worse than having none, so the text now
+says what `git log --format='%(trailers)'` actually shows.
 
 ---
 
