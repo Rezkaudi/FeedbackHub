@@ -335,20 +335,31 @@ Two smaller things that are true and easy to miss:
 Needs **Docker Compose v2** (`docker compose`, not `docker-compose`).
 
 ```bash
-docker compose up --build
+docker compose up --build -d --wait
 ```
 
 That is the whole command. There is no `.env` to prepare first: every value the
 compose file needs is written inside it, because they are all development
 values. It starts Postgres, Redis, Keycloak and Mailpit, runs the migration and
 the seed as their own step, and only then starts the API and the email worker.
+`-d` leaves the stack running in the background, and `--wait` returns only after
+the health checks pass.
 
 | What | Where |
 |---|---|
+| Web app | http://localhost:4200 |
 | API | http://localhost:3000/v1 |
 | API docs | http://localhost:3000/api/docs |
 | Keycloak | http://localhost:8080 (admin / admin) |
 | Mailpit | http://localhost:8025 |
+
+On this machine, `docker` is a Podman wrapper that delegates compose to a
+snap-packaged `docker-compose`, and that wrapper cannot read projects under
+`/media`. Use this equivalent one-command start instead:
+
+```bash
+podman-compose up --build -d
+```
 
 Seeded accounts, all with the password `Passw0rd!`:
 
