@@ -133,6 +133,29 @@ We are not hiding these. Each one is a choice.
 
 ---
 
+### Front end, decided during Step 1
+
+- **Angular 22, not the 20 the SRS named.** The brief asks us to justify the
+  version, and 22 is the current stable line. See D-36. It needs Node
+  `^22.22.3` and TypeScript 6, which is stricter than what the machine had.
+- **No server-side rendering.** Every route is behind a sign-in, so there is no
+  anonymous first paint to speed up and no crawler to serve. See D-37.
+- **Arabic is in scope.** R-57 asks for it, and one test in SRS part 17 depends
+  on it (a notification email written in Arabic). It means every string is
+  translated and every screen is checked in RTL.
+- **No "only my requests" filter.** Journey U-5 says a person finds their own
+  earlier request, but the board rules R-16 to R-25 never list a mine filter and
+  the API has no such parameter. Requests now carry `isMine`, so a person can
+  recognise their own on the board, but cannot filter the whole board down to
+  them. If that turns out to matter, it is one query parameter and one checkbox.
+- **Server validation messages stay English.** The error shape (R-76) promises a
+  code the front end translates, and it keeps that promise everywhere except
+  `fields`, which the exception filter fills from class-validator's own English
+  sentences. Rather than reshape the backend, the front end validates the same
+  documented limits itself and shows its own translated message; the server's
+  field errors are the safety net and would only be seen if the two ever
+  disagreed. This is a known gap, not a solved problem.
+
 ## 3. What was unclear, and how we read it
 
 **The brief says: keep the token in memory, not in browser storage.**

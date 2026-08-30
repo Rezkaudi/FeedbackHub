@@ -1,0 +1,327 @@
+/**
+ * The one token file (R-135).
+ *
+ * Every colour, space, size and duration in the app comes from here. Dark mode
+ * is a swap of these values, not a second stylesheet, so a screen written once
+ * is correct in both themes and cannot drift.
+ *
+ * ---------------------------------------------------------------------------
+ * The constraint that shaped this palette
+ * ---------------------------------------------------------------------------
+ * Category and status colours are **data**. An admin picks them at runtime
+ * (R-43, R-44) and we cannot know them. That has two consequences, and they
+ * drive most of the decisions below:
+ *
+ *   1. The app's own colours must stay quiet. If the chrome were a strong blue,
+ *      an admin's magenta category chip would fight it on every row. So the
+ *      surface is neutral and there is exactly one accent, used only for things
+ *      you can interact with.
+ *
+ *   2. A chip can never put text on an unknown colour. We do not know the
+ *      contrast of a hex somebody typed, so we never bet on it: the chip's text
+ *      is always a neutral we control, and the admin's colour appears as a small
+ *      solid dot plus a low-alpha wash behind it. Contrast is then ours, not
+ *      theirs, in both themes, whatever they pick. The name is always written
+ *      next to the dot, so colour is never the only signal (R-111).
+ */
+
+:root {
+  color-scheme: light;
+
+  /* -- Neutrals -----------------------------------------------------------
+   * A slightly warm grey. A pure-grey board of text looks clinical, and this
+   * app is mostly people writing to each other.
+   */
+  --fh-neutral-0: #ffffff;
+  --fh-neutral-50: #fafaf9;
+  --fh-neutral-100: #f5f5f4;
+  --fh-neutral-200: #e7e5e4;
+  --fh-neutral-300: #d6d3d1;
+  --fh-neutral-400: #a8a29e;
+  --fh-neutral-500: #78716c;
+  --fh-neutral-600: #57534e;
+  --fh-neutral-700: #44403c;
+  --fh-neutral-800: #292524;
+  --fh-neutral-900: #1c1917;
+  --fh-neutral-950: #0c0a09;
+
+  /* -- Semantic surfaces -------------------------------------------------- */
+  --fh-bg: var(--fh-neutral-50);
+  --fh-surface: var(--fh-neutral-0);
+  --fh-surface-raised: var(--fh-neutral-0);
+  --fh-surface-sunken: var(--fh-neutral-100);
+  /* The wash behind a hovered row. Alpha, not a fixed grey, so it works over
+   * any surface it happens to land on. */
+  --fh-surface-hover: rgb(0 0 0 / 0.035);
+  --fh-surface-active: rgb(0 0 0 / 0.06);
+
+  /* -- Text ---------------------------------------------------------------
+   * Measured against --fh-surface, not guessed: 17.5:1, 7.6:1 and 4.8:1. All
+   * three clear the 4.5:1 AA asks of body text, because even "subtle" here
+   * carries real content — author names and timestamps — not decoration.
+   */
+  --fh-text: var(--fh-neutral-900);
+  --fh-text-muted: var(--fh-neutral-600);
+  --fh-text-subtle: var(--fh-neutral-500);
+  --fh-text-on-accent: var(--fh-neutral-0);
+
+  /* -- Lines -------------------------------------------------------------- */
+  /* Dividers between cards and rows. Deliberately low contrast: WCAG 1.4.11
+   * asks 3:1 of a boundary that *identifies a control*, not of decoration,
+   * and a board of forty hard rules is harder to read, not easier. */
+  --fh-border: var(--fh-neutral-200);
+  --fh-border-strong: var(--fh-neutral-300);
+  /* The edge of an input, a select or a checkbox — the line that tells you a
+   * control is there. This one is held to 3:1 (measured 3.78:1), which is why
+   * it is a separate token from the decorative borders above. */
+  --fh-border-control: #8a827b;
+
+  /* -- Accent -------------------------------------------------------------
+   * One blue, and it means "you can act on this": links, focus, the voted
+   * state, the primary button. Nothing decorative is ever this colour, so the
+   * colour itself carries the affordance.
+   */
+  --fh-accent: #1d4ed8;
+  --fh-accent-hover: #1e40af;
+  --fh-accent-subtle: #eff6ff;
+  --fh-accent-border: #bfdbfe;
+
+  /* -- State --------------------------------------------------------------
+   * Always paired with an icon and words, never used alone (R-111).
+   */
+  --fh-danger: #b91c1c;
+  --fh-danger-subtle: #fef2f2;
+  --fh-danger-border: #fecaca;
+  --fh-success: #15803d;
+  --fh-success-subtle: #f0fdf4;
+  --fh-warning: #a16207;
+  --fh-warning-subtle: #fefce8;
+
+  /* -- Focus --------------------------------------------------------------
+   * Never removed, only restyled (R-89, R-109). Two rings: the accent ring and
+   * a white gap behind it, so it stays visible on top of a coloured chip or a
+   * dark button as well as on the page.
+   */
+  --fh-focus-ring: var(--fh-accent);
+  --fh-focus-gap: var(--fh-neutral-0);
+
+  /* -- Chip wash ----------------------------------------------------------
+   * How much of the admin's colour shows through behind chip text. Low in
+   * light mode because the text is near-black.
+   */
+  --fh-chip-wash: 0.1;
+  --fh-chip-dot-ring: rgb(0 0 0 / 0.15);
+
+  /* -- Scrim --------------------------------------------------------------- */
+  --fh-scrim: rgb(12 10 9 / 0.45);
+
+  /* -- Type ---------------------------------------------------------------
+   * IBM Plex Sans and IBM Plex Sans Arabic are one superfamily drawn by one
+   * team: same weights, same proportions, same rhythm. That matters more than
+   * usual here, because the app switches between English and Arabic at runtime
+   * (R-57) and a mismatched Arabic face makes the same screen feel like a
+   * different product. Plex Mono is used only where digits must not shift.
+   */
+  --fh-font-sans: 'IBM Plex Sans', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui,
+    -apple-system, 'Segoe UI', sans-serif;
+  --fh-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* A 1.2 scale from 14px. Body is 16px so mobile Safari does not zoom the
+   * page when a field takes focus. */
+  --fh-text-xs: 0.75rem;    /* 12 — chip labels, never body text */
+  --fh-text-sm: 0.875rem;   /* 14 — secondary, metadata */
+  --fh-text-base: 1rem;     /* 16 — body */
+  --fh-text-lg: 1.125rem;   /* 18 — card titles */
+  --fh-text-xl: 1.375rem;   /* 22 — page heading */
+  --fh-text-2xl: 1.75rem;   /* 28 — request title on the detail page */
+
+  --fh-leading-tight: 1.25; /* headings */
+  --fh-leading-normal: 1.5; /* UI text */
+  --fh-leading-relaxed: 1.65; /* descriptions and comments — the long reads */
+
+  --fh-weight-normal: 400;
+  --fh-weight-medium: 500;
+  --fh-weight-semibold: 600;
+
+  /* Long text gets a measure. 68ch keeps a description inside the 60–75
+   * characters a line can be read comfortably. */
+  --fh-measure: 68ch;
+
+  /* -- Space --------------------------------------------------------------
+   * A 4px base. Named by size, not by purpose, so the same rhythm holds
+   * whether it is padding, a gap or a stack.
+   */
+  --fh-space-1: 0.25rem;
+  --fh-space-2: 0.5rem;
+  --fh-space-3: 0.75rem;
+  --fh-space-4: 1rem;
+  --fh-space-5: 1.25rem;
+  --fh-space-6: 1.5rem;
+  --fh-space-8: 2rem;
+  --fh-space-10: 2.5rem;
+  --fh-space-12: 3rem;
+  --fh-space-16: 4rem;
+
+  /* -- Shape --------------------------------------------------------------- */
+  --fh-radius-sm: 0.25rem;
+  --fh-radius: 0.5rem;
+  --fh-radius-lg: 0.75rem;
+  --fh-radius-full: 9999px;
+
+  /* Shadows are almost absent on purpose. Cards are separated by a border and
+   * by space; a board of forty drop-shadows reads as noise. Only things that
+   * genuinely float — a modal, a dropdown — get one. */
+  --fh-shadow-popover: 0 4px 12px rgb(12 10 9 / 0.1), 0 1px 3px rgb(12 10 9 / 0.06);
+  --fh-shadow-modal: 0 16px 48px rgb(12 10 9 / 0.18);
+
+  /* -- Touch ---------------------------------------------------------------
+   * Nothing you can tap is ever smaller than this, even when the ink inside is
+   * (an icon button pads out to reach it).
+   */
+  --fh-tap-min: 2.75rem; /* 44px */
+
+  /* -- Motion -------------------------------------------------------------
+   * Short, and only ever to explain a change. Everything animates transform
+   * and opacity, so nothing reflows mid-animation.
+   */
+  --fh-duration-fast: 120ms;
+  --fh-duration: 180ms;
+  --fh-duration-slow: 260ms;
+  --fh-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --fh-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* -- Layers -------------------------------------------------------------- */
+  --fh-z-sticky: 10;
+  --fh-z-dropdown: 20;
+  --fh-z-scrim: 40;
+  --fh-z-modal: 50;
+  --fh-z-toast: 60;
+}
+
+/**
+ * Dark mode.
+ *
+ * Not an inversion. The surfaces are lifted off pure black so a card can still
+ * sit above the page, and the accent is lightened, because #1d4ed8 on a dark
+ * ground fails contrast. Every value here is re-checked against its own
+ * background rather than assumed from the light theme.
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --fh-bg: var(--fh-neutral-950);
+  --fh-surface: #17140f;
+  --fh-surface-raised: #211d18;
+  --fh-surface-sunken: var(--fh-neutral-950);
+  --fh-surface-hover: rgb(255 255 255 / 0.045);
+  --fh-surface-active: rgb(255 255 255 / 0.08);
+
+  --fh-text: var(--fh-neutral-100);
+  --fh-text-muted: var(--fh-neutral-400);
+  /* Not neutral-500: on these surfaces that measures 3.83:1 and fails AA.
+   * This value clears 4.5:1 against the raised surface as well as the flat
+   * one (4.87:1 and 5.33:1) — the raised card is the lighter of the two and
+   * is what a value chosen against the page alone gets wrong. Dark mode is
+   * measured on its own, never inferred from the light theme. */
+  --fh-text-subtle: #918981;
+  --fh-text-on-accent: var(--fh-neutral-950);
+
+  --fh-border: #2e2823;
+  --fh-border-strong: #453d36;
+  --fh-border-control: #847c75;
+
+  --fh-accent: #93b4fd;
+  --fh-accent-hover: #b9cffe;
+  --fh-accent-subtle: rgb(147 180 253 / 0.12);
+  --fh-accent-border: rgb(147 180 253 / 0.3);
+
+  --fh-danger: #fca5a5;
+  --fh-danger-subtle: rgb(252 165 165 / 0.12);
+  --fh-danger-border: rgb(252 165 165 / 0.3);
+  --fh-success: #86efac;
+  --fh-success-subtle: rgb(134 239 172 / 0.12);
+  --fh-warning: #fcd34d;
+  --fh-warning-subtle: rgb(252 211 77 / 0.12);
+
+  --fh-focus-ring: #93b4fd;
+  --fh-focus-gap: var(--fh-neutral-950);
+
+  /* The wash has to work harder against a dark ground, and the dot's ring
+   * flips to light so a dark admin colour still reads as a disc. */
+  --fh-chip-wash: 0.22;
+  --fh-chip-dot-ring: rgb(255 255 255 / 0.2);
+
+  --fh-scrim: rgb(0 0 0 / 0.65);
+
+  --fh-shadow-popover: 0 4px 12px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+  --fh-shadow-modal: 0 16px 48px rgb(0 0 0 / 0.65);
+}
+
+/**
+ * "Follow the computer" (R-55). The same dark values, applied only when the
+ * person has not chosen for themselves — an explicit light choice must win over
+ * a dark operating system, so this is scoped away from [data-theme='light'].
+ *
+ * The inline script in index.html stamps data-theme before the first paint, so
+ * this branch is what handles the live change when the machine's setting flips
+ * while the app is open (R-56), not the initial render.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    color-scheme: dark;
+
+    --fh-bg: var(--fh-neutral-950);
+    --fh-surface: #17140f;
+    --fh-surface-raised: #211d18;
+    --fh-surface-sunken: var(--fh-neutral-950);
+    --fh-surface-hover: rgb(255 255 255 / 0.045);
+    --fh-surface-active: rgb(255 255 255 / 0.08);
+
+    --fh-text: var(--fh-neutral-100);
+    --fh-text-muted: var(--fh-neutral-400);
+    --fh-text-subtle: #918981;
+    --fh-text-on-accent: var(--fh-neutral-950);
+
+    --fh-border: #2e2823;
+    --fh-border-strong: #453d36;
+    --fh-border-control: #847c75;
+
+    --fh-accent: #93b4fd;
+    --fh-accent-hover: #b9cffe;
+    --fh-accent-subtle: rgb(147 180 253 / 0.12);
+    --fh-accent-border: rgb(147 180 253 / 0.3);
+
+    --fh-danger: #fca5a5;
+    --fh-danger-subtle: rgb(252 165 165 / 0.12);
+    --fh-danger-border: rgb(252 165 165 / 0.3);
+    --fh-success: #86efac;
+    --fh-success-subtle: rgb(134 239 172 / 0.12);
+    --fh-warning: #fcd34d;
+    --fh-warning-subtle: rgb(252 211 77 / 0.12);
+
+    --fh-focus-ring: #93b4fd;
+    --fh-focus-gap: var(--fh-neutral-950);
+
+    --fh-chip-wash: 0.22;
+    --fh-chip-dot-ring: rgb(255 255 255 / 0.2);
+
+    --fh-scrim: rgb(0 0 0 / 0.65);
+
+    --fh-shadow-popover: 0 4px 12px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+    --fh-shadow-modal: 0 16px 48px rgb(0 0 0 / 0.65);
+  }
+}
+
+/**
+ * R-114: if the computer asks for less movement, we use less movement.
+ *
+ * Duration goes to almost nothing rather than to zero: a 1ms transition still
+ * fires its transitionend, so nothing that waits on one silently hangs.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --fh-duration-fast: 1ms;
+    --fh-duration: 1ms;
+    --fh-duration-slow: 1ms;
+  }
+}
