@@ -264,8 +264,8 @@ export class PrismaRequestRepository implements RequestRepository {
           `;
           return { count: Number(rows[0]?.count ?? 0), oldest: rows[0]?.oldest ?? null };
         },
-        async () => {
-          const row = await tx.feedbackRequest.create({
+        async (client) => {
+          const row = await client.feedbackRequest.create({
             data: {
               id: state.id,
               title: state.title,

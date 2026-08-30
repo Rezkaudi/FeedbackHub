@@ -34,7 +34,7 @@ export class PrismaVoteRepository implements VoteRepository {
         { key: `vote:${userId}`, code: 'VOTE_RATE_LIMITED', policy: limit },
         now,
         (client, since) => countVotesBy(client, userId, since),
-        async () => {
+        async (client) => {
           /**
            * R-27: voting twice is fine and gives back the current state.
            *
@@ -44,9 +44,9 @@ export class PrismaVoteRepository implements VoteRepository {
            * instead would not work: inside a transaction a failed statement
            * aborts the whole thing, and every later query in it fails too.
            */
-          await tx.vote.createMany({ data: [{ requestId, userId }], skipDuplicates: true });
+          await client.vote.createMany({ data: [{ requestId, userId }], skipDuplicates: true });
 
-          return countState(tx, requestId, userId);
+          return countState(client, requestId, userId);
         },
       ),
     );
@@ -64,10 +64,10 @@ export class PrismaVoteRepository implements VoteRepository {
         { key: `vote:${userId}`, code: 'VOTE_RATE_LIMITED', policy: limit },
         now,
         (client, since) => countVotesBy(client, userId, since),
-        async () => {
+        async (client) => {
           // deleteMany, not delete: removing nothing is fine (R-27).
-          await tx.vote.deleteMany({ where: { requestId, userId } });
-          return countState(tx, requestId, userId);
+          await client.vote.deleteMany({ where: { requestId, userId } });
+          return countState(client, requestId, userId);
         },
       ),
     );

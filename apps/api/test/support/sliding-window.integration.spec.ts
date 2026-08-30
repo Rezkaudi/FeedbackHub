@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { startTestDatabase, TestDatabase } from './database';
 import { withinRateLimit } from '../../src/shared/rate-limit/sliding-window';
 import { RateLimitedError } from '../../src/shared/errors/app-error';
@@ -44,8 +44,8 @@ describe('the sliding window, against a real database', () => {
 
   const scope = { key: 'signup', code: 'SIGNUP_RATE_LIMITED' as const, policy: { count: 3, minutes: 60 } };
 
-  const addUser = (createdAt: Date, suffix: string) =>
-    prisma.user.create({
+  const addUser = (client: Pick<Prisma.TransactionClient, 'user'>, createdAt: Date, suffix: string) =>
+    client.user.create({
       data: {
         externalId: `ext-${suffix}`,
         email: `person-${suffix}@example.com`,
@@ -56,7 +56,7 @@ describe('the sliding window, against a real database', () => {
 
   const attemptSignup = (suffix: string, at: Date = now) =>
     prisma.$transaction((tx) =>
-      withinRateLimit(tx, scope, at, countUsers, () => addUser(at, suffix)),
+      withinRateLimit(tx, scope, at, countUsers, (client) => addUser(client, at, suffix)),
     );
 
   it('allows attempts up to the limit', async () => {
@@ -102,13 +102,13 @@ describe('the sliding window, against a real database', () => {
 
       const [first, second] = await Promise.all([
         prisma.$transaction((tx) =>
-          withinRateLimit(tx, perPerson('one'), now, async () => ({ count: 0, oldest: null }), () =>
-            addUser(now, 'one'),
+          withinRateLimit(tx, perPerson('one'), now, async () => ({ count: 0, oldest: null }), (client) =>
+            addUser(client, now, 'one'),
           ),
         ),
         prisma.$transaction((tx) =>
-          withinRateLimit(tx, perPerson('two'), now, async () => ({ count: 0, oldest: null }), () =>
-            addUser(now, 'two'),
+          withinRateLimit(tx, perPerson('two'), now, async () => ({ count: 0, oldest: null }), (client) =>
+            addUser(client, now, 'two'),
           ),
         ),
       ]);
@@ -120,9 +120,9 @@ describe('the sliding window, against a real database', () => {
   describe('the window slides (R-131)', () => {
     it('says the person may try again one window after their OLDEST attempt', async () => {
       // Three sign-ups: 13:00, 13:20, 13:30. The limit is 3 in 60 minutes.
-      await addUser(new Date('2026-08-29T13:00:00.000Z'), 'a');
-      await addUser(new Date('2026-08-29T13:20:00.000Z'), 'b');
-      await addUser(new Date('2026-08-29T13:30:00.000Z'), 'c');
+      await addUser(prisma, new Date('2026-08-29T13:00:00.000Z'), 'a');
+      await addUser(prisma, new Date('2026-08-29T13:20:00.000Z'), 'b');
+      await addUser(prisma, new Date('2026-08-29T13:30:00.000Z'), 'c');
 
       // They try at 13:40. They have waited 40 minutes of the window already,
       // so the answer is 14:00 — not 14:40.
@@ -134,9 +134,9 @@ describe('the sliding window, against a real database', () => {
     });
 
     it('lets them through once the oldest attempt falls out of the window', async () => {
-      await addUser(new Date('2026-08-29T13:00:00.000Z'), 'a');
-      await addUser(new Date('2026-08-29T13:20:00.000Z'), 'b');
-      await addUser(new Date('2026-08-29T13:30:00.000Z'), 'c');
+      await addUser(prisma, new Date('2026-08-29T13:00:00.000Z'), 'a');
+      await addUser(prisma, new Date('2026-08-29T13:20:00.000Z'), 'b');
+      await addUser(prisma, new Date('2026-08-29T13:30:00.000Z'), 'c');
 
       // At 14:01 the 13:00 one is too old to count, so there is room again.
       await expect(attemptSignup('d', new Date('2026-08-29T14:01:00.000Z'))).resolves.toBeDefined();
@@ -144,9 +144,9 @@ describe('the sliding window, against a real database', () => {
     });
 
     it('is not reset on the hour: ten at 13:59 and ten at 14:00 is still refused', async () => {
-      await addUser(new Date('2026-08-29T13:59:00.000Z'), 'a');
-      await addUser(new Date('2026-08-29T13:59:30.000Z'), 'b');
-      await addUser(new Date('2026-08-29T13:59:59.000Z'), 'c');
+      await addUser(prisma, new Date('2026-08-29T13:59:00.000Z'), 'a');
+      await addUser(prisma, new Date('2026-08-29T13:59:30.000Z'), 'b');
+      await addUser(prisma, new Date('2026-08-29T13:59:59.000Z'), 'c');
 
       await expect(
         attemptSignup('d', new Date('2026-08-29T14:00:00.000Z')),
@@ -163,7 +163,7 @@ describe('the sliding window, against a real database', () => {
     const raised = { ...scope, policy: { count: 5, minutes: 60 } };
     await expect(
       prisma.$transaction((tx) =>
-        withinRateLimit(tx, raised, now, countUsers, () => addUser(now, 'e')),
+        withinRateLimit(tx, raised, now, countUsers, (client) => addUser(client, now, 'e')),
       ),
     ).resolves.toBeDefined();
   });

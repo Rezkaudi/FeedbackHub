@@ -278,9 +278,10 @@ move every rule from R-51 to R-118, and every pointer to them.
 
 ## 7. Still to decide
 
-Nothing about the stack. One small thing is still open:
-
-- Which fields the OpenAPI document shows.
+Nothing about the stack. The OpenAPI document is generated from the route
+decorators and response DTOs, and the frontend type check fails if it drifts.
+The taxonomy admin list includes `usageCount`, because the admin screen needs to
+show which rows are safe to delete and which must be retired.
 
 **Settled while building:** how the Keycloak realm export is kept in step with
 the seed data. The three test accounts have their user ids pinned in the realm

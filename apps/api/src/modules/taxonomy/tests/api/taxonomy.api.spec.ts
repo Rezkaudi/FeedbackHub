@@ -160,6 +160,7 @@ describe('taxonomy over HTTP', () => {
         'isActive',
         'name',
         'slug',
+        'usageCount',
       ]);
     });
 

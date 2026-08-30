@@ -98,8 +98,8 @@ export class PrismaUserRepository implements UserRepository {
           `;
           return { count: Number(rows[0]?.count ?? 0), oldest: rows[0]?.oldest ?? null };
         },
-        async () => {
-          const row = await tx.user.create({
+        async (client) => {
+          const row = await client.user.create({
             data: {
               id: state.id,
               externalId: state.externalId,

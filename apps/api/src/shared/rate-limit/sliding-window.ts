@@ -73,13 +73,13 @@ function lockPair(key: string): [number, number] {
   return [a | 0, b | 0];
 }
 
-export interface AttemptCounter {
+export interface AttemptCounter<Tx extends TransactionClient = TransactionClient> {
   /**
    * How many attempts this key has made at or after `since`, and when the
    * oldest of them was. Runs on the same transaction client, so it sees rows
    * written by calls that already hold the lock.
    */
-  (tx: TransactionClient, since: Date): Promise<{ count: number; oldest: Date | null }>;
+  (tx: Tx, since: Date): Promise<{ count: number; oldest: Date | null }>;
 }
 
 /**
@@ -90,12 +90,12 @@ export interface AttemptCounter {
  * inserting a vote, a request or a user. Passing the transaction in is what
  * stops this becoming "count here, write over there".
  */
-export async function withinRateLimit<T>(
-  tx: TransactionClient,
+export async function withinRateLimit<T, Tx extends TransactionClient>(
+  tx: Tx,
   scope: RateLimitScope,
   now: Date,
-  countAttempts: AttemptCounter,
-  write: () => Promise<T>,
+  countAttempts: AttemptCounter<Tx>,
+  write: (tx: Tx) => Promise<T>,
 ): Promise<T> {
   const [a, b] = lockPair(scope.key);
 
@@ -121,5 +121,5 @@ export async function withinRateLimit<T>(
     throw new RateLimitedError(scope.code, retryAt);
   }
 
-  return write();
+  return write(tx);
 }
