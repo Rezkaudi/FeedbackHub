@@ -15,6 +15,14 @@ export interface CategoryRepository {
   countActive(): Promise<number>;
   /** How many requests use it — the admin screen shows this (SRS part 7). */
   countRequestsUsing(id: string): Promise<number>;
+  /**
+   * The same count for every row at once, keyed by id.
+   *
+   * One grouped read rather than one call per row: the admin list is short
+   * today, but a count-per-row loop is the shape that quietly becomes N+1.
+   * An id missing from the map is used by nothing.
+   */
+  usageCounts(): Promise<ReadonlyMap<string, number>>;
   save(category: Category): Promise<Category>;
   add(category: Category): Promise<Category>;
   remove(id: string): Promise<void>;
@@ -26,6 +34,8 @@ export interface StatusRepository {
   findById(id: string): Promise<Status | null>;
   findDefault(): Promise<Status | null>;
   countRequestsUsing(id: string): Promise<number>;
+  /** As above, for statuses. */
+  usageCounts(): Promise<ReadonlyMap<string, number>>;
   save(status: Status): Promise<Status>;
   add(status: Status): Promise<Status>;
   remove(id: string): Promise<void>;

@@ -22,11 +22,20 @@ class BootstrapFeatures {
   public readonly commentsRequireApproval!: boolean;
 }
 
+/**
+ * R-45: a retired row is gone from the picker but still shown correctly on the
+ * old requests that use it. A request carries only a categoryId, so a screen
+ * that was never told about the retired row draws a blank chip. Both lists come
+ * whole, each row marked, and the picker filters on `isActive` itself — rather
+ * than a second call, which is the chain H-4 exists to prevent.
+ */
 class BootstrapTaxonomyItem {
   @ApiProperty() public readonly id!: string;
   @ApiProperty() public readonly name!: string;
   @ApiProperty() public readonly slug!: string;
   @ApiProperty() public readonly color!: string;
+  @ApiProperty({ description: 'False means retired: keep labelling it, stop offering it.' })
+  public readonly isActive!: boolean;
 }
 
 class BootstrapStatusItem extends BootstrapTaxonomyItem {
@@ -67,12 +76,14 @@ export class BootstrapResponse {
         name: category.name,
         slug: category.slug,
         color: category.color,
+        isActive: category.isActive,
       })),
       statuses: data.statuses.map((status) => ({
         id: status.id,
         name: status.name,
         slug: status.slug,
         color: status.color,
+        isActive: status.isActive,
         isDefault: status.isDefault,
       })),
     };

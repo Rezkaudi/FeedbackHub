@@ -52,6 +52,8 @@ export interface BoardRow {
   readonly authorAvatarUrl: string | null;
   readonly isPinned: boolean;
   readonly createdAt: Date;
+  /** Changes only when the text changes — not on a vote or a comment. */
+  readonly updatedAt: Date;
   /** R-28: counted from the real rows, never stored. */
   readonly voteCount: number;
   readonly commentCount: number;

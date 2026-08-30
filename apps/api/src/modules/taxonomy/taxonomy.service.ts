@@ -18,7 +18,28 @@ export class TaxonomyService {
     categories: CategoryView[];
     statuses: StatusView[];
   }> {
-    const { categories, statuses } = await this.listTaxonomy.execute({ includeRetired: false });
+    return this.lists({ includeRetired: false });
+  }
+
+  /**
+   * Every row, retired ones included, each marked (R-45).
+   *
+   * The start-up call needs these: a request keeps pointing at the category it
+   * was written under even after that category is retired, and a screen given
+   * only the active rows cannot name it.
+   */
+  public async allLists(): Promise<{
+    categories: CategoryView[];
+    statuses: StatusView[];
+  }> {
+    return this.lists({ includeRetired: true });
+  }
+
+  private async lists(options: { includeRetired: boolean }): Promise<{
+    categories: CategoryView[];
+    statuses: StatusView[];
+  }> {
+    const { categories, statuses } = await this.listTaxonomy.execute(options);
 
     return {
       categories: categories.map((category) => ({

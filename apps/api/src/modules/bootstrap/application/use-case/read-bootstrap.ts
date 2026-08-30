@@ -39,7 +39,7 @@ export class ReadBootstrap {
       this.identity.findActiveUser(viewer.id),
       this.settings.settingsFor(viewer.id),
       this.settings.appSettings(),
-      this.taxonomy.activeLists(),
+      this.taxonomy.allLists(),
     ]);
 
     return {
@@ -47,7 +47,8 @@ export class ReadBootstrap {
       settings: userSettings,
       appSettings,
       // R-49: both lists come with this call, in created_at order. They are not
-      // a separate call.
+      // a separate call. Retired rows come too, marked, so R-45 can be kept
+      // without a second one.
       categories: lists.categories,
       statuses: lists.statuses,
     };

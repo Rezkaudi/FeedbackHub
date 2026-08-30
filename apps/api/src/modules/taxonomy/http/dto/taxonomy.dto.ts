@@ -126,7 +126,40 @@ export class StatusResponse {
   }
 }
 
+/**
+ * The admin list adds the one thing that screen needs and no other screen does:
+ * how many requests use the row (SRS part 7).
+ *
+ * It is a separate shape rather than an optional field because only the list
+ * endpoint can answer it. Making it optional on CategoryResponse would let every
+ * other endpoint send `usageCount: undefined`, which reads as "nothing uses it"
+ * and is a different claim from "nobody asked".
+ */
+export class AdminCategoryResponse extends CategoryResponse {
+  @ApiProperty({
+    description:
+      'How many requests use it. Zero means it can be deleted; anything else ' +
+      'means retiring is the only way out (R-46).',
+  })
+  public readonly usageCount!: number;
+
+  public static fromWithUsage(category: Category, usageCount: number): AdminCategoryResponse {
+    return { ...CategoryResponse.from(category), usageCount };
+  }
+}
+
+export class AdminStatusResponse extends StatusResponse {
+  @ApiProperty({ description: 'How many requests use it (SRS part 7).' })
+  public readonly usageCount!: number;
+
+  public static fromWithUsage(status: Status, usageCount: number): AdminStatusResponse {
+    return { ...StatusResponse.from(status), usageCount };
+  }
+}
+
 export class TaxonomyResponse {
-  @ApiProperty({ type: [CategoryResponse] }) public readonly categories!: CategoryResponse[];
-  @ApiProperty({ type: [StatusResponse] }) public readonly statuses!: StatusResponse[];
+  @ApiProperty({ type: [AdminCategoryResponse] })
+  public readonly categories!: AdminCategoryResponse[];
+  @ApiProperty({ type: [AdminStatusResponse] })
+  public readonly statuses!: AdminStatusResponse[];
 }

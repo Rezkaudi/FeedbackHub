@@ -119,13 +119,21 @@ export class RequestResponse {
   @ApiProperty({ nullable: true, type: String }) public readonly authorAvatarUrl!: string | null;
   @ApiProperty() public readonly isPinned!: boolean;
   @ApiProperty() public readonly createdAt!: string;
+  @ApiProperty({ description: 'Changes only when the text changes, never on a vote or a comment.' })
+  public readonly updatedAt!: string;
   @ApiProperty({ description: 'Counted from the real votes on every read (R-28).' })
   public readonly voteCount!: number;
   @ApiProperty({ description: 'Counted for the person asking (R-33c). Zero when comments are off.' })
   public readonly commentCount!: number;
   @ApiProperty() public readonly viewerHasVoted!: boolean;
+  @ApiProperty({
+    description:
+      'Whether the person asking wrote this. The only thing a screen needs in ' +
+      'order to offer Edit and Delete (R-13, R-14); the server still decides.',
+  })
+  public readonly isMine!: boolean;
 
-  public static from(row: BoardRow): RequestResponse {
+  public static from(row: BoardRow, viewerId: string): RequestResponse {
     return {
       id: row.id,
       title: row.title,
@@ -133,14 +141,18 @@ export class RequestResponse {
       categoryId: row.categoryId,
       statusId: row.statusId,
       // The author's id and email are not sent: a name and a picture are all a
-      // screen needs, and an email is private (R-99).
+      // screen needs, and an email is private (R-99). `isMine` below answers the
+      // one question a screen actually has about the author, without handing
+      // over an id it could then use to ask about somebody else (R-94).
       authorName: row.authorName,
       authorAvatarUrl: row.authorAvatarUrl,
       isPinned: row.isPinned,
       createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
       voteCount: row.voteCount,
       commentCount: row.commentCount,
       viewerHasVoted: row.viewerHasVoted,
+      isMine: row.authorId === viewerId,
     };
   }
 }

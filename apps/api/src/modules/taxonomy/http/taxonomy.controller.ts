@@ -24,11 +24,13 @@ import {
   CreateCategoryDto,
   CreateStatusDto,
   StatusResponse,
+  AdminCategoryResponse,
+  AdminStatusResponse,
   TaxonomyResponse,
   UpdateCategoryDto,
   UpdateStatusDto,
 } from './dto/taxonomy.dto';
-import { ListTaxonomy } from '../application/use-case/list-taxonomy';
+import { ListTaxonomyWithUsage } from '../application/use-case/list-taxonomy-with-usage';
 import { AddCategory } from '../application/use-case/add-category';
 import { ChangeCategory } from '../application/use-case/change-category';
 import { RetireCategory } from '../application/use-case/retire-category';
@@ -56,7 +58,7 @@ import { MakeStatusDefault } from '../application/use-case/make-status-default';
 @Controller('taxonomy')
 export class TaxonomyController {
   public constructor(
-    private readonly listTaxonomy: ListTaxonomy,
+    private readonly listTaxonomyWithUsage: ListTaxonomyWithUsage,
     private readonly addCategory: AddCategory,
     private readonly changeCategory: ChangeCategory,
     private readonly retireCategory: RetireCategory,
@@ -75,11 +77,15 @@ export class TaxonomyController {
   @ApiOkResponse({ type: TaxonomyResponse })
   @RequiresAdmin()
   public async list(): Promise<TaxonomyResponse> {
-    const { categories, statuses } = await this.listTaxonomy.execute({ includeRetired: true });
+    const { categories, statuses } = await this.listTaxonomyWithUsage.execute();
 
     return {
-      categories: categories.map((category) => CategoryResponse.from(category)),
-      statuses: statuses.map((status) => StatusResponse.from(status)),
+      categories: categories.map(({ row, usageCount }) =>
+        AdminCategoryResponse.fromWithUsage(row, usageCount),
+      ),
+      statuses: statuses.map(({ row, usageCount }) =>
+        AdminStatusResponse.fromWithUsage(row, usageCount),
+      ),
     };
   }
 

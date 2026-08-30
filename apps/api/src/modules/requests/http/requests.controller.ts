@@ -82,7 +82,7 @@ export class RequestsController {
     );
 
     return {
-      items: page.rows.map((row) => RequestResponse.from(row)),
+      items: page.rows.map((row) => RequestResponse.from(row, user.id)),
       total: page.total,
       page: page.page,
       pageSize: page.pageSize,
@@ -97,7 +97,7 @@ export class RequestsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<RequestResponse> {
-    return RequestResponse.from(await this.readRequest.execute(id, user));
+    return RequestResponse.from(await this.readRequest.execute(id, user), user.id);
   }
 
   @Post()
@@ -113,7 +113,7 @@ export class RequestsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<RequestResponse> {
     const created = await this.submitRequest.execute(body, user.id);
-    return RequestResponse.from(await this.readRequest.execute(created.id, user));
+    return RequestResponse.from(await this.readRequest.execute(created.id, user), user.id);
   }
 
   @Patch(':id')
@@ -126,7 +126,7 @@ export class RequestsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<RequestResponse> {
     await this.editRequest.execute(id, body, user);
-    return RequestResponse.from(await this.readRequest.execute(id, user));
+    return RequestResponse.from(await this.readRequest.execute(id, user), user.id);
   }
 
   @Delete(':id')
@@ -155,7 +155,7 @@ export class RequestsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<RequestResponse> {
     await this.changeRequestStatus.execute(id, body.statusId, user.id);
-    return RequestResponse.from(await this.readRequest.execute(id, user));
+    return RequestResponse.from(await this.readRequest.execute(id, user), user.id);
   }
 
   @Patch(':id/pin')
@@ -169,6 +169,6 @@ export class RequestsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<RequestResponse> {
     await this.pinRequest.execute(id, body.pinned);
-    return RequestResponse.from(await this.readRequest.execute(id, user));
+    return RequestResponse.from(await this.readRequest.execute(id, user), user.id);
   }
 }

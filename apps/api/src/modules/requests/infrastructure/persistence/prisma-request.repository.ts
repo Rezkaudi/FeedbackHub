@@ -53,6 +53,7 @@ interface BoardSqlRow {
   author_avatar_url: string | null;
   is_pinned: boolean;
   created_at: Date;
+  updated_at: Date;
   vote_count: bigint;
   comment_count: bigint;
   viewer_has_voted: boolean;
@@ -183,6 +184,7 @@ export class PrismaRequestRepository implements RequestRepository {
         u.avatar_url   AS author_avatar_url,
         r.is_pinned,
         r.created_at,
+        r.updated_at,
         (SELECT count(*) FROM votes v WHERE v.request_id = r.id)      AS vote_count,
         ${commentCount}                                               AS comment_count,
         EXISTS (
@@ -300,6 +302,7 @@ function toBoardRow(row: BoardSqlRow): BoardRow {
     authorAvatarUrl: row.author_avatar_url,
     isPinned: row.is_pinned,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
     voteCount: Number(row.vote_count),
     commentCount: Number(row.comment_count),
     viewerHasVoted: row.viewer_has_voted,

@@ -49,6 +49,12 @@ class FakeCategoryRepository implements CategoryRepository {
   public countActive(): Promise<number> {
     return Promise.resolve(this.categories.filter((c) => c.isActive).length);
   }
+  public usageCounts(): Promise<ReadonlyMap<string, number>> {
+    return Promise.resolve(
+      new Map(this.categories.map((category) => [category.id, this.requestsUsing[category.id] ?? 0])),
+    );
+  }
+
   public countRequestsUsing(id: string): Promise<number> {
     return Promise.resolve(this.requestsUsing[id] ?? 0);
   }

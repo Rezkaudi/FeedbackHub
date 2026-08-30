@@ -83,6 +83,15 @@ export class PrismaCategoryRepository implements CategoryRepository {
     return this.prisma.feedbackRequest.count({ where: { categoryId: id } });
   }
 
+  public async usageCounts(): Promise<ReadonlyMap<string, number>> {
+    const groups = await this.prisma.feedbackRequest.groupBy({
+      by: ['categoryId'],
+      _count: { _all: true },
+    });
+
+    return new Map(groups.map((group) => [group.categoryId, group._count._all]));
+  }
+
   public async add(category: Category): Promise<Category> {
     const state = category.snapshot();
 
@@ -157,6 +166,15 @@ export class PrismaStatusRepository implements StatusRepository {
 
   public countRequestsUsing(id: string): Promise<number> {
     return this.prisma.feedbackRequest.count({ where: { statusId: id } });
+  }
+
+  public async usageCounts(): Promise<ReadonlyMap<string, number>> {
+    const groups = await this.prisma.feedbackRequest.groupBy({
+      by: ['statusId'],
+      _count: { _all: true },
+    });
+
+    return new Map(groups.map((group) => [group.statusId, group._count._all]));
   }
 
   public async add(status: Status): Promise<Status> {

@@ -10,6 +10,7 @@ import {
   PrismaStatusRepository,
 } from './infrastructure/persistence/prisma-taxonomy.repository';
 import { ListTaxonomy } from './application/use-case/list-taxonomy';
+import { ListTaxonomyWithUsage } from './application/use-case/list-taxonomy-with-usage';
 import { AddCategory } from './application/use-case/add-category';
 import { ChangeCategory } from './application/use-case/change-category';
 import { RetireCategory } from './application/use-case/retire-category';
@@ -32,6 +33,7 @@ import { MakeStatusDefault } from './application/use-case/make-status-default';
     { provide: CATEGORY_REPOSITORY, useClass: PrismaCategoryRepository },
     { provide: STATUS_REPOSITORY, useClass: PrismaStatusRepository },
     ListTaxonomy,
+    ListTaxonomyWithUsage,
     AddCategory,
     ChangeCategory,
     RetireCategory,
