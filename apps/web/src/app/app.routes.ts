@@ -28,6 +28,24 @@ export const routes: Routes = [
         title: 'Board · FeedbackHub',
       },
       {
+        path: 'requests/new',
+        loadComponent: () =>
+          import('./features/request-form/request-form').then((m) => m.RequestForm),
+        title: 'New request · FeedbackHub',
+      },
+      {
+        path: 'requests/:id/edit',
+        loadComponent: () =>
+          import('./features/request-form/request-form').then((m) => m.RequestForm),
+        title: 'Edit request · FeedbackHub',
+      },
+      {
+        path: 'requests/:id',
+        loadComponent: () =>
+          import('./features/request-detail/request-detail').then((m) => m.RequestDetail),
+        title: 'Request · FeedbackHub',
+      },
+      {
         path: 'admin',
         canActivate: [adminGuard],
         loadChildren: () => import('./features/admin/admin.routes').then((m) => m.adminRoutes),

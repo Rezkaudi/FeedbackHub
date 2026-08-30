@@ -219,14 +219,79 @@ Known limits that are choices, not omissions, are in
 [SCOPE.md](SCOPE.md) §2 — no audit log (D-12), no maximum page size (D-04), no
 comment threading (D-05), and search without ranking (D-11).
 
+### The front end — the board
+
+- **Search, filter by status and category, sort, and pages**, all of it in the
+  web address (R-22). Copy the address and you get the same board back; the back
+  button walks the searches.
+- **The saved sort and filters seed the board, and the address overrides them**
+  (R-24). An explicitly-cleared filter stays cleared, so a shared link cannot
+  quietly revert to the recipient's own saved filters.
+- **All four states, and the two empty ones read differently.** "No requests
+  yet. Be the first." for a new board; "Nothing matches these filters" with a
+  Clear button when a filter is what hid everything.
+- **A page past the end goes back to the last real page** rather than showing an
+  empty page with working pagination underneath (SRS 15.1). At most once, so a
+  disagreeing server cannot loop it.
+- **A slow answer that arrives after a newer one is dropped**, so typing in the
+  search box cannot leave results for words already replaced.
+- **A retired category still names the requests that use it** (R-45), because
+  the start-up call carries the retired rows too. An id we cannot name shows as
+  "Unknown", never as a blank chip.
+- **Comment counts disappear from the board when comments are switched off**
+  (R-42).
+
+### The front end — a request page
+
+- **Voting is optimistic and rolls back.** The number moves on click (R-30); the
+  server's answer replaces the prediction rather than confirming it, because the
+  count belongs to the server (R-28). A refusal puts the number back and says
+  why, and a rate limit says when they may vote again (R-131).
+- **A double click is one vote.** The database guarantees that (R-26); the
+  screen adds not sending a second call, which would be an un-vote.
+- **The vote button's name says the count and whether you voted** (R-31), so a
+  screen reader hears what pressing it did. It works from the keyboard.
+- **Comments are cursor-paged, newest first** (R-33b), so a comment arriving
+  while somebody reads cannot push a row they have already seen into the next
+  block. A repeated id is dropped as well, belt and braces.
+- **A new comment appears at the top with no reload and no second call**
+  (R-33d), and the box keeps what was typed if saving fails (SRS 15.5).
+- **A deleted comment leaves a grey line** so the thread keeps its shape (R-38)
+  and stops being counted (R-39). A comment waiting for approval is shown to its
+  writer, marked, and not counted (R-40).
+- **The request and the thread fail independently** (SRS 15.2) — a thread that
+  will not load never takes down a page that otherwise works.
+- **With comments switched off the thread and box are not rendered at all**, and
+  the thread is not even requested (R-42). The server refuses too; the E2E suite
+  will prove that half.
+- **Descriptions and comments are plain text** (R-98) — markup in a description
+  is shown, never executed.
+
+### The front end — writing a request
+
+- **Create, edit and delete your own** (R-10 to R-14), on Angular 22's Signal
+  Forms, so every validation rule lives in a schema and is testable without
+  rendering a component.
+- **Inline messages that say how to fix it**, next to the field, on blur or on
+  save — never on every key press (R-88). The cursor goes to the first bad
+  field (R-112), and each message is tied to its input with `aria-describedby`.
+- **Over the submission limit** names the time they may try again and says
+  plainly that nothing they wrote was lost (SRS 15.3, R-131).
+- **Deleting asks first**, names the request, and says its votes and comments go
+  with it (R-91). One click can never delete.
+- **Editing a request that is not yours shows a message and no form at all**
+  (SRS 15.2), rather than a form that will fail on save.
+- **A category retired while the form was open** asks for another one.
+
 ### The front end — everything else
 
 Only the shell is built. These routes exist and say so on the page rather than
 rendering blank:
 
-- **The board** is a placeholder. No list, no search, no filters, no sorting, no
-  pagination.
-- **A request page** does not exist. No comments, no voting.
+- **Editing a comment** does not exist. Deleting your own does (R-35 is not
+  built; R-37 is).
+- **Admin moderation of comments** does not exist — approving or rejecting a
+  waiting comment needs the admin screens.
 - **Creating, editing and deleting a request** does not exist.
 - **Profile and settings** does not exist. The nav links to `/settings`, which
   currently falls through to the "page does not exist" screen.
