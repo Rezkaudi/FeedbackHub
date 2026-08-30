@@ -101,7 +101,7 @@ function testEnvironment(databaseUrl: string, redisUrl: string): AppEnvironment 
     AUTH_ALLOWED_ORIGINS: TEST_ORIGIN,
     OIDC_ISSUER_URL: 'http://localhost:8080/realms/feedbackhub',
     OIDC_CLIENT_ID: 'feedbackhub-api',
-    OIDC_CLIENT_SECRET: 'test-only-not-a-real-secret',
+    OIDC_CLIENT_SECRET: 'stub',
     OIDC_REDIRECT_URI: `${TEST_ORIGIN}/auth/callback`,
     SMTP_HOST: 'localhost',
     SMTP_PORT: '1025',

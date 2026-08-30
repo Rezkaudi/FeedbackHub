@@ -14,7 +14,7 @@ const complete: NodeJS.ProcessEnv = {
   AUTH_ALLOWED_ORIGINS: 'https://feedbackhub.test',
   OIDC_ISSUER_URL: 'http://localhost:8080/realms/feedbackhub',
   OIDC_CLIENT_ID: 'feedbackhub-api',
-  OIDC_CLIENT_SECRET: 'not-a-real-secret',
+  OIDC_CLIENT_SECRET: 'stub',
   OIDC_REDIRECT_URI: 'https://feedbackhub.test/auth/callback',
   APP_BASE_URL: 'https://feedbackhub.test',
   SMTP_HOST: 'localhost',
