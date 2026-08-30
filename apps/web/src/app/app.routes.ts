@@ -46,6 +46,11 @@ export const routes: Routes = [
         title: 'Request · FeedbackHub',
       },
       {
+        path: 'settings',
+        loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
+        title: 'Settings · FeedbackHub',
+      },
+      {
         path: 'admin',
         canActivate: [adminGuard],
         loadChildren: () => import('./features/admin/admin.routes').then((m) => m.adminRoutes),

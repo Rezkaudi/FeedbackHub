@@ -23,6 +23,7 @@ export class RequestDetailStore {
   private readonly row = signal<RequestResponse | null>(null);
   private readonly failure = signal<ApiError | null>(null);
   private readonly voteFailure = signal<ApiError | null>(null);
+  private readonly adminFailure = signal<ApiError | null>(null);
 
   /** A vote is in flight. A second click while it is must do nothing at all. */
   private voting = false;
@@ -31,6 +32,7 @@ export class RequestDetailStore {
   public readonly request: Signal<RequestResponse | null> = this.row.asReadonly();
   public readonly error: Signal<ApiError | null> = this.failure.asReadonly();
   public readonly voteError: Signal<ApiError | null> = this.voteFailure.asReadonly();
+  public readonly adminError: Signal<ApiError | null> = this.adminFailure.asReadonly();
 
   public readonly voteCount = computed(() => this.row()?.voteCount ?? 0);
   public readonly viewerHasVoted = computed(() => this.row()?.viewerHasVoted ?? false);
@@ -108,6 +110,49 @@ export class RequestDetailStore {
       }
     } finally {
       this.voting = false;
+    }
+  }
+
+  /**
+   * R-64: only an admin changes a status, and it shows at once. R-65: only an
+   * admin pins, and more than one request may be pinned.
+   *
+   * Both take the server's answer as the new row rather than patching the field
+   * locally: the answer carries the recounted votes and comments too, and
+   * keeping a second copy of what changed is how two truths appear on one
+   * screen. The button is hidden from a non-admin as a courtesy; the server
+   * refuses it either way (R-70, R-93).
+   */
+  public async changeStatus(statusId: string): Promise<boolean> {
+    return this.adminChange((id) =>
+      this.http.patch<RequestResponse>(`/v1/requests/${id}/status`, { statusId }),
+    );
+  }
+
+  public async setPinned(pinned: boolean): Promise<boolean> {
+    return this.adminChange((id) =>
+      this.http.patch<RequestResponse>(`/v1/requests/${id}/pin`, { pinned }),
+    );
+  }
+
+  private async adminChange(
+    call: (id: string) => ReturnType<HttpClient['patch']>,
+  ): Promise<boolean> {
+    const before = this.row();
+    if (before === null) {
+      return false;
+    }
+
+    this.adminFailure.set(null);
+
+    try {
+      this.row.set((await firstValueFrom(call(before.id))) as RequestResponse);
+      return true;
+    } catch (cause) {
+      // Nothing was changed on screen, so there is nothing to roll back — the
+      // row shown is still the row the server has.
+      this.adminFailure.set(toApiError(cause));
+      return false;
     }
   }
 

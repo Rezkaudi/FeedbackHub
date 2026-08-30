@@ -101,6 +101,48 @@ import { EmptyPanel, ErrorPanel, SkeletonRows } from '../../shared/ui/state/stat
               </div>
             </div>
 
+            <!--
+              R-64, R-65. Hidden from everybody else as a courtesy only: the
+              server refuses both endpoints to a non-admin whatever this shows
+              (R-70), and the E2E suite proves that by calling them directly.
+            -->
+            @if (bootstrap.isAdmin()) {
+              <div
+                class="border-line bg-surface-sunken mt-6 flex flex-wrap items-end gap-4 rounded-lg border p-4"
+              >
+                <div>
+                  <label for="admin-status" class="mb-1 block text-sm font-medium">
+                    Status
+                  </label>
+                  <select
+                    id="admin-status"
+                    [value]="request.statusId"
+                    (change)="onStatus($event)"
+                    class="border-line-control bg-surface min-h-11 rounded border px-3"
+                  >
+                    @for (option of bootstrap.activeStatuses(); track option.id) {
+                      <option [value]="option.id">{{ option.name }}</option>
+                    }
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  class="border-line-control min-h-11 rounded border px-4"
+                  [attr.aria-pressed]="request.isPinned"
+                  (click)="detail.setPinned(!request.isPinned)"
+                >
+                  {{ request.isPinned ? 'Unpin from the top' : 'Pin to the top' }}
+                </button>
+
+                @if (detail.adminError()) {
+                  <p role="alert" class="text-danger w-full text-sm">
+                    That change could not be saved. What you see is still what the server has.
+                  </p>
+                }
+              </div>
+            }
+
             <!-- R-98: plain text. Line breaks are kept, nothing is read as
                  HTML, which removes a whole family of attacks in one line. -->
             <p data-user-text class="mt-6 max-w-(--fh-measure)">{{ request.description }}</p>
@@ -272,6 +314,10 @@ export class RequestDetail {
         void this.comments.load(id);
       }
     });
+  }
+
+  protected onStatus(event: Event): void {
+    void this.detail.changeStatus((event.target as HTMLSelectElement).value);
   }
 
   protected onDraft(event: Event): void {

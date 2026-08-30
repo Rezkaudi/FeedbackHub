@@ -15,6 +15,12 @@ import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
  * voted**. A button labelled only "Vote" tells a screen-reader user nothing
  * about what pressing it did.
  */
+// A catch-all so navigations in the component under test resolve. With no
+// routes at all, router.navigate() rejects, and an unhandled rejection in one
+// spec file leaks into the whole run — it poisoned the admin and board suites
+// before this was added.
+const ANY_ROUTE = [{ path: '**', children: [] }];
+
 describe('the request page', () => {
   const aRequest = (over: Record<string, unknown> = {}) => ({
     id: 'r1',
@@ -94,7 +100,7 @@ describe('the request page', () => {
     comments = commentsIn('empty'),
   ) {
     await render(RequestDetail, {
-      providers: [provideRouter([]), { provide: BootstrapStore, useValue: bootstrap }],
+      providers: [provideRouter(ANY_ROUTE), { provide: BootstrapStore, useValue: bootstrap }],
       componentProviders: [
         { provide: RequestDetailStore, useValue: detail },
         { provide: CommentsStore, useValue: comments },

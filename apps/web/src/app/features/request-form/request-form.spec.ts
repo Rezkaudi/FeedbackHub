@@ -14,6 +14,12 @@ import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
  * every key press. Being told the title is too short while typing the second
  * letter is noise, not help.
  */
+// A catch-all so navigations in the component under test resolve. With no
+// routes at all, router.navigate() rejects, and an unhandled rejection in one
+// spec file leaks into the whole run — it poisoned the admin and board suites
+// before this was added.
+const ANY_ROUTE = [{ path: '**', children: [] }];
+
 describe('writing a request', () => {
   const active = { id: 'c1', name: 'Bug', slug: 'bug', color: '#DC2626', isActive: true };
   const retired = { id: 'c9', name: 'Legacy', slug: 'legacy', color: '#78716C', isActive: false };
@@ -39,7 +45,7 @@ describe('writing a request', () => {
 
   async function renderForm(store: ReturnType<typeof storeIn>, id?: string) {
     await render(RequestForm, {
-      providers: [provideRouter([]), { provide: BootstrapStore, useValue: bootstrap }],
+      providers: [provideRouter(ANY_ROUTE), { provide: BootstrapStore, useValue: bootstrap }],
       componentProviders: [{ provide: RequestFormStore, useValue: store }],
       inputs: id === undefined ? {} : { id },
     });

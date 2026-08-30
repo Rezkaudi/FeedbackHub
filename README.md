@@ -283,6 +283,29 @@ comment threading (D-05), and search without ranking (D-11).
   (SRS 15.2), rather than a form that will fail on save.
 - **A category retired while the form was open** asks for another one.
 
+### The front end — settings and admin
+
+- **Profile, language, email choices and account deletion** (R-54 to R-62). Each
+  part saves on its own and says so, so one failing part cannot make another
+  look unsaved. Deleting an account says what will happen *before* the button
+  appears, and needs the word DELETE typed out. The last admin is refused with
+  the reason (R-62).
+- **The settings that live in this browser say so on the screen** — theme,
+  default sort and default filters (D-06), so nobody is surprised when their
+  theme does not follow them to their phone.
+- **Categories and statuses** (R-43 to R-49), with the count of what uses each
+  one (SRS part 7). Delete is not offered for a row in use; retire is. The first
+  status offers no Retire button at all (R-48).
+- **Application settings** — sign-up rule, allowed domains, comment approval,
+  all six rate limits, and the comments feature switch (R-67 to R-70). A limit
+  below 1 is refused before it is sent, because zero would mean nobody can
+  write (R-130).
+- **Waiting comments**: approve or reject (R-41). There is deliberately no edit
+  — an admin never rewrites what somebody said (R-36).
+- **Invitations**: invite, see whether it was used, withdraw (R-66).
+- **Status and pin on a request** (R-64, R-65), shown to admins only as a
+  courtesy — the server refuses both to anybody else (R-70).
+
 ### The front end — everything else
 
 Only the shell is built. These routes exist and say so on the page rather than
@@ -293,11 +316,13 @@ rendering blank:
 - **Admin moderation of comments** does not exist — approving or rejecting a
   waiting comment needs the admin screens.
 - **Creating, editing and deleting a request** does not exist.
-- **Profile and settings** does not exist. The nav links to `/settings`, which
-  currently falls through to the "page does not exist" screen.
-- **Admin** is a placeholder behind a working guard.
-- **Arabic and RTL** are decided and the fonts are loaded, but no string is
-  translated yet — the UI is English only.
+- **Arabic and RTL are not done.** The decision is recorded, the fonts load, the
+  language saves to the server and the `dir` attribute is set before the first
+  paint — but no string is translated, so the interface is English only. This is
+  the largest single thing still missing against the SRS (R-57).
+- **Editing your own comment** (R-35) is not built. Deleting one is (R-37).
+- **The board has no admin status control.** SRS part 7 allows changing a status
+  from the board as well as the request page; only the request page has it.
 - **No end-to-end tests.** Playwright is not set up.
 
 Two smaller things that are true and easy to miss:

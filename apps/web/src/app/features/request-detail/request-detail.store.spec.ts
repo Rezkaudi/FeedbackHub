@@ -255,3 +255,76 @@ describe('a request and its vote', () => {
     });
   });
 });
+
+/**
+ * R-64 and R-65: only an admin changes a status or pins, and both show at once.
+ * The screen hides the controls from everybody else as a courtesy; the server
+ * refuses them either way (R-70), which the E2E suite proves separately.
+ */
+describe('what an admin changes on a request', () => {
+  let store: RequestDetailStore;
+  let http: HttpTestingController;
+
+  const row = {
+    id: 'r1',
+    title: 'Dark mode',
+    description: 'It is painful at night.',
+    categoryId: 'c1',
+    statusId: 's1',
+    authorName: 'Sam',
+    authorAvatarUrl: null,
+    isPinned: false,
+    createdAt: '2026-08-01T10:00:00.000Z',
+    updatedAt: '2026-08-01T10:00:00.000Z',
+    voteCount: 4,
+    commentCount: 2,
+    viewerHasVoted: false,
+    isMine: false,
+  };
+
+  beforeEach(async () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), RequestDetailStore],
+    });
+    store = TestBed.inject(RequestDetailStore);
+    http = TestBed.inject(HttpTestingController);
+
+    const done = store.load('r1');
+    http.expectOne('/v1/requests/r1').flush(row);
+    await done;
+  });
+
+  afterEach(() => http.verify());
+
+  it('changes the status and shows the new one at once', async () => {
+    const done = store.changeStatus('s2');
+
+    const request = http.expectOne('/v1/requests/r1/status');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ statusId: 's2' });
+
+    request.flush({ ...row, statusId: 's2' });
+
+    expect(await done).toBe(true);
+    expect(store.request()?.statusId).toBe('s2');
+  });
+
+  it('pins and unpins', async () => {
+    const pinning = store.setPinned(true);
+    const request = http.expectOne('/v1/requests/r1/pin');
+    expect(request.request.body).toEqual({ pinned: true });
+    request.flush({ ...row, isPinned: true });
+    await pinning;
+
+    expect(store.request()?.isPinned).toBe(true);
+  });
+
+  it('leaves the row exactly as it was when the server refuses', async () => {
+    const done = store.changeStatus('s2');
+    http.expectOne('/v1/requests/r1/status').flush({}, { status: 403, statusText: 'Forbidden' });
+
+    expect(await done).toBe(false);
+    expect(store.request()?.statusId).toBe('s1');
+    expect(store.adminError()?.status).toBe(403);
+  });
+});

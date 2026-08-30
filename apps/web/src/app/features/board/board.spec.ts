@@ -16,6 +16,12 @@ import { DevicePreferencesStore } from '../../core/config/device-preferences.sto
  * Everything is queried by role, label or visible text — never by class or by
  * component internals.
  */
+// A catch-all so navigations in the component under test resolve. With no
+// routes at all, router.navigate() rejects, and an unhandled rejection in one
+// spec file leaks into the whole run — it poisoned the admin and board suites
+// before this was added.
+const ANY_ROUTE = [{ path: '**', children: [] }];
+
 describe('the board screen', () => {
   const aRequest = (over: Record<string, unknown> = {}) => ({
     id: 'r1',
@@ -84,7 +90,7 @@ describe('the board screen', () => {
   async function renderBoard(store: ReturnType<typeof boardIn>) {
     await render(Board, {
       providers: [
-        provideRouter([]),
+        provideRouter(ANY_ROUTE),
         { provide: BootstrapStore, useValue: bootstrap },
         { provide: DevicePreferencesStore, useValue: preferences },
       ],
