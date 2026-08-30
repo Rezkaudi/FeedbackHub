@@ -1,0 +1,20 @@
+{
+  "name": "@feedbackhub/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "End-to-end tests. Its own package because Playwright's TypeScript peer range does not overlap the TypeScript 6 that Angular 22 requires (D-36, D-42).",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report .playwright/report",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^22.10.0",
+    "axe-core": "^4.13.0",
+    "typescript": "^5.7.0"
+  }
+}

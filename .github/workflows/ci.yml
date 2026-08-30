@@ -1,8 +1,6 @@
-# R-162: CI runs lint, the dependency-rule check and every test layer on every
-# push. A red pipeline is never merged.
-#
-# The end-to-end suite (R-159) is deliberately absent: it needs the front end,
-# which does not exist yet. It joins here when it does.
+# R-162: CI runs lint, the dependency-rule check, every test layer, the
+# end-to-end suite and a build of both images, on every push. A red pipeline is
+# never merged.
 name: CI
 
 on:
@@ -86,3 +84,83 @@ jobs:
             exit 1
           fi
           echo "Runs as uid $user."
+
+  web:
+    name: Front end
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Angular 22 refuses to run on anything older; the message it prints
+          # when it does is about Node, not about the code, so pinning here
+          # saves the next person a confusing minute.
+          node-version: 22.23.2
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - run: npm ci
+
+      - name: Front-end tests (through what a person sees)
+        run: npm test
+
+      - name: The production build
+        run: npm run build
+
+  e2e:
+    name: End to end (R-159)
+    runs-on: ubuntu-latest
+    # The whole stack has to build first, and there is no point starting the
+    # browsers if the unit tests are already red.
+    needs: [backend, web]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.2
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: The whole stack, the way a reviewer starts it (R-80)
+        # --wait holds until every healthcheck passes, so the tests never race
+        # the migration or Keycloak's first boot. The suite checks again and
+        # says so plainly if something is missing, but by then it is too late to
+        # be useful.
+        run: docker compose up --build -d --wait
+
+      - name: Install the test runner
+        working-directory: e2e
+        run: npm ci
+
+      - name: Types (Playwright does not check across files)
+        working-directory: e2e
+        run: npm run typecheck
+
+      - name: Install the browser
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: The eleven journeys, the two hard parts and the axe pass
+        working-directory: e2e
+        run: npm test
+
+      # The report is the only way to see why a browser test failed on a
+      # machine nobody can open, so it is kept whether the run passed or not.
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/.playwright/report
+          retention-days: 7
+
+      - name: What the stack said, if anything went wrong
+        if: failure()
+        run: docker compose logs --no-color --tail 200

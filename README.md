@@ -9,11 +9,13 @@ comments, and configures the app.
 The goal: stop the same idea arriving five times by email, and make it visible
 what is actually being worked on.
 
-> **Status: the backend is built. The front end is empty folders.** All nine
-> modules are written, wired and tested: `npm run verify` passes with 297 tests
-> against a real PostgreSQL and a real Redis. What has *not* been checked is the
-> world outside those tests — real sign-in through Keycloak, and a real SMTP
-> server. The two lists below say exactly which is which.
+> **Status: the backend and the front end are built, and the eleven journeys
+> from the brief run end to end.** `npm run verify` passes 297 backend tests
+> against a real PostgreSQL and a real Redis; the front end has 243; and 61
+> Playwright tests drive a real browser against the whole compose stack,
+> signing in through the real Keycloak. What is still *not* proven is real
+> outgoing mail, session refresh and sign-out, and Arabic — which is not built
+> at all. The two lists below say exactly which is which.
 
 ---
 
@@ -21,7 +23,7 @@ what is actually being worked on.
 
 | Layer | Choice | Why |
 |---|---|---|
-| Front end | Angular 20, standalone components, signals, Tailwind | D-16 |
+| Front end | Angular 22, standalone components, signals, Tailwind | D-16, D-36 |
 | Back end | Node.js 22, NestJS 11, TypeScript strict | D-17 |
 | Architecture | Modular monolith, 9 modules, + 1 email worker | D-18 |
 | Database | PostgreSQL 16, Prisma 6 (raw SQL for the board query) | D-19 |
@@ -180,22 +182,19 @@ Nothing in this list is hidden.
   and the drop-on-failure rule are all tested, but nothing has been watched
   landing in Mailpit, and no real SMTP server has been contacted. The last hop is
   unproven.
-- **No sign-in has ever completed.** Signing in was tried for the first time
-  today, with a password and through Google, and both failed the same way:
-  `/v1/auth/callback` threw `iss missing from the response` and redirected to
-  `/sign-in-problem?problem=sign_in_failed`. The cause is D-35, it is fixed, and
-  the fix is now running in the API container — but **nobody has signed in since
-  the rebuild**. Until a person completes the form and reaches `/v1/me`, treat
-  the whole second half of the handshake as unproven. The API tests drive the guard chain with a stub provider, so they
-  prove our side and not Keycloak's.
-- **The four `/v1/auth/*` routes have no test of their own.** Every API test
-  replaces the identity provider with a stub, so nothing exercises the routes
-  themselves: the cookie names, paths and flags, the PKCE state check, or the
-  three failure redirects. That is how D-32 went unnoticed — the refresh cookie
-  was scoped to a path that did not exist, so refresh and sign-out were both
-  broken while every test passed. The path is fixed; **the fix has not been
-  tried in a browser yet**, and there is still no test that would catch it
-  coming back.
+- ~~**No sign-in has ever completed.**~~ It does now, and it is proven on every
+  run. The end-to-end suite signs in through the real Keycloak login form with a
+  seeded account (R-160), lands on the board, and then checks the parts that
+  only a real sign-in can show: no token anywhere a script can read, the two
+  cookies by name with their flags and paths, and exactly one call to
+  `/bootstrap` afterwards. The cause of the old failure was D-35.
+- **The four `/v1/auth/*` routes still have no *API* test of their own.** Every
+  API test replaces the identity provider with a stub. That is how D-32 went
+  unnoticed — the refresh cookie was scoped to a path that did not exist, so
+  refresh and sign-out were both broken while every test passed. Sign-in and
+  sign-out are now covered end to end in a real browser; **refresh is still
+  untested**, because the access cookie outlives a three-minute run and nothing
+  ever makes the browser renew a session.
 - **No social sign-in has been seen to work.** Google has been switched on once
   with real credentials and got as far as returning a code to our callback,
   which then failed on D-35 — so the provider side is proven and ours is not.
@@ -212,8 +211,9 @@ Nothing in this list is hidden.
   containers by hand. See [SCOPE.md](SCOPE.md) §8.
 - **A deleted request frees its rate-limit slot**, which R-131 says it should
   not. Everything else about the three limits is built and tested.
-- **The front end.** Empty folders. No Angular code at all.
-- **End-to-end tests.** Deliberately not started: they need the front end.
+- **Session refresh is still unproven.** The access cookie outlives every test
+  run, so nothing has ever made the browser renew a session. Sign-out was in
+  this list too and is now proven — see `e2e/specs/sign-out.spec.ts`.
 
 Known limits that are choices, not omissions, are in
 [SCOPE.md](SCOPE.md) §2 — no audit log (D-12), no maximum page size (D-04), no
@@ -308,22 +308,19 @@ comment threading (D-05), and search without ranking (D-11).
 
 ### The front end — everything else
 
-Only the shell is built. These routes exist and say so on the page rather than
-rendering blank:
+What is left, now that the request form, the admin screens and the moderation
+queue are built and driven end to end:
 
-- **Editing a comment** does not exist. Deleting your own does (R-35 is not
-  built; R-37 is).
-- **Admin moderation of comments** does not exist — approving or rejecting a
-  waiting comment needs the admin screens.
-- **Creating, editing and deleting a request** does not exist.
+- **Editing your own comment** (R-35) is not built. Deleting one is (R-37), and
+  an admin can delete any (R-38).
 - **Arabic and RTL are not done.** The decision is recorded, the fonts load, the
   language saves to the server and the `dir` attribute is set before the first
   paint — but no string is translated, so the interface is English only. This is
   the largest single thing still missing against the SRS (R-57).
-- **Editing your own comment** (R-35) is not built. Deleting one is (R-37).
-- **The board has no admin status control.** SRS part 7 allows changing a status
-  from the board as well as the request page; only the request page has it.
-- **No end-to-end tests.** Playwright is not set up.
+- **The board has no admin status control.** R-64 asks for the status to be
+  changeable from the board as well as the request page; only the request page
+  has it. The end-to-end suite covers A-2 through the request page, so the
+  journey is proven and this half of the rule is not.
 
 Two smaller things that are true and easy to miss:
 
@@ -582,10 +579,62 @@ cd apps/web
 npm test           # Vitest, through Angular's own unit-test builder
 ```
 
-64 tests. They cover the pieces that carry a rule: the browser-side
-preferences, the error shape, the one start-up call, the session renewal, the
-guards, and the four start-up states of the root component. There are no
-end-to-end tests yet.
+243 tests. They go through what a person sees — role, label and visible text,
+never a CSS class — and cover the browser-side preferences, the error shape, the
+one start-up call, the session renewal, the guards, the board, the request page,
+the request form, the settings screen and the admin screens.
+
+Angular 22 needs Node 22.22.3 or newer. On an older one the CLI stops with a
+message about Node, not about the code.
+
+### The end-to-end tests (R-159)
+
+These run a real browser against the whole stack from `docker-compose.yml`: the
+real Angular build served by nginx, the real API, the real Postgres, the real
+Redis and the real Keycloak. Nothing is mocked, and sign-in goes through the
+real Keycloak login form with a seeded account (R-160) — a faked cookie would
+remove the one thing these tests exist to prove.
+
+```bash
+docker compose up --build -d --wait   # from the root; --wait holds until healthy
+
+cd e2e
+npm install
+npx playwright install --with-deps chromium
+
+npm test            # the whole suite
+npm run test:ui     # the same thing, watchable, for writing one
+npm run typecheck   # Playwright does not type-check across files; this does
+npm run report      # open the last HTML report
+```
+
+**61 tests, about three minutes.** What they cover:
+
+| File | What it proves |
+|---|---|
+| `sign-out.spec.ts` | R-9, both halves: our cookies are cleared, the API refuses the old session, **and** the provider's session really ends — so signing in again asks for the password instead of waving the person straight back through. |
+| `sign-in.spec.ts` | U-1, and the two things only a browser can show: no token in `localStorage` or `sessionStorage` (R-3c), both cookies HttpOnly with the right `SameSite` and path (R-3d, R-3e), and exactly one `/bootstrap` call to draw the app (H-4). |
+| `user-journeys.spec.ts` | U-2 to U-6: the board and its address, reading and voting and commenting, submitting, editing and deleting your own, profile and preferences. |
+| `admin-journeys.spec.ts` | A-1 to A-5: the saved board link, status and pin, moderating a comment and approving a waiting one, categories and statuses, the application settings. |
+| `comments-switch.spec.ts` | H-5. With the switch off the box and the thread are gone, the counts leave the board, **and** the server refuses a comment posted straight to the endpoint with a 403 and a clear message. |
+| `authorization.spec.ts` | R-70 and R-66 from the other side: signed in as an ordinary person, calling every admin endpoint by hand and being refused with a 403. Plus the origin check (R-3g) and 401 with no session. |
+| `rate-limits.spec.ts` | R-130 to R-132: the limit refuses the one past it, says when to try again, and applies to an admin too. |
+| `accessibility.spec.ts` | R-163: an axe pass (WCAG 2.x A and AA) on the board, both its empty states, the request page, the settings screen, the admin screens, and the board in dark mode. |
+
+Two things worth knowing before you read the code:
+
+- **One worker, no retries.** These tests share one database, so two workers
+  would make failures that depend on the order things happened to run. A retry
+  would hide a flake, and a flake in a suite this small is a real defect.
+- **The suite lifts the submission rate limit while it runs**, and puts it back
+  afterwards. R-130 allows ten requests an hour and the suite files two of them,
+  so on a machine where it has already run a few times the limit would start
+  refusing tests that are not about limits. `rate-limits.spec.ts` sets a limit
+  of its own instead, so the rule is still proven — by the one test that is
+  about it.
+
+If the stack is not up, the run stops before the first test with a message
+naming the command to start it.
 
 ## Configuration
 

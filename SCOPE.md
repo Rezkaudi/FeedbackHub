@@ -104,6 +104,26 @@ built — see section 8 for why, and what is open because of it.
 Test first, then code. Four layers, plus Playwright for the whole system with a
 real Keycloak sign-in (D-22).
 
+The end-to-end suite covers all eleven journeys of SRS part 6 — U-1 to U-6 and
+A-1 to A-5 — plus the two hard parts, H-4 (one call at start-up) and H-5 (the
+comments switch that also stops the server), plus an axe pass on the board, the
+request page and the settings screen (R-163). It lives in `e2e/`, in a package
+of its own (D-42), signs in through the real form every time (D-43), and lifts
+the submission rate limit for the length of the run (D-44).
+
+Two things it decided for itself, and both are worth naming because they cost
+something:
+
+- **Some tests go straight to a request's address rather than clicking it on the
+  board.** Every run files requests of its own, so on a database that has been
+  used a few times the seeded ones are no longer on the first page. A test about
+  voting that fails on pagination proves nothing. One test in U-3 still opens a
+  request by clicking it, so the journey itself is not lost.
+- **Two tests assert on `fh-taxonomy-chip` by element name.** Everywhere else
+  the suite queries by role, label or visible text. These two cannot: the status
+  name they are checking is also sitting in the admin picker's own options, so a
+  plain text match would pass whether the status changed or not.
+
 ---
 
 ## 2. What we are not building
@@ -140,9 +160,10 @@ We are not hiding these. Each one is a choice.
   `^22.22.3` and TypeScript 6, which is stricter than what the machine had.
 - **No server-side rendering.** Every route is behind a sign-in, so there is no
   anonymous first paint to speed up and no crawler to serve. See D-37.
-- **Arabic is in scope.** R-57 asks for it, and one test in SRS part 17 depends
-  on it (a notification email written in Arabic). It means every string is
-  translated and every screen is checked in RTL.
+- **Arabic was in scope, and was cut.** R-57 asks for it, and one test in SRS
+  part 17 depends on it (a notification email written in Arabic). It was planned
+  as in scope during Step 1 and dropped during Step 2. What it needs, and what
+  was built anyway, is in section 6.
 - **No "only my requests" filter.** Journey U-5 says a person finds their own
   earlier request, but the board rules R-16 to R-25 never list a mine filter and
   the API has no such parameter. Requests now carry `isMine`, so a person can
@@ -212,10 +233,37 @@ why we removed the status-history table we had invented (D-08).
 
 ## 6. What was cut, and why
 
-**Nothing was cut for time.**
+**One thing was cut: Arabic and RTL (R-57).**
 
-Everything in section 2 left the plan because nothing reads it, not because the
-week ran out. Over three revisions of the SRS, eleven tables became nine. Six
+The UI is English only. No string is translated and no screen has been checked
+right-to-left.
+
+What was built, and is real: the language choice saves to the server and comes
+back on the one start-up call, `dir` and `lang` are set on the document before
+the first paint so a translated build would not flash, and IBM Plex Sans Arabic
+is loaded and paired with the Latin face (D-41).
+
+What is missing is the translation itself: a message file, every visible string
+moved into it, and a pass over every screen in RTL — logical CSS properties
+instead of left/right, mirrored icons, and the vote and comment counts checked
+with Arabic-Indic digits.
+
+**Why it was cut.** It is wide rather than deep. It touches every template in
+the app, and it cannot be done half way and still be honest: a screen that is
+nine-tenths translated is worse than one that is plainly English. Against that,
+the rest of Step 2 and the whole of Step 3 are the parts the brief actually
+grades. The judgement was that eleven working E2E journeys prove more than a
+second language on a board whose accessibility, error handling and authorisation
+had not yet been proven end to end.
+
+**What it costs.** This is the largest single gap against the SRS. The SRS part
+17 test that expects a notification email in Arabic cannot pass. R-57 is not
+met. The backend does its half — it stores the language and the worker reads it
+— so the gap is entirely in the front end. It is also written in `README.md`
+under what does not work, so it is not visible only here.
+
+**Everything else in section 2 left the plan because nothing reads it, not
+because the week ran out.** Over three revisions of the SRS, eleven tables became nine. Six
 groups of fields were removed. Three things were added: the comments feature
 flag, the six rate-limit fields with R-130 to R-132, and R-66, which says only an
 admin manages invitations.
@@ -285,6 +333,57 @@ request — a tombstone, or an attempts table — which is a new table, and the
 instruction for this step was to build the SRS tables and no others. The gap is
 also written in the repository code that implements the limit, so it cannot be
 found only here.
+
+**The end-to-end suite found three real defects, and they are fixed.** They are
+worth naming because none of the other four test layers could have found them,
+and none of them was a typo:
+
+1. **The board's sort control lied.** It showed "Newest first" while the board
+   was sorted by most votes. A `<select [value]>` whose options come from an
+   `@for` is given its value before the options exist, so the browser falls back
+   to the first one. See D-45.
+2. **The admin's status picker lied in the same way**, and worse: it showed
+   "New" on a request that was Done, so an admin changing something else on that
+   page would have moved the status without meaning to.
+3. **An admin could not delete somebody else's comment.** R-37 allows it and the
+   server always did; the button was only offered on your own comment, so
+   journey A-3 could not be completed through the interface at all.
+
+All three now have a component test that fails without the fix (R-161).
+
+**One half of R-64 is still not built.** The rule says a status can be changed
+"from the board and from the request page". Only the request page has it. A-2 is
+covered end to end through the request page, so the journey works; the board
+half does not exist and is written up in `README.md` as well.
+
+**Sign-out was broken in two ways at once, and both are fixed.** It was the
+area named here as having no test at any layer, and it turned out to be broken
+in the shipped app:
+
+1. **The button showed the person a raw JSON 404.** It navigated the browser to
+   `/v1/auth/sign-out`, which is a GET; the route is a POST. Nothing ran, so the
+   cookies were never cleared either — signed in, on a page saying "Not found".
+2. **Even once that was fixed, sign-out did not sign anybody out.** Our cookies
+   were cleared, the guard redirected to the provider, and the provider's own
+   session was still alive, so it answered silently with a fresh code and the
+   person landed back on the board. R-9 says sign-out "ends the session at the
+   identity provider too", and it never did — `revoke` retires one refresh
+   token, it does not end a session. See D-46 and D-47.
+
+The second one is the one worth remembering: the first four assertions of the
+new `sign-out.spec.ts` all passed while it was broken. Only asking for the
+password screen caught it.
+
+**Session refresh still has no test at any layer.** The access cookie outlives a
+three-minute run, so nothing in the end-to-end suite ever makes the browser
+renew a session, and every API test replaces the identity provider with a stub.
+D-32 was a bug in exactly this area and survived a green pipeline; it would
+survive one again.
+
+**The submission rate limit had no test of its enforcement** until the
+end-to-end suite grew one. The refusal *shape* was unit tested and the window
+arithmetic was reasoned about, but nothing anywhere watched the server say no to
+the eleventh request. `rate-limits.spec.ts` does (D-44).
 
 **Docker Compose v2 is required.** `docker-compose.yml` uses the Compose Spec —
 no `version:` key, and `depends_on` with `condition: service_completed_successfully`,

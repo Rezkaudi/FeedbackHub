@@ -73,7 +73,7 @@ import { Session } from '../core/auth/session';
           <button
             type="button"
             class="hover:bg-surface-hover inline-flex min-h-11 items-center rounded px-3"
-            (click)="session.signOut()"
+            (click)="signOut()"
           >
             Sign out
           </button>
@@ -96,6 +96,15 @@ export class Shell {
     // Constructed here rather than in a provider so the effect that mirrors the
     // theme onto <html> lives exactly as long as the signed-in app does.
     inject(ThemeApplier);
+  }
+
+  /**
+   * `void` because the template cannot await, and an unhandled rejection in a
+   * click handler is a silent one. `signOut` already swallows its own failure
+   * and leaves anyway, so there is nothing here left to handle.
+   */
+  protected signOut(): void {
+    void this.session.signOut();
   }
 
   protected toggleTheme(): void {

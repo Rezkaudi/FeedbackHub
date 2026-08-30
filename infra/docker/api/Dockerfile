@@ -2,7 +2,7 @@
 # R-144: this one image runs both the API and the worker; only the command differs.
 
 # ---- build ------------------------------------------------------------------
-FROM node:22-alpine AS build
+FROM docker.io/node:22-alpine AS build
 WORKDIR /app
 
 # Dependencies first, so a code change does not re-download the world.
@@ -20,7 +20,7 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 # ---- run --------------------------------------------------------------------
-FROM node:22-alpine AS runtime
+FROM docker.io/node:22-alpine AS runtime
 WORKDIR /app
 
 # dumb-init gives us correct signal handling, so SIGTERM reaches Node and the

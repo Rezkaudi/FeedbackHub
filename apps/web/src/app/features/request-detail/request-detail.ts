@@ -98,6 +98,21 @@ import { EmptyPanel, ErrorPanel, SkeletonRows } from '../../shared/ui/state/stat
                     {{ request.createdAt | date: 'medium' }}
                   </time>
                 </p>
+
+                <!--
+                  R-13: the author changes their own request. isMine is the
+                  server's answer about this viewer, not a comparison we make
+                  here (R-93) — and the form checks it again on load, so the
+                  link disappearing is a courtesy, never the control.
+                -->
+                @if (request.isMine) {
+                  <a
+                    [routerLink]="['/requests', request.id, 'edit']"
+                    class="border-line-control mt-3 inline-flex min-h-11 items-center rounded border px-4"
+                  >
+                    Edit
+                  </a>
+                }
               </div>
             </div>
 
@@ -114,14 +129,21 @@ import { EmptyPanel, ErrorPanel, SkeletonRows } from '../../shared/ui/state/stat
                   <label for="admin-status" class="mb-1 block text-sm font-medium">
                     Status
                   </label>
+                  <!-- Marked on the option, not with [value] on the select:
+                       with an @for the select's value is set before the options
+                       exist, and the browser quietly falls back to the first
+                       one. A picker showing "New" on a request that is Done is
+                       not a display bug — the next admin to touch it changes
+                       the status without meaning to. -->
                   <select
                     id="admin-status"
-                    [value]="request.statusId"
                     (change)="onStatus($event)"
                     class="border-line-control bg-surface min-h-11 rounded border px-3"
                   >
                     @for (option of bootstrap.activeStatuses(); track option.id) {
-                      <option [value]="option.id">{{ option.name }}</option>
+                      <option [value]="option.id" [selected]="option.id === request.statusId">
+                        {{ option.name }}
+                      </option>
                     }
                   </select>
                 </div>
@@ -240,7 +262,11 @@ import { EmptyPanel, ErrorPanel, SkeletonRows } from '../../shared/ui/state/stat
                             </p>
                             <p data-user-text class="mt-2">{{ comment.body }}</p>
 
-                            @if (comment.isMine) {
+                            <!-- R-37: the writer deletes their own; an admin
+                                 deletes any. The server checks both again, so
+                                 an absent button is a courtesy, never the
+                                 control (R-70). -->
+                            @if (comment.isMine || bootstrap.isAdmin()) {
                               <button
                                 type="button"
                                 class="text-danger mt-2 min-h-11 text-sm underline"

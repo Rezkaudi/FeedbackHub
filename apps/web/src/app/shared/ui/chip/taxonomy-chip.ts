@@ -64,7 +64,17 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     }
 
     .retired {
-      color: var(--fh-text-subtle);
+      /* Not --fh-text-subtle. That token is measured against --fh-surface, and
+       * this word does not sit on --fh-surface: it sits on the chip's wash,
+       * which is the admin's own colour mixed into the surface and therefore
+       * darker (or lighter) by an amount nobody can know in advance. An axe
+       * pass on the board caught it at 4.2:1 on the seeded grey category.
+       *
+       * The full text colour is the only value that is safe for every colour an
+       * admin might pick, and nothing is lost: "(retired)" is already set apart
+       * by the brackets and by the lighter weight, so the colour was never
+       * carrying the meaning (R-111). */
+      color: var(--fh-text);
       font-weight: var(--fh-weight-normal);
     }
   `,

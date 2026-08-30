@@ -59,14 +59,24 @@ const SORT_LABELS: ReadonlyArray<{ value: Sort; label: string }> = [
 
         <div>
           <label for="board-sort" class="mb-1 block text-sm font-medium">Sort</label>
+          <!--
+            The chosen one is marked on the option, not with [value] on the
+            select. When the options come from an @for, the select's own value
+            is written before its children exist, so the browser has nothing to
+            match and falls back to the first option — the board would be sorted
+            by most votes while this control said "Newest first". R-22 puts the
+            sort in the address; a control that disagrees with the address is
+            worse than no control.
+          -->
           <select
             id="board-sort"
-            [value]="query().sort"
             (change)="onSort($event)"
             class="border-line-control bg-surface min-h-11 rounded border px-3"
           >
             @for (option of sortOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
+              <option [value]="option.value" [selected]="option.value === query().sort">
+                {{ option.label }}
+              </option>
             }
           </select>
         </div>

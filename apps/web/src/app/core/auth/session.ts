@@ -1,5 +1,7 @@
 import { Injectable, inject, signal, type Signal } from '@angular/core';
 import { DOCUMENT } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 /**
  * Signing in and out.
@@ -17,6 +19,7 @@ const RETURN_URL_KEY = 'fh.returnUrl';
 @Injectable({ providedIn: 'root' })
 export class Session {
   private readonly document = inject(DOCUMENT);
+  private readonly http = inject(HttpClient);
   private readonly signedOut = signal(false);
 
   /** Set when a renewal failed mid-session, so the shell can react. */
@@ -59,8 +62,38 @@ export class Session {
     this.signedOut.set(true);
   }
 
-  /** R-9: clears the app and ends the session at the identity provider too. */
-  public signOut(): void {
-    this.document.defaultView?.location.assign('/v1/auth/sign-out');
+  /**
+   * R-9: clears the app and ends the session at the identity provider too.
+   *
+   * A request, not a navigation. This used to be
+   * `location.assign('/v1/auth/sign-out')`, and it was broken: that is a GET,
+   * the route is a POST, so the browser was shown a raw JSON 404 — and the
+   * cookies were never cleared, which meant the person was still signed in
+   * while looking at a page that said "Not found".
+   *
+   * A GET would have been the smaller change and is the wrong one. Sign-out
+   * ends a session, and the Origin check that stops another site making that
+   * happen only guards writes (R-3g) — a GET sign-out is a URL any page could
+   * put in an `<img>` tag to log our people out. It does not need to be a
+   * navigation either: the provider's session is ended from our server by a
+   * back-channel revoke, not by sending the browser anywhere.
+   *
+   * Then a full page load, deliberately, rather than a router navigation: it
+   * throws away every store in memory, so nothing of the last person survives
+   * into the next sign-in. The guard finds no session and sends them on to the
+   * identity provider.
+   */
+  public async signOut(): Promise<void> {
+    try {
+      await firstValueFrom(this.http.post('/v1/auth/sign-out', {}));
+    } catch {
+      // The server could not be reached, or refused. Go anyway: staying on a
+      // page that is half signed out is worse than arriving at the sign-in
+      // screen. If the cookies really did survive, the guard will let them
+      // straight back in, which is honest — the sign-out did not happen.
+    }
+
+    this.signedOut.set(true);
+    this.document.defaultView?.location.assign('/');
   }
 }

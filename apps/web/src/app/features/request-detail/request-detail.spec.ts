@@ -61,8 +61,11 @@ describe('the request page', () => {
       voteCount: signal(4),
       viewerHasVoted: signal(false),
       isMine: signal(false),
+      adminError: signal(null),
       load: vi.fn().mockResolvedValue(undefined),
       vote: vi.fn().mockResolvedValue(undefined),
+      changeStatus: vi.fn().mockResolvedValue(undefined),
+      setPinned: vi.fn().mockResolvedValue(undefined),
       ...over,
     };
   }
@@ -91,9 +94,23 @@ describe('the request page', () => {
     commentsEnabled: signal(true),
     commentsRequireApproval: signal(false),
     isAdmin: signal(false),
+    // Only the admin panel reads this, so it stayed absent until an admin test
+    // rendered the panel for the first time.
+    activeStatuses: signal([
+      { id: 's1', name: 'New', color: '#0369A1', isActive: true },
+      { id: 's2', name: 'Planned', color: '#00838F', isActive: true },
+    ]),
     categoryById: () => ({ id: 'c1', name: 'Bug', color: '#DC2626', isActive: true }),
     statusById: () => ({ id: 's1', name: 'New', color: '#0369A1', isActive: true }),
   };
+
+  // `bootstrap` is one object shared by every test in this file, so a test that
+  // makes the viewer an admin must not leave them one.
+  afterEach(() => {
+    bootstrap.isAdmin.set(false);
+    bootstrap.commentsEnabled.set(true);
+    bootstrap.commentsRequireApproval.set(false);
+  });
 
   async function renderPage(
     detail: ReturnType<typeof detailIn>,
@@ -154,6 +171,31 @@ describe('the request page', () => {
 
       expect(screen.getByText('<img src=x onerror="alert(1)">')).toBeInTheDocument();
       expect(document.querySelector('img')).toBeNull();
+    });
+  });
+
+  /**
+   * R-13: the author edits their own request. The route and the form both
+   * existed before this, but nothing linked to them — the only way in was to
+   * type the address, which meant journey U-5 could not be completed by a
+   * person using the screen. The E2E suite is what found it.
+   */
+  describe('editing my own request', () => {
+    it('offers Edit on a request that is mine', async () => {
+      const detail = detailIn('ready', { isMine: signal(true) });
+      detail.request.set(aRequest({ isMine: true }));
+      await renderPage(detail);
+
+      expect(screen.getByRole('link', { name: /edit/i })).toHaveAttribute(
+        'href',
+        '/requests/r1/edit',
+      );
+    });
+
+    it('offers no Edit on somebody else\u2019s request', async () => {
+      await renderPage(detailIn('ready'));
+
+      expect(screen.queryByRole('link', { name: /edit/i })).not.toBeInTheDocument();
     });
   });
 
@@ -278,6 +320,37 @@ describe('the request page', () => {
       expect(screen.getAllByRole('button', { name: /delete comment/i })).toHaveLength(1);
     });
 
+    /**
+     * R-37: an admin deletes any comment. This is journey A-3, and without it
+     * the only way to moderate a published comment is to call the endpoint by
+     * hand — the server has always allowed it.
+     */
+    it('offers Delete on every comment to an admin', async () => {
+      bootstrap.isAdmin.set(true);
+
+      await renderPage(
+        detailIn('ready'),
+        commentsIn('ready', {
+          items: signal([aComment('mine', { isMine: true }), aComment('theirs')]),
+          total: signal(2),
+        }),
+      );
+
+      expect(screen.getAllByRole('button', { name: /delete comment/i })).toHaveLength(2);
+    });
+
+    /** R-36: moderation is deleting, never rewriting. No edit is offered. */
+    it('offers an admin no way to change somebody else’s words', async () => {
+      bootstrap.isAdmin.set(true);
+
+      await renderPage(
+        detailIn('ready'),
+        commentsIn('ready', { items: signal([aComment('theirs')]), total: signal(1) }),
+      );
+
+      expect(screen.queryByRole('button', { name: /edit comment/i })).not.toBeInTheDocument();
+    });
+
     it('shows more only while there are more', async () => {
       await renderPage(
         detailIn('ready'),
@@ -359,6 +432,60 @@ describe('the request page', () => {
 
       expect(comments.load).not.toHaveBeenCalled();
       bootstrap.commentsEnabled.set(true);
+    });
+  });
+  /**
+   * Journey A-2, on this screen: an admin changes the status and pins. Both are
+   * hidden from everybody else as a courtesy — R-70 says the server is the
+   * check, and the E2E suite calls both endpoints as an ordinary person to
+   * prove it.
+   */
+  describe('the admin panel (R-64, R-65)', () => {
+    it('is not there for an ordinary person', async () => {
+      await renderPage(detailIn('ready'));
+
+      expect(screen.queryByLabelText('Status')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /pin to the top/i })).not.toBeInTheDocument();
+    });
+
+    /**
+     * The same bug as the board's sort control, and worse here: an admin who
+     * opens a request that is "Planned" and sees "New" in the picker has been
+     * shown a lie about the thing they are about to change.
+     */
+    it('shows the status the request actually has', async () => {
+      bootstrap.isAdmin.set(true);
+      const detail = detailIn('ready');
+      detail.request.set(aRequest({ statusId: 's2' }));
+
+      await renderPage(detail);
+
+      expect(screen.getByLabelText('Status')).toHaveValue('s2');
+    });
+
+    it('changes the status', async () => {
+      bootstrap.isAdmin.set(true);
+      const { detail } = await renderPage(detailIn('ready'));
+
+      await userEvent.selectOptions(screen.getByLabelText('Status'), 's2');
+
+      expect(detail.changeStatus).toHaveBeenCalledWith('s2');
+    });
+
+    it('pins, and says so when it is already pinned', async () => {
+      bootstrap.isAdmin.set(true);
+      const detail = detailIn('ready');
+      const { detail: used } = await renderPage(detail);
+
+      const pin = screen.getByRole('button', { name: /pin to the top/i });
+      expect(pin).toHaveAttribute('aria-pressed', 'false');
+      await userEvent.click(pin);
+      expect(used.setPinned).toHaveBeenCalledWith(true);
+
+      detail.request.set(aRequest({ isPinned: true }));
+      expect(
+        await screen.findByRole('button', { name: /unpin from the top/i }),
+      ).toHaveAttribute('aria-pressed', 'true');
     });
   });
 });

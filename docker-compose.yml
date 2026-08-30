@@ -6,8 +6,8 @@
 # There is no secret to set first. Every value here is a development value and
 # is safe to read — real deployments get theirs from the environment (R-53).
 #
-# The front end is not in here yet: it has no code. When it exists it joins as
-# one more service behind the same compose file.
+# The front end is served by nginx on http://localhost:4200, on the same origin
+# as the API it proxies (R-3h).
 
 name: feedbackhub
 
@@ -143,6 +143,29 @@ services:
       start_period: 10s
     ports:
       - '3000:3000'
+
+  web:
+    # R-80: the one command starts the front end too. nginx serves the build and
+    # proxies /v1 to the API, so the browser sees one origin and the SameSite
+    # cookies behave the way they will in production (R-3h).
+    build:
+      context: .
+      dockerfile: infra/docker/web/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    ports:
+      # 4200 on the outside because that is what APP_BASE_URL and
+      # AUTH_ALLOWED_ORIGINS already say, and what the identity provider sends
+      # people back to. 8080 inside because the unprivileged nginx image does
+      # not run as root (R-79).
+      - '4200:8080'
 
   worker:
     # R-144: the same image, a different command, and no HTTP at all.

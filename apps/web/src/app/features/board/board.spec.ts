@@ -102,6 +102,29 @@ describe('the board screen', () => {
     return store;
   }
 
+  /**
+   * R-22 puts the sort in the address, and R-24 lets a saved default stand in
+   * when the address says nothing. Either way the control has to agree with the
+   * board underneath it.
+   *
+   * This is here because it was wrong: the select bound its own `value`, which
+   * is written before an @for has made any options, so the browser fell back to
+   * the first one. The board really was sorted by most votes; the control said
+   * "Newest first". An end-to-end run caught it on a real browser.
+   */
+  describe('the sort control', () => {
+    it('shows the sort the board is actually using', async () => {
+      preferences.defaultSort.set('most_votes');
+      try {
+        await renderBoard(boardIn('ready', { items: signal([aRequest()]), total: signal(1) }));
+
+        expect(screen.getByLabelText('Sort')).toHaveValue('most_votes');
+      } finally {
+        preferences.defaultSort.set('newest');
+      }
+    });
+  });
+
   describe('while it is loading', () => {
     it('says so, once, rather than making a screen reader read grey boxes', async () => {
       await renderBoard(boardIn('loading'));

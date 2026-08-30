@@ -176,15 +176,85 @@ export class KeycloakIdentityProvider implements IdentityProvider, OnModuleInit 
   /**
    * R-9: signing out ends the session at the identity provider too. We keep no
    * session list of our own (R-9a), so this is the only way to cut one short.
+   *
+   * This used to call `revoke`, and that was not enough — it was found by
+   * signing out in a real browser and being signed straight back in. Revoking a
+   * refresh token retires that one token. It does **not** end the provider's
+   * own browser session, so the `KEYCLOAK_IDENTITY` cookie survived, and the
+   * very next redirect to the authorization endpoint was answered silently with
+   * a fresh code. The person pressed Sign out, watched the page reload, and
+   * arrived back on the board still signed in.
+   *
+   * The end-session endpoint, called from here with the client's own
+   * credentials, ends the session itself. Called from *here* on purpose: the
+   * alternative is sending the browser to that endpoint, and the version of
+   * that which does not need a confirmation screen puts an id token in a URL —
+   * which R-3c forbids in as many words. A back-channel call keeps every token
+   * on this side and needs no redirect at all.
    */
   public async endSession(refreshToken: string): Promise<void> {
     const client = await this.ensureClient();
+    const endpoint = this.reachableFromHere(client.issuer.metadata['end_session_endpoint']);
 
     try {
+      if (endpoint !== null) {
+        const answer = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: this.environment.oidc.clientId,
+            client_secret: this.environment.oidc.clientSecret,
+            refresh_token: refreshToken,
+          }),
+        });
+
+        // Not fatal, but worth knowing: a 400 here means the session outlived
+        // the sign-out, and the next sign-in will not ask for a password.
+        if (!answer.ok) {
+          throw new Error(`The provider refused the sign-out: ${answer.status}`);
+        }
+        return;
+      }
+
+      // No end-session endpoint published. Retiring the token is then the most
+      // that can be done, and it is better than nothing.
       await client.revoke(refreshToken, 'refresh_token');
     } catch {
       // The person is signing out. A provider that will not answer must not
       // stop us clearing their cookies, which is the part that matters here.
+    }
+  }
+
+  /**
+   * The end-session address, on the host *this server* can reach.
+   *
+   * Keycloak sorts its endpoints into two groups and publishes a different host
+   * for each. The token endpoint comes back as `keycloak:8080`, because that is
+   * where we dialled it; the authorization and end-session endpoints come back
+   * as `localhost:8080`, because Keycloak counts both as front-channel — places
+   * it expects a *browser* to go. That is right for a redirect and wrong for
+   * us: posting to `localhost:8080` from inside this container reaches this
+   * container, not Keycloak. The connection is refused, the error is swallowed
+   * because a sign-out must not fail, and the person is signed back in on the
+   * next redirect with nothing anywhere to say why.
+   *
+   * So the path is taken from the discovery document — Keycloak's route layout
+   * is not ours to guess — and only the origin is replaced with the one we know
+   * answers, which is the issuer URL we were configured with.
+   */
+  private reachableFromHere(published: unknown): string | null {
+    if (typeof published !== 'string') {
+      return null;
+    }
+
+    try {
+      const address = new URL(published);
+      const reachable = new URL(this.environment.oidc.issuerUrl);
+      address.protocol = reachable.protocol;
+      address.host = reachable.host;
+      return address.toString();
+    } catch {
+      return null;
     }
   }
 }
