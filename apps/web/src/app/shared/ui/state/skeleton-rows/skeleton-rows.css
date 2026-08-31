@@ -16,6 +16,11 @@
   }
 }
 
+/* One full-width column at every width — for pages that are not the card grid. */
+.skeleton-grid.stack {
+  grid-template-columns: 1fr;
+}
+
 .skeleton-card {
   border-radius: var(--md-sys-shape-corner-large);
   border: 1px solid var(--md-sys-color-outline-variant);

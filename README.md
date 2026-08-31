@@ -304,12 +304,17 @@ comment threading (D-05), and search without ranking (D-11).
   `<input type="checkbox">` elements are still real checkboxes inside real
   `<fieldset>`s, just visually rebuilt as chips, so the accessibility tree
   (and most of the old Cypress selectors) did not have to change.
-- **"New request" is a popup, not a page.** It opens in place over the board
-  as a modal dialog (a native `<dialog>`), so the board's scroll position and
-  filters are never disturbed; on success a snackbar offers "View" to jump
-  straight to the new request. The routes `/requests/new` and
-  `/requests/:id/edit` still exist and still open the same dialog, forced open,
-  so a bookmarked or shared link still works.
+- **"New request" and "Edit request" are popups, not pages.** Both open in
+  place as a modal dialog (a native `<dialog>`): "New request" over the board,
+  so its scroll position and filters are never disturbed; "Edit" over the
+  request page, so you stay on the request you are editing. On a new request a
+  snackbar offers "View" to jump straight to it; on an edit the page reloads in
+  place and a snackbar confirms the save. The route `/requests/new` still
+  exists and opens the same dialog, forced open, so a bookmarked link still
+  works. The old `/requests/:id/edit` route is gone — edit is only reachable
+  from the request page now. The form dialog has no Delete button: deleting a
+  request is done from the trash icon in the request header, which asks first
+  the same way it always did.
 
 ### The front end — a request page
 

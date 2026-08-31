@@ -20,8 +20,4 @@ export class RequestFormPage {
   protected onSaved(id: string): void {
     void this.router.navigate(['/requests', id]);
   }
-
-  protected onDeleted(): void {
-    void this.router.navigate(['/']);
-  }
 }

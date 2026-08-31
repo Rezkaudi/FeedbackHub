@@ -42,7 +42,7 @@ describe('Request creation, editing, ownership and deletion', () => {
     fillRequest(title, 'Original description that is long enough.');
     cy.contains('h1', title, { timeout: 15_000 }).should('be.visible');
 
-    cy.contains('a', /edit/i).click();
+    cy.get('button[aria-label="Edit"]').click();
     cy.get('textarea#description').clear().type('Updated description for the owner edit flow.');
     cy.get('form button[type="submit"]').click();
     cy.contains('Updated description for the owner edit flow.').should('be.visible');
@@ -51,7 +51,7 @@ describe('Request creation, editing, ownership and deletion', () => {
   it('does not offer owner controls on another person’s request', () => {
     cy.visit(`/requests/${IDS.raeRequest}`);
     cy.contains('h1', /search does not find/i).should('be.visible');
-    cy.contains('a', /edit/i).should('not.exist');
+    cy.get('button[aria-label="Edit"]').should('not.exist');
     cy.contains('button', /delete request/i).should('not.exist');
   });
 

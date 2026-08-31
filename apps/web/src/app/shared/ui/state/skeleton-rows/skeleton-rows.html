@@ -1,5 +1,5 @@
 <p role="status" class="sr-only">{{ label() }}</p>
-<div aria-hidden="true" class="skeleton-grid">
+<div aria-hidden="true" class="skeleton-grid" [class.stack]="layout() === 'stack'">
   @for (row of rows(); track row) {
     <div class="skeleton-card">
       <div class="line w-1/3"></div>

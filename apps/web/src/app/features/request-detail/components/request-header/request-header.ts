@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { TaxonomyChip } from '../../../../shared/ui/chip/taxonomy-chip';
 import { Avatar } from '../../../../shared/ui/avatar/avatar';
-import { Icon } from '../../../../shared/ui/icon/icon';
 import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
@@ -14,16 +12,7 @@ type RequestResponse = components['schemas']['RequestResponse'];
 
 @Component({
   selector: 'fh-request-header',
-  imports: [
-    RouterLink,
-    TaxonomyChip,
-    Avatar,
-    Icon,
-    IconButton,
-    TranslatePipe,
-    LocalizedDatePipe,
-    StatusMenu,
-  ],
+  imports: [TaxonomyChip, Avatar, IconButton, TranslatePipe, LocalizedDatePipe, StatusMenu],
   templateUrl: './request-header.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -40,6 +29,7 @@ export class RequestHeader {
   public readonly isPinned = input<boolean>(false);
 
   public readonly deleteRequested = output<void>();
+  public readonly editRequested = output<void>();
   public readonly statusChanged = output<string>();
   public readonly pinToggled = output<boolean>();
 }

@@ -13,13 +13,7 @@
       }
 
       @if (request().isMine) {
-        <a
-          [routerLink]="['/requests', request().id, 'edit']"
-          [attr.aria-label]="'common.edit' | t"
-          class="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors"
-        >
-          <fh-icon name="pencil" [size]="20" />
-        </a>
+        <fh-icon-button icon="pencil" [label]="'common.edit' | t" (click)="editRequested.emit()" />
       }
 
       @if (canDelete()) {

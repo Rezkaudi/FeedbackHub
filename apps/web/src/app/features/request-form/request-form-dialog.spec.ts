@@ -199,26 +199,9 @@ describe('the request form dialog', () => {
     expect(screen.queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument();
   });
 
-  it('asks first, naming the request and what goes with it, then deletes only after confirming', async () => {
-    const backend = await renderEdit('r1', { title: 'Dark mode' });
-
-    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }));
-
-    const dialog = screen.getByRole('alertdialog');
-    expect(dialog).toHaveTextContent(/dark mode/i);
-    expect(dialog).toHaveTextContent(/votes and all of its comments/i);
-
-    await userEvent.click(screen.getByRole('button', { name: /delete it/i }));
-
-    backend.expectOne('/v1/requests/r1').flush(null);
-  });
-
-  it('lets them keep it', async () => {
+  it('is not offered while editing either — delete lives on the request page, not here', async () => {
     await renderEdit('r1', { title: 'Dark mode' });
 
-    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }));
-    await userEvent.click(screen.getByRole('button', { name: /keep it/i }));
-
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument();
   });
 });

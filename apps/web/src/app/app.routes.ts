@@ -25,12 +25,6 @@ export const routes: Routes = [
         title: 'New request · FeedbackHub',
       },
       {
-        path: 'requests/:id/edit',
-        loadComponent: () =>
-          import('./features/request-form/request-form-page').then((m) => m.RequestFormPage),
-        title: 'Edit request · FeedbackHub',
-      },
-      {
         path: 'requests/:id',
         loadComponent: () =>
           import('./features/request-detail/request-detail').then((m) => m.RequestDetail),

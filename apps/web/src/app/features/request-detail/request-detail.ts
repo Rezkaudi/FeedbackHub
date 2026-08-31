@@ -12,6 +12,7 @@ import { EmptyPanel } from '../../shared/ui/state/empty-panel/empty-panel';
 import { ErrorPanel } from '../../shared/ui/state/error-panel/error-panel';
 import { SkeletonRows } from '../../shared/ui/state/skeleton-rows/skeleton-rows';
 import { Breadcrumbs } from '../../shared/ui/breadcrumbs/breadcrumbs';
+import { RequestFormDialog } from '../request-form/request-form-dialog';
 import { RequestHeader } from './components/request-header/request-header';
 import { RequestVoteButton } from './components/request-vote-button/request-vote-button';
 import { CommentForm } from './components/comment-form/comment-form';
@@ -27,6 +28,7 @@ import { CommentList } from './components/comment-list/comment-list';
     EmptyPanel,
     ErrorPanel,
     SkeletonRows,
+    RequestFormDialog,
     RequestHeader,
     RequestVoteButton,
     CommentForm,
@@ -49,6 +51,7 @@ export class RequestDetail {
 
   protected readonly voting = signal(false);
   protected readonly deleting = signal(false);
+  protected readonly editing = signal(false);
 
   protected readonly crumbs = computed(() => [
     { label: this.i18n.translate('nav.requests'), link: '/' },
@@ -85,6 +88,12 @@ export class RequestDetail {
     this.voting.set(true);
     await this.detail.vote();
     this.voting.set(false);
+  }
+
+  protected onEditSaved(): void {
+    this.editing.set(false);
+    void this.detail.load(this.id());
+    this.snackbar.show(this.i18n.translate('snackbar.requestUpdated'));
   }
 
   protected onDraft(value: string): void {

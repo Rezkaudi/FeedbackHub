@@ -93,12 +93,6 @@
             {{ (store.isSaving() ? 'common.saving' : 'common.save') | t }}
           </fh-button>
           <fh-button variant="text" type="button" (click)="closed.emit()">{{ 'common.cancel' | t }}</fh-button>
-
-          @if (isEditing()) {
-            <fh-button variant="danger" type="button" class="ms-auto" (click)="askToDelete()">
-              {{ 'common.delete' | t }}
-            </fh-button>
-          }
         </div>
       </form>
     }

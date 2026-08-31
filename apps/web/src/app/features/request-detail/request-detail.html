@@ -2,7 +2,7 @@
 
 @switch (detail.state()) {
   @case ('loading') {
-    <fh-skeleton-rows [count]="1" [label]="'requestDetail.loadingLabel' | t" />
+    <fh-skeleton-rows [count]="1" layout="stack" [label]="'requestDetail.loadingLabel' | t" />
   }
 
   @case ('missing') {
@@ -34,6 +34,7 @@
           [isAdmin]="bootstrap.isAdmin()"
           [statuses]="bootstrap.activeStatuses()"
           [isPinned]="request.isPinned"
+          (editRequested)="editing.set(true)"
           (deleteRequested)="removeRequest()"
           (statusChanged)="detail.changeStatus($event)"
           (pinToggled)="detail.setPinned($event)"
@@ -88,7 +89,7 @@
           <div class="mt-6">
             @switch (comments.state()) {
               @case ('loading') {
-                <fh-skeleton-rows [count]="3" [label]="'requestDetail.loadingLabel' | t" />
+                <fh-skeleton-rows [count]="3" layout="stack" [label]="'requestDetail.loadingLabel' | t" />
               }
               @case ('empty') {
                 <fh-empty-panel
@@ -121,4 +122,13 @@
       }
     }
   }
+}
+
+@if (editing()) {
+  <fh-request-form-dialog
+    [open]="true"
+    [id]="id()"
+    (closed)="editing.set(false)"
+    (saved)="onEditSaved()"
+  />
 }

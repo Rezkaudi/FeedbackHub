@@ -31,7 +31,7 @@ describe('Complete business-critical journeys', () => {
     cy.contains('button', /add comment/i).click();
     cy.contains('Critical journey comment.').should('be.visible');
 
-    cy.contains('a', /edit/i).should('be.visible');
+    cy.get('button[aria-label="Edit"]').should('be.visible');
 
     cy.contains('button', /sign out/i).click();
     cy.url({ timeout: 20_000 }).should('match', KEYCLOAK_AUTH);

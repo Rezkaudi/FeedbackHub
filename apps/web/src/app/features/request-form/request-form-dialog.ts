@@ -6,7 +6,6 @@ import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
 import { I18nStore } from '../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LocalizedDatePipe } from '../../core/i18n/localized-date.pipe';
-import { ConfirmService } from '../../shared/ui/dialog/confirm.service';
 import { Dialog } from '../../shared/ui/dialog/dialog';
 import { Button } from '../../shared/ui/button/button';
 import { Field } from '../../shared/ui/field/field';
@@ -25,7 +24,6 @@ type RequestResponse = components['schemas']['RequestResponse'];
 export class RequestFormDialog {
   protected readonly store = inject(RequestFormStore);
   protected readonly bootstrap = inject(BootstrapStore);
-  private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nStore);
 
   public readonly open = input.required<boolean>();
@@ -33,7 +31,6 @@ export class RequestFormDialog {
 
   public readonly closed = output<void>();
   public readonly saved = output<RequestResponse>();
-  public readonly deleted = output<void>();
 
   protected readonly isEditing = computed(() => this.id() !== undefined);
   private readonly submitted = signal(false);
@@ -103,30 +100,6 @@ export class RequestFormDialog {
 
     if (saved !== null) {
       this.saved.emit(saved);
-    }
-  }
-
-  protected async askToDelete(): Promise<void> {
-    const id = this.id();
-    if (id === undefined) {
-      return;
-    }
-
-    const title = this.store.initial()?.title ?? '';
-    const confirmed = await this.confirm.ask({
-      title: this.i18n.translate('requestForm.deleteRequestTitle', { title }),
-      message: this.i18n.translate('requestForm.deleteRequestMessage'),
-      confirmLabel: this.i18n.translate('requestForm.deleteConfirm'),
-      cancelLabel: this.i18n.translate('requestForm.deleteCancel'),
-      tone: 'danger',
-    });
-
-    if (!confirmed) {
-      return;
-    }
-
-    if (await this.store.remove(id)) {
-      this.deleted.emit();
     }
   }
 
