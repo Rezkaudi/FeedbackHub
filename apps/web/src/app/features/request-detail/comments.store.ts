@@ -156,20 +156,21 @@ export class CommentsStore {
   }
 
   /**
-   * R-38: the row stays as a grey line so the thread keeps its shape, and R-39
-   * stops counting it. Done locally from the answer rather than by re-reading,
-   * for the same reason as `add`.
+   * A deleted comment is removed everywhere — the row leaves the thread and the
+   * database (this reverses the original R-38 grey line; see DECISIONS.md).
+   * Done locally from the answer rather than by re-reading, for the same reason
+   * as `add`.
    */
   public async remove(commentId: string): Promise<void> {
     try {
       await firstValueFrom(this.http.delete<void>(`/v1/comments/${commentId}`));
 
-      this.rows.set(
-        this.rows().map((comment) =>
-          comment.id === commentId ? { ...comment, state: 'deleted' as const, body: '' } : comment,
-        ),
-      );
+      const remaining = this.rows().filter((comment) => comment.id !== commentId);
+      this.rows.set(remaining);
       this.count.update((total) => Math.max(0, total - 1));
+      if (remaining.length === 0) {
+        this.current.set('empty');
+      }
     } catch (cause) {
       this.moreFailure.set(toApiError(cause));
     }

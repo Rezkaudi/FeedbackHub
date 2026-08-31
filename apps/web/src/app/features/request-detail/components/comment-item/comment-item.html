@@ -1,25 +1,33 @@
-<li class="border-outline-variant rounded-2xl border p-4">
-  @if (comment().state === 'deleted') {
-    <p class="text-on-surface-variant text-sm italic">{{ 'requestDetail.commentDeleted' | t }}</p>
-  } @else {
-    <p class="text-on-surface-variant text-sm">
-      {{ comment().authorName }} ·
-      <time [attr.datetime]="comment().createdAt">{{ comment().createdAt | localizedDate: { dateStyle: 'medium' } }}</time>
-      @if (comment().state === 'pending') {
-        · <span class="text-warning">{{ 'requestDetail.commentWaiting' | t }}</span>
-      }
-    </p>
-    <p data-user-text class="mt-2">{{ comment().body }}</p>
+<li class="border-outline-variant bg-surface rounded-2xl border p-4">
+  <div class="flex items-start gap-3">
+    <fh-avatar [name]="comment().authorName" [src]="comment().authorAvatarUrl" [size]="32" class="flex-none" />
+
+    <div class="min-w-0 flex-1">
+      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span class="font-medium">{{ comment().authorName }}</span>
+        <time
+          [attr.datetime]="comment().createdAt"
+          class="text-on-surface-variant text-sm"
+          [attr.title]="comment().createdAt | localizedDate: { dateStyle: 'long', timeStyle: 'short' }"
+        >
+          {{ comment().createdAt | relativeTime }}
+        </time>
+        @if (comment().state === 'pending') {
+          <span class="text-warning text-xs font-medium">· {{ 'requestDetail.commentWaiting' | t }}</span>
+        }
+      </div>
+
+      <p data-user-text class="mt-2 whitespace-pre-wrap">{{ comment().body }}</p>
+    </div>
 
     @if (comment().isMine || canDelete()) {
-      <button
-        type="button"
-        class="text-error mt-2 min-h-11 text-sm underline"
-        [attr.aria-label]="deleteLabel()"
+      <fh-icon-button
+        icon="trash"
+        variant="standard"
+        class="flex-none"
+        [label]="deleteLabel()"
         (click)="removed.emit()"
-      >
-        {{ 'common.delete' | t }}
-      </button>
+      />
     }
-  }
+  </div>
 </li>

@@ -77,7 +77,8 @@ against a real PostgreSQL 16, not mocks:
 - a second default status is impossible;
 - two categories cannot share a name, even in different capitals;
 - a category or status in use cannot be deleted, only retired;
-- a deleted comment must be empty, so the text is really gone;
+- a deleted comment is removed completely — row and all (this overrides the
+  original R-38 "grey line"; see `DECISIONS.md`);
 - a rate limit of `0` is refused, since it would mean nobody can write.
 
 **Rate limiting**
@@ -325,9 +326,13 @@ comment threading (D-05), and search without ranking (D-11).
   block. A repeated id is dropped as well, belt and braces.
 - **A new comment appears at the top with no reload and no second call**
   (R-33d), and the box keeps what was typed if saving fails (SRS 15.5).
-- **A deleted comment leaves a grey line** so the thread keeps its shape (R-38)
-  and stops being counted (R-39). A comment waiting for approval is shown to its
-  writer, marked, and not counted (R-40).
+- **Deleting a comment removes it completely** — from the thread and from the
+  database, with no tombstone row (this overrides R-38/R-39; see `DECISIONS.md`).
+  Admin "reject" of a waiting comment deletes it the same way. A comment waiting
+  for approval is shown to its writer, marked, and not counted (R-40).
+- **Every page carries a breadcrumb** from the board down to where you are, so
+  the deeper screens (a request, a settings tab, an admin section) show their
+  place. Not asked for in the brief — a usability addition.
 - **The request and the thread fail independently** (SRS 15.2) — a thread that
   will not load never takes down a page that otherwise works.
 - **With comments switched off the thread and box are not rendered at all**, and
@@ -390,7 +395,8 @@ queue are built and driven end to end:
 - **Editing your own comment has no UI** (R-35). The `PATCH /v1/comments/:id`
   endpoint works and refuses everyone but the author — `04-comments` proves it —
   but the request page offers only Delete, never an inline edit. Deleting is
-  built (R-37), and an admin can delete any (R-38).
+  built (R-37), and an admin can delete any (R-37) — a delete is a real row
+  delete now, not a grey line.
 - **The board has no admin status control.** R-64 asks for the status to be
   changeable from the board as well as the request page; only the request page
   has it. The end-to-end suite covers A-2 through the request page, so the

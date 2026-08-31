@@ -1,16 +1,19 @@
+:host {
+  display: block;
+}
+
 .request-vote-button {
   display: flex;
-  flex: none;
-  flex-direction: column;
+  width: 100%;
   align-items: center;
   justify-content: center;
-  gap: var(--fh-space-1);
-  width: 5rem;
-  height: 5rem;
+  gap: var(--fh-space-2);
+  min-height: 3.25rem;
+  padding-inline: var(--fh-space-5);
   border-radius: var(--md-sys-shape-corner-large);
-  border: 1px solid var(--md-sys-color-outline);
-  background: var(--md-sys-color-surface);
-  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
   cursor: pointer;
   transition:
     background-color var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard),
@@ -19,13 +22,17 @@
 }
 
 .request-vote-button:hover {
-  background: var(--md-sys-color-surface-container-high);
+  background: color-mix(in srgb, var(--md-sys-color-primary) 88%, black);
 }
 
+/* Once you have voted the bar steps back to a quiet outline that still toggles. */
 .request-vote-button.voted {
-  background: var(--md-sys-color-primary);
-  border-color: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-primary);
+}
+
+.request-vote-button.voted:hover {
+  background: var(--md-sys-color-surface-container-high);
 }
 
 .request-vote-button:disabled {
@@ -33,7 +40,12 @@
   opacity: 0.7;
 }
 
+.vote-verb {
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+}
+
 .vote-count {
-  font-size: var(--md-sys-typescale-title-large-size);
-  font-weight: var(--md-sys-typescale-title-large-weight);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: 700;
 }

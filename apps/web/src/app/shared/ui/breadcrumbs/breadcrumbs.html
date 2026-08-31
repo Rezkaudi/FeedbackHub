@@ -1,0 +1,29 @@
+<nav [attr.aria-label]="navLabel()">
+  <ol class="text-on-surface-variant flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
+    @for (item of items(); track item.label; let last = $last) {
+      <li class="flex items-center gap-x-1.5">
+        @if (!last && item.link) {
+          <a
+            [routerLink]="item.link"
+            class="hover:text-on-surface rounded-sm underline-offset-2 hover:underline"
+          >
+            {{ item.label }}
+          </a>
+        } @else {
+          <span
+            [attr.aria-current]="last ? 'page' : null"
+            class="max-w-[16rem] truncate"
+            [class.text-on-surface]="last"
+            [class.font-medium]="last"
+          >
+            {{ item.label }}
+          </span>
+        }
+
+        @if (!last) {
+          <span aria-hidden="true" class="text-outline-variant">/</span>
+        }
+      </li>
+    }
+  </ol>
+</nav>

@@ -44,7 +44,7 @@ export class PrismaCommentRepository implements CommentRepository {
     // R-40: a waiting comment is seen only by its writer and by admins.
     const visible: Prisma.CommentWhereInput = viewer.isAdmin
       ? {}
-      : { OR: [{ state: { in: ['published', 'deleted'] } }, { authorId: viewer.id }] };
+      : { OR: [{ state: 'published' }, { authorId: viewer.id }] };
 
     const where: Prisma.CommentWhereInput = { requestId, ...visible };
 
@@ -73,9 +73,8 @@ export class PrismaCommentRepository implements CommentRepository {
     const last = page[page.length - 1];
 
     /**
-     * R-33c: the total is counted for the person asking, and a deleted comment
-     * is not counted at all (R-39) — though its grey line still appears in the
-     * list, which is why the count and the list have different rules.
+     * R-33c: the total is counted for the person asking. A pending comment is
+     * counted only for its own author and for admins.
      */
     const total = await this.prisma.comment.count({
       where: {
@@ -126,9 +125,14 @@ export class PrismaCommentRepository implements CommentRepository {
       where: { id: data.id },
       // request_id and author_id are never written after creation: a comment
       // cannot move or change hands.
-      data: { body: data.body, state: data.state, deletedAt: data.deletedAt },
+      data: { body: data.body, state: data.state },
     });
     return toComment(row);
+  }
+
+  /** R-37, R-38: a deleted comment is gone for good, row and all. */
+  public async remove(id: string): Promise<void> {
+    await this.prisma.comment.delete({ where: { id } });
   }
 
   public async listPending(): Promise<Comment[]> {

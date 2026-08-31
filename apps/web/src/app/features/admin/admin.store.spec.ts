@@ -180,7 +180,7 @@ describe('admin work', () => {
   });
 
   describe('moderation and invites', () => {
-    /** R-41: approve makes it appear; reject turns it into the grey line. */
+    /** R-41: approve makes it appear; reject deletes it for good. */
     it('approves a waiting comment and re-reads the queue', async () => {
       const done = store.approveComment('k1');
 

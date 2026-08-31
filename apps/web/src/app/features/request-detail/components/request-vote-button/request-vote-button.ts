@@ -19,6 +19,10 @@ export class RequestVoteButton {
 
   public readonly voted = output<void>();
 
+  protected readonly verb = computed(() =>
+    this.i18n.translate(this.hasVoted() ? 'requestDetail.voted' : 'requestDetail.upvote'),
+  );
+
   protected readonly label = computed(() => {
     const count = this.voteCount();
     const unit = this.i18n.translate(count === 1 ? 'common.vote' : 'common.votes');

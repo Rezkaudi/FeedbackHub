@@ -11,7 +11,9 @@
   @if (busy()) {
     <fh-spinner [size]="20" />
   } @else {
-    <fh-icon name="arrow-up" [size]="22" />
+    <fh-icon name="arrow-up" [size]="20" />
   }
+  <span aria-hidden="true" class="vote-verb">{{ verb() }}</span>
+  <span aria-hidden="true">·</span>
   <span aria-hidden="true" class="vote-count">{{ voteCount() }}</span>
 </button>

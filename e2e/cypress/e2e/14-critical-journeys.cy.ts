@@ -43,8 +43,8 @@ describe('Complete business-critical journeys', () => {
     cy.contains('h1', /Feedback/i).should('be.visible');
 
     cy.visit(`/requests/${IDS.spreadsheet}`);
-    cy.get('select#admin-status').should('be.visible');
-    cy.contains('button', /pin to the top|unpin from the top/i).should('be.visible');
+    cy.get('button[aria-label^="Change status"]').should('be.visible');
+    cy.get('button[aria-label="Pin to the top"], button[aria-label="Unpin from the top"]').should('be.visible');
 
     cy.visit('/admin/settings');
     cy.get('select#policy').should('be.visible');

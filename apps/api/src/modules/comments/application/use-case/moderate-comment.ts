@@ -5,11 +5,10 @@ import { RequestsService } from '../../../requests/requests.service';
 import { IdentityService } from '../../../identity/identity.service';
 import { NotificationsService } from '../../../notifications/notifications.service';
 import { NotFoundError } from '../../../../shared/errors/app-error';
-import { CLOCK, type Clock } from '../../../../shared/ports';
 
 /**
- * R-41: an admin approves a waiting comment (it appears) or rejects it (it
- * becomes a deleted line).
+ * R-41: an admin approves a waiting comment (it appears) or rejects it (it is
+ * deleted for good).
  *
  * R-125 is the subtle part: the email goes out **when the comment becomes
  * visible**, which is here — not when it was written. A comment the admin
@@ -22,7 +21,6 @@ export class ModerateComment {
     private readonly requests: RequestsService,
     private readonly identity: IdentityService,
     private readonly notifications: NotificationsService,
-    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   public listWaiting(): Promise<Comment[]> {
@@ -50,11 +48,10 @@ export class ModerateComment {
     return saved;
   }
 
-  public async reject(commentId: string): Promise<Comment> {
-    const comment = await this.load(commentId);
-    comment.reject(this.clock.now());
+  public async reject(commentId: string): Promise<void> {
+    await this.load(commentId);
     // No email, ever, for a rejected comment (R-125).
-    return this.comments.save(comment);
+    await this.comments.remove(commentId);
   }
 
   private async load(commentId: string): Promise<Comment> {

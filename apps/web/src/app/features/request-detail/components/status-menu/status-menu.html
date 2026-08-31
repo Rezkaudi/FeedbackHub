@@ -1,0 +1,25 @@
+<fh-menu #menu="fhMenu" align="start">
+  <button
+    menuTrigger
+    type="button"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="menu.open()"
+    [attr.aria-label]="label()"
+    (click)="menu.toggle()"
+    class="border-outline text-on-surface hover:bg-surface-container-high inline-flex h-8 items-center gap-2 rounded-full border pr-2 pl-3 text-sm font-medium transition-colors"
+  >
+    @if (current(); as row) {
+      <span class="size-2 flex-none rounded-full" [style.background]="row.color"></span>
+      <span>{{ row.name }}</span>
+    }
+    <fh-icon name="chevron-down" [size]="16" />
+  </button>
+
+  <div menuPanel>
+    @for (status of statuses(); track status.id) {
+      <fh-menu-item [selected]="status.id === currentId()" (click)="pick(menu, status.id)">
+        {{ status.name }}
+      </fh-menu-item>
+    }
+  </div>
+</fh-menu>

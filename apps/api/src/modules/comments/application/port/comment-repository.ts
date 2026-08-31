@@ -26,6 +26,8 @@ export interface CommentRepository {
   findById(id: string): Promise<Comment | null>;
   add(comment: Comment): Promise<Comment>;
   save(comment: Comment): Promise<Comment>;
+  /** R-37, R-38: deleting a comment removes the row for good — no tombstone. */
+  remove(id: string): Promise<void>;
   listPending(): Promise<Comment[]>;
 }
 

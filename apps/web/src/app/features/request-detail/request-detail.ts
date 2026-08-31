@@ -11,9 +11,9 @@ import { SnackbarService } from '../../shared/ui/snackbar/snackbar.service';
 import { EmptyPanel } from '../../shared/ui/state/empty-panel/empty-panel';
 import { ErrorPanel } from '../../shared/ui/state/error-panel/error-panel';
 import { SkeletonRows } from '../../shared/ui/state/skeleton-rows/skeleton-rows';
+import { Breadcrumbs } from '../../shared/ui/breadcrumbs/breadcrumbs';
 import { RequestHeader } from './components/request-header/request-header';
 import { RequestVoteButton } from './components/request-vote-button/request-vote-button';
-import { RequestAdminBar } from './components/request-admin-bar/request-admin-bar';
 import { CommentForm } from './components/comment-form/comment-form';
 import { CommentList } from './components/comment-list/comment-list';
 
@@ -23,12 +23,12 @@ import { CommentList } from './components/comment-list/comment-list';
     RouterLink,
     TranslatePipe,
     LocalizedDatePipe,
+    Breadcrumbs,
     EmptyPanel,
     ErrorPanel,
     SkeletonRows,
     RequestHeader,
     RequestVoteButton,
-    RequestAdminBar,
     CommentForm,
     CommentList,
   ],
@@ -49,6 +49,13 @@ export class RequestDetail {
 
   protected readonly voting = signal(false);
   protected readonly deleting = signal(false);
+
+  protected readonly crumbs = computed(() => [
+    { label: this.i18n.translate('nav.requests'), link: '/' },
+    {
+      label: this.detail.request()?.title ?? this.i18n.translate('requestDetail.loadingLabel'),
+    },
+  ]);
 
   protected readonly status = computed(() =>
     this.bootstrap.statusById(this.detail.request()?.statusId ?? ''),

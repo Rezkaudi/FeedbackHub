@@ -266,21 +266,19 @@ describe('votes and comments', () => {
       ).resolves.toMatchObject({ body: 'My own words.' });
     });
 
-    it('leaves a grey line when deleted, and stops counting it (R-38, R-39)', async () => {
+    it('removes the comment completely when deleted (overrides R-38, R-39)', async () => {
       const created = await post(`/v1/requests/${requestId}/comments`, { body: 'Something rude.' });
       const id = (created.body as { id: string }).id;
 
       await del(`/v1/comments/${id}`).expect(204);
 
-      const row = await api.prisma.comment.findUniqueOrThrow({ where: { id } });
-      expect(row.state).toBe('deleted');
-      // The text is gone for good.
-      expect(row.body).toBe('');
+      // The row is gone from the database, not just hidden.
+      const row = await api.prisma.comment.findUnique({ where: { id } });
+      expect(row).toBeNull();
 
       const list = await get(`/v1/requests/${requestId}/comments`);
       expect(list.body).toMatchObject({ total: 0 });
-      // The row stays, so the thread keeps its shape.
-      expect((list.body as { items: unknown[] }).items).toHaveLength(1);
+      expect((list.body as { items: unknown[] }).items).toHaveLength(0);
     });
 
     it('lets an admin delete anyone\'s (R-37)', async () => {
@@ -334,17 +332,16 @@ describe('votes and comments', () => {
       expect(theirs.body).toMatchObject({ total: 1 });
     });
 
-    it('turns a rejected comment into a grey line (R-41)', async () => {
+    it('deletes a rejected comment for good (R-41)', async () => {
       await requireApproval();
       const created = await post(`/v1/requests/${requestId}/comments`, { body: 'Please reject.' });
       const id = (created.body as { id: string }).id;
 
       api.signInAs(someAdmin);
-      await post(`/v1/admin/comments/${id}/reject`).expect(201);
+      await post(`/v1/admin/comments/${id}/reject`).expect(204);
 
-      const row = await api.prisma.comment.findUniqueOrThrow({ where: { id } });
-      expect(row.state).toBe('deleted');
-      expect(row.body).toBe('');
+      const row = await api.prisma.comment.findUnique({ where: { id } });
+      expect(row).toBeNull();
     });
 
     it('refuses a normal person approving anything (R-70)', async () => {

@@ -54,9 +54,10 @@ describe('Comments, moderation and the feature switch', () => {
 
     cy.signIn(ADMIN);
     cy.visit(`/requests/${IDS.spreadsheet}`);
-    cy.contains('li', body).find('button').contains(/delete/i).click();
+    cy.contains('li', body).find('button[aria-label*="Delete comment"]').click();
+    cy.get('[role="alertdialog"]').contains('button', /delete/i).click();
     cy.contains('li', body).should('not.exist');
-    cy.contains('This comment was deleted.').should('be.visible');
+    // The comment is gone for good — no tombstone line, and still gone after a reload.
     cy.reload();
     cy.contains('li', body).should('not.exist');
   });

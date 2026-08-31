@@ -76,6 +76,15 @@ nothing is skipped while people are writing (D-05).
 The comment count is different for different people. A comment waiting for
 approval is counted only for the person who wrote it, and for admins (R-40).
 
+Deleting a comment removes it completely — from the thread and from the
+database. This departs from R-38/R-39/R-41, which ask for a "grey line" that
+stays and is not counted; the owner asked for a real delete instead (D-73).
+
+### Breadcrumbs
+
+Not in the brief. Every page below the board carries a breadcrumb trail so the
+deeper screens show where they sit and give a way back up (D-74).
+
 ### Where settings live
 
 | Setting | Where it lives | Why |
@@ -426,3 +435,12 @@ succeeded", and R-82 is the reason the step exists. The machine this was built o
 has v1.29, so the same wiring was verified by starting the containers by hand
 instead: the migration image was run twice against a real Postgres and left
 identical row counts, and only then was the API started.
+
+**Comment delete became a hard delete, against the SRS.** R-38/R-39/R-41 ask for
+a deleted or rejected comment to stay as an uncounted "grey line". Seen running,
+that blank card reads as a bug and still leaks who commented. The owner asked
+for a real delete, so the row is now removed outright (D-73). Written here, in
+`DECISIONS.md`, and in `README.md` rather than slipped in.
+
+**Breadcrumbs were added, though the brief does not ask for one.** A shared
+`fh-breadcrumbs` component sits at the top of every page below the board (D-74).

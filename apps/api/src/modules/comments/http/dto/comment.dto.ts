@@ -28,15 +28,13 @@ export class ListCommentsDto {
 }
 
 /**
- * R-38: a deleted comment is a grey line. The API sends the state and an empty
- * body rather than the text, so there is nothing left for a client to show even
- * by accident.
+ * Deleting a comment removes it entirely, so a rendered comment is always
+ * either published or pending — never a tombstone.
  */
 export class CommentResponse {
   @ApiProperty() public readonly id!: string;
-  @ApiProperty({ description: 'Empty when the comment was deleted (R-38).' })
-  public readonly body!: string;
-  @ApiProperty({ enum: ['published', 'pending', 'deleted'] })
+  @ApiProperty() public readonly body!: string;
+  @ApiProperty({ enum: ['published', 'pending'] })
   public readonly state!: string;
   @ApiProperty() public readonly authorName!: string;
   @ApiProperty({ nullable: true, type: String }) public readonly authorAvatarUrl!: string | null;

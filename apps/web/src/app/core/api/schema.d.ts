@@ -522,7 +522,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Reject a waiting comment: it becomes a grey line (R-41).
+         * Reject a waiting comment: it is deleted for good (R-41).
          * @description A rejected comment is never emailed (R-125).
          */
         post: operations["CommentsController_reject"];
@@ -761,10 +761,9 @@ export interface components {
         };
         CommentResponse: {
             id: string;
-            /** @description Empty when the comment was deleted (R-38). */
             body: string;
             /** @enum {string} */
-            state: "published" | "pending" | "deleted";
+            state: "published" | "pending";
             authorName: string;
             authorAvatarUrl: string | null;
             isMine: boolean;
@@ -2027,7 +2026,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description It is now a grey line (R-38). */
+            /** @description The comment is removed completely. */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -2168,13 +2167,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: {
+            /** @description The comment is gone. */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["CommentResponse"];
-                };
+                content?: never;
             };
             /** @description Not signed in (R-6). */
             401: {

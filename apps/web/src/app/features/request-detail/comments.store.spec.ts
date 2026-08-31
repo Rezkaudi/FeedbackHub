@@ -283,10 +283,10 @@ describe('the comment thread', () => {
 
   describe('removing one', () => {
     /**
-     * R-38: a deleted comment leaves a small grey line and the row stays, so the
-     * thread still makes sense. R-39: it is not counted any more.
+     * Deleting a comment removes it everywhere — the row leaves the thread and
+     * the count drops (this reverses the original R-38 grey line).
      */
-    it('leaves a grey line in place rather than closing the gap', async () => {
+    it('drops the row from the thread and stops counting it', async () => {
       const done = store.load(REQUEST);
       expectList().flush({
         items: [aComment('a'), aComment('b', { isMine: true }), aComment('c')],
@@ -299,9 +299,7 @@ describe('the comment thread', () => {
       http.expectOne('/v1/comments/b').flush(null, { status: 204, statusText: 'No Content' });
       await removing;
 
-      expect(store.items().map((comment) => comment.id)).toEqual(['a', 'b', 'c']);
-      expect(store.items()[1]?.state).toBe('deleted');
-      expect(store.items()[1]?.body).toBe('');
+      expect(store.items().map((comment) => comment.id)).toEqual(['a', 'c']);
       expect(store.total()).toBe(2);
     });
   });

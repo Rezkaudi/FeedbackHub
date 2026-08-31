@@ -120,7 +120,7 @@ export class CommentsController {
   @Delete('comments/:id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Delete my own comment; an admin can delete any (R-37).' })
-  @ApiNoContentResponse({ description: 'It is now a grey line (R-38).' })
+  @ApiNoContentResponse({ description: 'The comment is removed completely.' })
   public async remove(
     @Param('id', ParseUUIDPipe) commentId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -154,18 +154,14 @@ export class CommentsController {
 
   @Post('admin/comments/:id/reject')
   @RequiresAdmin()
+  @HttpCode(204)
   @ApiOperation({
-    summary: 'Reject a waiting comment: it becomes a grey line (R-41).',
+    summary: 'Reject a waiting comment: it is deleted for good (R-41).',
     description: 'A rejected comment is never emailed (R-125).',
   })
-  @ApiOkResponse({ type: CommentResponse })
-  public async reject(
-    @Param('id', ParseUUIDPipe) commentId: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<CommentResponse> {
-    const comment = await this.moderateComment.reject(commentId);
-    const [rendered] = await this.render([comment], user);
-    return rendered as CommentResponse;
+  @ApiNoContentResponse({ description: 'The comment is gone.' })
+  public async reject(@Param('id', ParseUUIDPipe) commentId: string): Promise<void> {
+    await this.moderateComment.reject(commentId);
   }
 
   /** One author lookup for the whole list, never one per comment (R-103). */

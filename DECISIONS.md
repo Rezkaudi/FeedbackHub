@@ -528,3 +528,28 @@ form) still holds — it is now `cy.session()` per persona per spec.
 - **Options** — Always render `<a>`, even for items with no destination (wrong semantics: an anchor with no navigation misleads keyboard and screen-reader users, and Space no longer activates it). Duplicate the label as two literal `@if`/`@else` copies of the same static string instead of projected content (defeats the point of `<ng-content>`, and still two outlets). Move the shared markup into one `<ng-template>` and stamp it into either host element with `*ngTemplateOutlet` (one physical `<ng-content>`, either host renders it).
 - **We picked** — The `<ng-template>` + `ngTemplateOutlet` version.
 - **What we get** — One `<ng-content>` in the whole template, so every item's label renders regardless of which branch it takes; `menu.spec.ts` now renders one `routerLink` item and one action item side by side and asserts both keep their accessible name, so a regression here fails a test instead of only showing up in a screenshot. Cost: one more moving part (`ng-template`/`ngTemplateOutlet`) in a component that used to be two flat branches — worth it for a bug this easy to reintroduce by accident.
+
+---
+
+## Comments and navigation
+
+### D-73 — Deleting a comment removes the row, not R-38's grey line
+
+- **Problem** — The SRS (R-38, R-39, R-41) says a deleted or rejected comment stays in the thread as an empty "grey line", uncounted. Seen in the running app, that line reads as a bug — a broken, blank card — and it also tells everyone that a comment used to be there and who wrote it. The owner asked for a real delete: gone from the thread and gone from the database.
+- **Options** — Keep R-38's grey line. Hard delete the row. Soft delete: keep the row in the database but hide it from every reader (still leaks nothing on screen, keeps a paper trail, but the "reply that quoted it" problem is the same and the thread still needs special-casing).
+- **We picked** — Hard delete. `DELETE /v1/comments/:id` and admin reject both remove the row (`CommentRepository.remove`). The list and the count no longer have a "deleted" case. The front end drops the row from the thread in place, no reload.
+- **What we get** — A thread with no broken-looking blank cards, and a delete that is actually a delete. The count logic gets simpler (no carve-out). Cost: this is a deliberate departure from R-38/R-39/R-41 — written here, in `SCOPE.md`, and in `README.md`. A reply that answered a now-deleted comment loses that context. The Postgres `CommentState` enum keeps its unused `deleted` value rather than take a fiddly enum-shrinking migration.
+
+### D-74 — A breadcrumb on every page below the board
+
+- **Problem** — The deeper screens (a request, a settings tab, an admin section) gave no sense of where you were or how to step back up, beyond the browser Back button. Not raised in the brief.
+- **Options** — Do nothing (rely on Back and the header logo). Add a per-page "← Back to the board" link (one level only, no hierarchy). A real breadcrumb trail from the board down.
+- **We picked** — A shared `fh-breadcrumbs` component, fed a small list per page. The last item is the current page as plain text with `aria-current="page"`; every earlier step is a link. The admin shell derives its section label from the active child route.
+- **What we get** — Orientation on every deep page, and a consistent way back, for a small component. Cost: one more thing each new page must remember to add; there is no route-config-driven automation, so a page with no breadcrumb simply has none.
+
+### D-75 — Every control on the request page sits on the thing it acts on: no admin bar, no vote footer
+
+- **Problem** — The detail page had grown into stacked boxes with nothing reading as one object. Four passes followed: a tinted "Admin" strip; a right-aligned footer row; folding the controls into the header as a native `<select>` plus a corner pin; and finally this one. The `<select>` still read as a form control dropped into the page, and the vote pill under a divider still read as its own separated section.
+- **Options** — Keep the native `<select>` and the divided vote footer. Move the vote into an overflow menu. Make the status a proper menu picker and lift the vote onto the same row as the status.
+- **We picked** — Status is a `fh-status-menu` (new component): a chip-shaped button showing the current status + colour dot, opening the shared `fh-menu` with every status and a tick on the current one. Non-admins still see a plain `fh-taxonomy-chip`. The **vote button is a full-width bar** across the bottom of the card, below the description — a filled primary "Upvote · N" that can't be missed, dropping to a quiet outline ("Voted · N") once cast. Six earlier placements were tried and rejected by the owner (left rail, small pill on the meta row, a divided footer, left of the title, in the flow after the description, stacked under the corner icons); the full-width bar was picked from a mock-up.
+- **What we get** — Changing status feels like changing status (pick from a list, see the tick move), not editing a form field. The vote reads unmistakably as the call to action. The card is one surface with one border. Cost: `fh-request-header` now takes admin inputs/outputs (no longer purely presentational); a new `requestDetail.changeStatusLabel` string and a `fh-status-menu` component to maintain; and the vote button inverts the usual emphasis (filled = not yet done), which is deliberate but unusual.

@@ -1,3 +1,5 @@
+<fh-breadcrumbs class="mb-6 block" [items]="crumbs()" [navLabel]="'nav.breadcrumbLabel' | t" />
+
 @switch (detail.state()) {
   @case ('loading') {
     <fh-skeleton-rows [count]="1" [label]="'requestDetail.loadingLabel' | t" />
@@ -22,39 +24,39 @@
 
   @case ('ready') {
     @if (detail.request(); as request) {
-      <article>
-        <div class="flex items-start gap-6">
-          <fh-request-vote-button
-            [voteCount]="detail.voteCount()"
-            [hasVoted]="detail.viewerHasVoted()"
-            [busy]="voting()"
-            (voted)="vote()"
-          />
-          <fh-request-header
-            [request]="request"
-            [status]="status()"
-            [category]="category()"
-            [canDelete]="canDelete()"
-            [deleting]="deleting()"
-            (deleteRequested)="removeRequest()"
-          />
-        </div>
+      <article class="border-outline-variant bg-surface-container-low rounded-3xl border p-5 sm:p-6">
+        <fh-request-header
+          [request]="request"
+          [status]="status()"
+          [category]="category()"
+          [canDelete]="canDelete()"
+          [deleting]="deleting()"
+          [isAdmin]="bootstrap.isAdmin()"
+          [statuses]="bootstrap.activeStatuses()"
+          [isPinned]="request.isPinned"
+          (deleteRequested)="removeRequest()"
+          (statusChanged)="detail.changeStatus($event)"
+          (pinToggled)="detail.setPinned($event)"
+        />
 
-        @if (bootstrap.isAdmin()) {
-          <fh-request-admin-bar
-            [statuses]="bootstrap.activeStatuses()"
-            [currentStatusId]="request.statusId"
-            [isPinned]="request.isPinned"
-            [hasError]="detail.adminError() !== null"
-            (statusChanged)="detail.changeStatus($event)"
-            (pinToggled)="detail.setPinned($event)"
-          />
+        <p data-user-text class="mt-5 max-w-(--fh-measure) leading-relaxed whitespace-pre-wrap">
+          {{ request.description }}
+        </p>
+
+        @if (detail.adminError() !== null) {
+          <p role="alert" class="text-error mt-4 text-sm">{{ 'requestDetail.adminChangeFailed' | t }}</p>
         }
 
-        <p data-user-text class="mt-6 max-w-(--fh-measure)">{{ request.description }}</p>
+        <fh-request-vote-button
+          class="mt-6 block"
+          [voteCount]="detail.voteCount()"
+          [hasVoted]="detail.viewerHasVoted()"
+          [busy]="voting()"
+          (voted)="vote()"
+        />
 
         @if (detail.voteError(); as failure) {
-          <p role="alert" class="bg-error-container text-on-error-container mt-4 rounded-lg px-4 py-3">
+          <p role="alert" class="bg-error-container text-on-error-container mt-3 rounded-xl px-4 py-3">
             @if (failure.retryAt; as retryAt) {
               {{ 'requestDetail.voteRateLimited' | t: { time: (retryAt | localizedDate: { timeStyle: 'short' }) } }}
             } @else {
@@ -65,11 +67,13 @@
       </article>
 
       @if (bootstrap.commentsEnabled()) {
-        <section class="mt-10" aria-labelledby="comments-heading">
-          <h2 id="comments-heading" class="text-xl">
+        <section class="border-outline-variant mt-10 border-t pt-8" aria-labelledby="comments-heading">
+          <h2 id="comments-heading" class="flex items-center gap-2 text-xl font-semibold">
             {{ 'requestDetail.commentsHeading' | t }}
             @if (comments.total() > 0) {
-              <span class="text-on-surface-variant font-normal">({{ comments.total() }})</span>
+              <span class="text-on-surface-variant bg-surface-container rounded-full px-2 py-0.5 text-sm font-normal">
+                {{ comments.total() }}
+              </span>
             }
           </h2>
 

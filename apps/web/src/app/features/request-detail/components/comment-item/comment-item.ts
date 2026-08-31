@@ -2,11 +2,14 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 import { I18nStore } from '../../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
+import { RelativeTimePipe } from '../../../../core/i18n/relative-time.pipe';
+import { Avatar } from '../../../../shared/ui/avatar/avatar';
+import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
 import type { Comment } from '../../comments.store';
 
 @Component({
   selector: 'fh-comment-item',
-  imports: [TranslatePipe, LocalizedDatePipe],
+  imports: [TranslatePipe, LocalizedDatePipe, RelativeTimePipe, Avatar, IconButton],
   templateUrl: './comment-item.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

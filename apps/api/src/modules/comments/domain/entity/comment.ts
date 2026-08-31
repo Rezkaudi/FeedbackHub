@@ -87,27 +87,11 @@ export class Comment {
     this.data.body = checkBody(newBody);
   }
 
-  /**
-   * R-38: a deleted comment leaves a small grey line. The row stays so the
-   * thread still makes sense, and the text is gone for good — which is why the
-   * body is emptied rather than hidden.
-   */
-  public delete(at: Date): void {
-    this.data.body = '';
-    this.data.state = 'deleted';
-    this.data.deletedAt = at;
-  }
-
   /** R-41: an admin approves a waiting comment, and it appears. */
   public approve(): void {
     if (this.data.state === 'pending') {
       this.data.state = 'published';
     }
-  }
-
-  /** R-41: rejecting makes it a deleted line, exactly like any other deletion. */
-  public reject(at: Date): void {
-    this.delete(at);
   }
 
   /**

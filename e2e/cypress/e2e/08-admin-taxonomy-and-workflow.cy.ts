@@ -51,15 +51,10 @@ describe('Administration: taxonomy and workflow', () => {
 
   it('changes a request status and persists it', () => {
     cy.visit(`/requests/${IDS.spreadsheet}`);
-    cy.get('select#admin-status')
-      .find('option')
-      .contains('In Progress')
-      .then(($option) => {
-        const value = String($option.attr('value'));
-        cy.get('select#admin-status').select(value);
-        cy.reload();
-        cy.get('select#admin-status').should('have.value', value);
-      });
+    cy.get('button[aria-label^="Change status"]').click();
+    cy.get('[role="menuitem"]').contains('In Progress').click();
+    cy.reload();
+    cy.get('button[aria-label^="Change status"]').should('contain', 'In Progress');
 
     // Restore the seeded status so later specs see the request as "Done".
     cy.apiGet('/bootstrap').then((response) => {
@@ -74,8 +69,8 @@ describe('Administration: taxonomy and workflow', () => {
 
   it('pins and unpins a request', () => {
     cy.visit(`/requests/${IDS.raeRequest}`);
-    cy.contains('button', /pin to the top/i).click();
-    cy.contains('button', /unpin from the top/i).should('be.visible').click();
-    cy.contains('button', /pin to the top/i).should('be.visible');
+    cy.get('button[aria-label="Pin to the top"]').click();
+    cy.get('button[aria-label="Unpin from the top"]').should('be.visible').click();
+    cy.get('button[aria-label="Pin to the top"]').should('be.visible');
   });
 });

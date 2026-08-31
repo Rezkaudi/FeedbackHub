@@ -164,7 +164,7 @@ export class AdminStore {
     );
   }
 
-  /** R-41: rejecting turns it into the grey line, it is never emailed (R-125). */
+  /** R-41: rejecting deletes it for good, and it is never emailed (R-125). */
   public rejectComment(id: string): Promise<boolean> {
     return this.act(() => this.http.post(`/v1/admin/comments/${id}/reject`, null), () =>
       this.loadPending(),
