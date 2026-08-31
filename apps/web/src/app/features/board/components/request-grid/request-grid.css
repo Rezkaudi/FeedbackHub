@@ -9,6 +9,7 @@
 
 .request-grid li {
   display: flex;
+  min-width: 0;
 }
 
 .request-grid li > * {
