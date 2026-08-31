@@ -1,0 +1,92 @@
+<article class="request-card" [class.pinned]="request().isPinned">
+  @if (request().isPinned) {
+    <span class="pin-marker" [attr.aria-label]="'board.pinned' | t">
+      <fh-icon name="pin" [size]="16" />
+    </span>
+  }
+
+  <div class="request-card-head">
+    <h3 class="request-card-title">
+      <a [routerLink]="['/requests', request().id]" class="stretched-link">{{ request().title }}</a>
+    </h3>
+
+    @if (canPin() || canDelete()) {
+      <div class="request-card-owner-actions">
+        @if (canPin()) {
+          <fh-icon-button
+            icon="pin"
+            variant="standard"
+            [pressed]="request().isPinned"
+            [label]="pinLabel()"
+            [loading]="pinning()"
+            (click)="onPinToggle($event)"
+          />
+        }
+
+        @if (canDelete()) {
+          <fh-icon-button
+            icon="trash"
+            variant="danger"
+            [label]="'requestCard.deleteLabel' | t"
+            [loading]="deleting()"
+            (click)="onDelete($event)"
+          />
+        }
+      </div>
+    }
+  </div>
+
+  <div class="request-card-meta">
+    @if (status(); as row) {
+      <span class="meta-group">
+        <span class="meta-label">{{ 'board.statusLabel' | t }}</span>
+        <fh-taxonomy-chip [name]="row.name" [color]="row.color" [isActive]="row.isActive" [retiredLabel]="'board.retired' | t" />
+      </span>
+    }
+    @if (category(); as row) {
+      <span class="meta-group">
+        <span class="meta-label">{{ 'board.categoryLabel' | t }}</span>
+        <fh-taxonomy-chip [name]="row.name" [color]="row.color" [isActive]="row.isActive" [retiredLabel]="'board.retired' | t" />
+      </span>
+    }
+  </div>
+
+  <p class="request-card-excerpt">{{ request().description }}</p>
+
+  <div class="request-card-info">
+    <fh-avatar [name]="request().authorName" [src]="request().authorAvatarUrl" [size]="28" />
+    <span class="request-card-author">{{ request().authorName }}</span>
+    <time
+      class="request-card-date"
+      [attr.datetime]="request().createdAt"
+      [title]="request().createdAt | localizedDate: { dateStyle: 'long', timeStyle: 'short' }"
+    >
+      {{ request().createdAt | relativeTime }}
+    </time>
+
+    @if (commentsEnabled()) {
+      <span class="request-card-comments" [attr.aria-label]="commentsLabel()" [title]="commentsLabel()">
+        <fh-icon name="message-circle" [size]="16" />
+        <span>{{ request().commentCount }}</span>
+      </span>
+    }
+
+    <button
+      type="button"
+      class="vote-pill"
+      [class.active]="display().viewerHasVoted"
+      [attr.aria-pressed]="display().viewerHasVoted"
+      [attr.aria-label]="voteLabel()"
+      [attr.aria-busy]="busy() ? 'true' : null"
+      [disabled]="busy()"
+      (click)="onVote($event)"
+    >
+      @if (busy()) {
+        <fh-spinner [size]="14" />
+      } @else {
+        <fh-icon name="arrow-up" [size]="16" />
+      }
+      <span>{{ display().voteCount }}</span>
+    </button>
+  </div>
+</article>

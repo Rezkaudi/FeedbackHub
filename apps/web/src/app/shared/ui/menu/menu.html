@@ -1,0 +1,14 @@
+<div class="fh-menu" fhClickOutside (fhClickOutside)="close()" (keydown)="onKeydown($event)">
+  <ng-content select="[menuTrigger]" />
+
+  @if (open()) {
+    <div
+      class="panel"
+      [class.align-start]="align() === 'start'"
+      [class.align-end]="align() === 'end'"
+      role="menu"
+    >
+      <ng-content select="[menuPanel]" />
+    </div>
+  }
+</div>

@@ -1,0 +1,7 @@
+<span class="chip" [style.--chip]="color()">
+  <span class="dot" aria-hidden="true"></span>
+  <span>{{ name() }}</span>
+  @if (!isActive()) {
+    <span class="retired">({{ retiredLabel() }})</span>
+  }
+</span>

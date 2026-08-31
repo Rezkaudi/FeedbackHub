@@ -1,0 +1,17 @@
+<button
+  [type]="type()"
+  class="fh-icon-button"
+  [class]="'variant-' + variant()"
+  [disabled]="disabled() || loading()"
+  [attr.aria-label]="label()"
+  [attr.aria-busy]="loading() ? 'true' : null"
+  [attr.aria-pressed]="pressed() === undefined ? null : pressed()"
+  [attr.aria-haspopup]="hasPopup() ?? null"
+  [attr.aria-expanded]="expanded() === undefined ? null : expanded()"
+>
+  @if (loading()) {
+    <fh-spinner [size]="18" />
+  } @else {
+    <fh-icon [name]="icon()" [size]="20" />
+  }
+</button>

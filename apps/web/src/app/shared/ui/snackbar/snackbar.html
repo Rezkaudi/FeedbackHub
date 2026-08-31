@@ -1,0 +1,9 @@
+@if (snackbar.message(); as message) {
+  <div class="snackbar" role="status" aria-live="polite">
+    <p class="snackbar-text">{{ message.text }}</p>
+    @if (message.action; as action) {
+      <button type="button" class="snackbar-action" (click)="act()">{{ action.label }}</button>
+    }
+    <fh-icon-button icon="close" label="Dismiss" (click)="snackbar.dismiss()" />
+  </div>
+}

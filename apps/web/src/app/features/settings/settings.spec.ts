@@ -1,40 +1,19 @@
-import { render, screen } from '@testing-library/angular';
+import { render, screen, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
 import { Settings } from './settings';
-import { SettingsStore } from './settings.store';
 import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
 import { DevicePreferencesStore } from '../../core/config/device-preferences.store';
 import { Session } from '../../core/auth/session';
+import { ConfirmDialog } from '../../shared/ui/dialog/confirm-dialog';
 
-/**
- * SRS 15.6, and the part of R-61 that is a sentence rather than a call: the
- * question asked before deleting an account must say what will happen, in
- * words, before the person can press anything.
- */
-// A catch-all so navigations in the component under test resolve. With no
-// routes at all, router.navigate() rejects, and an unhandled rejection in one
-// spec file leaks into the whole run — it poisoned the admin and board suites
-// before this was added.
 const ANY_ROUTE = [{ path: '**', children: [] }];
 
 describe('the settings screen', () => {
-  function storeIn(over: Record<string, unknown> = {}) {
-    return {
-      profileSaved: signal(false),
-      settingsSaved: signal(false),
-      profileError: signal(null),
-      settingsError: signal(null),
-      deleteError: signal(null),
-      isSaving: signal(false),
-      saveProfile: vi.fn().mockResolvedValue({ displayName: 'Sam' }),
-      saveSettings: vi.fn().mockResolvedValue({ language: 'en' }),
-      deleteAccount: vi.fn().mockResolvedValue(true),
-      ...over,
-    };
-  }
-
   const bootstrap = {
     user: signal({ id: 'u1', displayName: 'Sam', avatarUrl: null, role: 'user' }),
     mySettings: signal({ language: 'en', notifyOnComment: true, notifyOnStatusChange: false }),
@@ -49,44 +28,50 @@ describe('the settings screen', () => {
     setDefaultSort: vi.fn(),
     setDefaultCategoryIds: vi.fn(),
     setStoredLanguage: vi.fn(),
+    storedLanguage: () => null,
   };
 
   const session = { signOut: vi.fn(), signIn: vi.fn(), markSignedOut: vi.fn() };
 
-  async function renderSettings(store: ReturnType<typeof storeIn>) {
-    await render(Settings, {
+  async function renderSettings() {
+    const utils = await render('<fh-settings></fh-settings><fh-confirm-dialog></fh-confirm-dialog>', {
+      imports: [Settings, ConfirmDialog],
       providers: [
         provideRouter(ANY_ROUTE),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: BootstrapStore, useValue: bootstrap },
         { provide: DevicePreferencesStore, useValue: preferences },
         { provide: Session, useValue: session },
       ],
-      componentProviders: [{ provide: SettingsStore, useValue: store }],
     });
-    return store;
+    return { backend: TestBed.inject(HttpTestingController), ...utils };
   }
 
   it('starts filled in from the one start-up call, with no request of its own', async () => {
-    await renderSettings(storeIn());
+    await renderSettings();
 
     expect(screen.getByLabelText(/display name/i)).toHaveValue('Sam');
   });
 
-  it('saves the profile on its own', async () => {
-    const store = await renderSettings(storeIn());
+  it('saves the profile on its own and says Saved', async () => {
+    const { backend, fixture } = await renderSettings();
 
     await userEvent.clear(screen.getByLabelText(/display name/i));
     await userEvent.type(screen.getByLabelText(/display name/i), 'Sam Smith');
     await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
 
-    expect(store.saveProfile).toHaveBeenCalledWith({
-      displayName: 'Sam Smith',
-      avatarUrl: '',
-    });
+    const request = backend.expectOne('/v1/me');
+    expect(request.request.body).toEqual({ displayName: 'Sam Smith', avatarUrl: null });
+    request.flush({ id: 'u1', displayName: 'Sam Smith', avatarUrl: null, role: 'user' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(screen.getByRole('status')).toHaveTextContent(/saved/i);
   });
 
   it('will not save an empty display name', async () => {
-    await renderSettings(storeIn());
+    await renderSettings();
 
     await userEvent.clear(screen.getByLabelText(/display name/i));
 
@@ -94,58 +79,72 @@ describe('the settings screen', () => {
     expect(screen.getByText(/cannot be empty/i)).toBeInTheDocument();
   });
 
-  it('says Saved for the part that saved', async () => {
-    await renderSettings(storeIn({ profileSaved: signal(true) }));
-
-    expect(screen.getByRole('status')).toHaveTextContent(/saved/i);
-  });
-
-  /** D-06: the browser-only settings say so, so nobody is surprised later. */
   it('says plainly which settings stay on this device', async () => {
-    await renderSettings(storeIn());
+    await renderSettings();
 
-    expect(screen.getByText(/kept on this device only/i)).toBeInTheDocument();
+    expect(screen.getByText(/on this device/i)).toBeInTheDocument();
   });
 
   it('changes the theme without asking the server', async () => {
-    const store = await renderSettings(storeIn());
+    await renderSettings();
 
-    await userEvent.selectOptions(screen.getByLabelText(/theme/i), 'dark');
+    await userEvent.click(screen.getByRole('radio', { name: /dark/i }));
 
     expect(preferences.setTheme).toHaveBeenCalledWith('dark');
-    expect(store.saveSettings).not.toHaveBeenCalled();
   });
 
   describe('deleting my account', () => {
-    /** R-61: the question says what will be lost, before anything is pressed. */
     it('says what will happen before offering the button', async () => {
-      await renderSettings(storeIn());
+      await renderSettings();
 
-      const section = screen.getByRole('region', { name: /delete my account/i });
-      expect(section).toHaveTextContent(/sign-in will stop working/i);
-      expect(section).toHaveTextContent(/votes will be removed/i);
-      expect(section).toHaveTextContent(/shown as .deleted user./i);
-      expect(section).toHaveTextContent(/cannot be undone/i);
+      const section = screen.getByRole('region', { name: /delete/i });
+      expect(section).toHaveTextContent(/sign-in stops working/i);
+      expect(section).toHaveTextContent(/votes go/i);
+      expect(section).toHaveTextContent(/deleted user/i);
     });
 
-    it('needs the word typed out before it will do anything', async () => {
-      const store = await renderSettings(storeIn());
+    it('asks first, and deletes only after confirming', async () => {
+      const { backend, fixture } = await renderSettings();
 
-      await userEvent.click(screen.getByRole('button', { name: /^delete my account$/i }));
-      const confirm = screen.getByRole('button', { name: /for good/i });
+      await userEvent.click(screen.getByRole('button', { name: /delete my account/i }));
 
-      expect(confirm).toBeDisabled();
+      const dialog = screen.getByRole('alertdialog');
+      expect(dialog).toHaveTextContent(/cannot be undone/i);
 
-      await userEvent.type(screen.getByLabelText(/type delete/i), 'DELETE');
-      expect(confirm).toBeEnabled();
+      await userEvent.click(within(dialog).getByRole('button', { name: /delete my account/i }));
+      await fixture.whenStable();
 
-      await userEvent.click(confirm);
-      expect(store.deleteAccount).toHaveBeenCalled();
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+
+      const request = backend.expectOne('/v1/me');
+      expect(request.request.method).toBe('DELETE');
+      request.flush(null);
     });
 
-    /** R-62: the app must never be left with nobody who can run it. */
+    it('does not delete when they change their mind', async () => {
+      const { backend } = await renderSettings();
+
+      await userEvent.click(screen.getByRole('button', { name: /delete my account/i }));
+      const dialog = screen.getByRole('alertdialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: /^cancel$/i }));
+
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      backend.expectNone('/v1/me');
+    });
+
     it('explains that the last admin cannot leave', async () => {
-      await renderSettings(storeIn({ deleteError: signal({ status: 409, code: 'CONFLICT' }) }));
+      const { backend, fixture } = await renderSettings();
+
+      await userEvent.click(screen.getByRole('button', { name: /delete my account/i }));
+      const dialog = screen.getByRole('alertdialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: /delete my account/i }));
+
+      backend.expectOne('/v1/me').flush(
+        { error: { code: 'CONFLICT', message: 'last admin', requestId: 'r' } },
+        { status: 409, statusText: 'Conflict' },
+      );
+      await fixture.whenStable();
+      fixture.detectChanges();
 
       expect(screen.getByRole('alert')).toHaveTextContent(/only admin/i);
     });

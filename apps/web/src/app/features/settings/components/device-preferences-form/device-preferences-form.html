@@ -1,0 +1,34 @@
+<fh-section-card [heading]="'settings.deviceHeading' | t" [detail]="'settings.deviceDetail' | t">
+  <fh-field [label]="'header.theme' | t">
+    <fh-segmented-control
+      [options]="themeOptions()"
+      [value]="preferences.theme()"
+      [ariaLabel]="'header.theme' | t"
+      (valueChange)="onTheme($event)"
+    />
+  </fh-field>
+
+  <fh-field [label]="'board.sortLabel' | t" fieldId="defaultSort">
+    <select id="defaultSort" [value]="preferences.defaultSort()" (change)="onSort($event)" class="fh-select">
+      <option value="newest">{{ 'board.sortNewest' | t }}</option>
+      <option value="oldest">{{ 'board.sortOldest' | t }}</option>
+      <option value="most_votes">{{ 'board.sortMostVotes' | t }}</option>
+      <option value="most_comments">{{ 'board.sortMostComments' | t }}</option>
+    </select>
+  </fh-field>
+
+  <fieldset>
+    <legend class="text-on-surface-variant mb-2 text-sm font-medium">{{ 'board.categoryLabel' | t }}</legend>
+    <div class="flex flex-wrap gap-2">
+      @for (category of bootstrap.activeCategories(); track category.id) {
+        <fh-filter-chip
+          [inputId]="'default-category-' + category.id"
+          [checked]="preferences.defaultCategoryIds().includes(category.id)"
+          (toggled)="toggleCategory(category.id)"
+        >
+          {{ category.name }}
+        </fh-filter-chip>
+      }
+    </div>
+  </fieldset>
+</fh-section-card>

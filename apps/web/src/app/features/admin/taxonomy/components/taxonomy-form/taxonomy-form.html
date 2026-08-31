@@ -1,0 +1,26 @@
+<form class="mt-4 flex flex-wrap items-end gap-3" (submit)="submit($event)">
+  <fh-field [label]="label()" [fieldId]="nameId()">
+    <input
+      [id]="nameId()"
+      type="text"
+      maxlength="40"
+      [value]="name()"
+      (input)="name.set($any($event.target).value)"
+      class="fh-input"
+    />
+  </fh-field>
+
+  <fh-field [label]="'admin.color' | t" [fieldId]="colorId()">
+    <input
+      [id]="colorId()"
+      type="color"
+      [value]="color()"
+      (input)="color.set($any($event.target).value)"
+      class="h-11 w-16 rounded-lg border border-outline"
+    />
+  </fh-field>
+
+  <fh-button type="submit" [loading]="saving()" [disabled]="name().trim().length === 0">
+    {{ label() }}
+  </fh-button>
+</form>

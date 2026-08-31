@@ -1,0 +1,27 @@
+.section-card {
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
+  padding: var(--fh-space-6);
+}
+
+.section-card-head {
+  margin-bottom: var(--fh-space-5);
+}
+
+.section-card-heading {
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+}
+
+.section-card-detail {
+  margin-top: var(--fh-space-1);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-medium-size);
+}
+
+.section-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fh-space-5);
+}

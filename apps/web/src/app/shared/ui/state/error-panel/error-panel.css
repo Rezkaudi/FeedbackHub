@@ -1,0 +1,30 @@
+.error-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fh-space-4);
+  padding: var(--fh-space-5) var(--fh-space-6);
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+
+.error-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fh-space-2);
+}
+
+.error-heading {
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+}
+
+.error-detail {
+  color: var(--md-sys-color-on-error-container);
+  opacity: 0.9;
+}
+
+.error-request-id {
+  font-size: var(--md-sys-typescale-body-small-size);
+  opacity: 0.85;
+}

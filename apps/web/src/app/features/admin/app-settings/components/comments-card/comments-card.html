@@ -1,0 +1,19 @@
+<fh-section-card [heading]="'admin.commentsSection' | t">
+  <div class="flex items-center gap-3">
+    <fh-switch
+      inputId="comments-enabled"
+      [checked]="settings().featureCommentsEnabled"
+      (toggled)="enabledChanged.emit(!settings().featureCommentsEnabled)"
+    />
+    <label for="comments-enabled">{{ 'admin.commentsEnabled' | t }}</label>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <fh-switch
+      inputId="comments-approval"
+      [checked]="settings().commentsRequireApproval"
+      (toggled)="approvalChanged.emit(!settings().commentsRequireApproval)"
+    />
+    <label for="comments-approval">{{ 'admin.commentsRequireApproval' | t }}</label>
+  </div>
+</fh-section-card>

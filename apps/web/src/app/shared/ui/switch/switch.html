@@ -1,0 +1,17 @@
+<label class="fh-switch" [class.checked]="checked()" [class.disabled]="disabled()">
+  <input
+    type="checkbox"
+    [id]="inputId() || null"
+    class="sr-only"
+    [checked]="checked()"
+    [disabled]="disabled()"
+    (change)="toggled.emit()"
+  />
+  <span class="track">
+    <span class="thumb">
+      @if (checked()) {
+        <fh-icon name="check" [size]="12" />
+      }
+    </span>
+  </span>
+</label>

@@ -11,11 +11,13 @@ what is actually being worked on.
 
 > **Status: the backend and the front end are built, and the eleven journeys
 > from the brief run end to end.** `npm run verify` passes 297 backend tests
-> against a real PostgreSQL and a real Redis; the front end has 243; and ~80
-> Cypress tests (15 spec files) drive a real browser against the whole compose
-> stack, signing in through the real Keycloak. What is still *not* proven is
-> real outgoing mail, and Arabic — which is not built at all. The two lists
-> below say exactly which is which.
+> against a real PostgreSQL and a real Redis; the front end has 240. The front
+> end's whole presentation layer was rebuilt on Material Design 3 (blue) with
+> full English and Arabic text and RTL, right after this line was written — the
+> Cypress suite below is the *old* UI's suite and has **not** been re-run or
+> updated against the new one yet, so it is not proof of anything until it is.
+> What is still *not* proven is real outgoing mail. The two lists below say
+> exactly which is which.
 
 ---
 
@@ -23,7 +25,7 @@ what is actually being worked on.
 
 | Layer | Choice | Why |
 |---|---|---|
-| Front end | Angular 22, standalone components, signals, Tailwind | D-16, D-36 |
+| Front end | Angular 22, standalone components, signals, Tailwind, Material Design 3 tokens | D-16, D-36 |
 | Back end | Node.js 22, NestJS 11, TypeScript strict | D-17 |
 | Architecture | Modular monolith, 9 modules, + 1 email worker | D-18 |
 | Database | PostgreSQL 16, Prisma 6 (raw SQL for the board query) | D-19 |
@@ -177,6 +179,41 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   with the timing" are different pages, because the second person *is* allowed.
 - Skip link, visible focus, lazy routes, and a design-token file whose every
   colour pair was measured against WCAG AA in both themes.
+- **The whole presentation layer was rebuilt on Material Design 3.** One blue
+  seed (`#0B57D0`), full light/dark tonal palettes, the M3 shape, elevation,
+  motion and state-layer scales, all as design tokens — a hand-tuned tonal
+  scale built to the M3 structure, not the exact output of Google's own Theme
+  Builder (see [DECISIONS.md](DECISIONS.md)). Every screen is now assembled
+  from a shared component kit (button, icon-button, spinner, menu, dialog,
+  chip, field, switch, avatar, pagination, snackbar) under `shared/ui/`, and
+  every component is three files — `.ts`, `.html`, `.css` — never an inline
+  template. No code comments anywhere in this layer, by request.
+- **A user menu in the header**, opened from the avatar and name, closes on
+  Escape, on a click outside it, and on every route change, and returns focus
+  to the trigger when it does. It carries My settings, Admin (when the viewer
+  is one), a language switch, a theme switch, and Sign out, separated and in
+  red. The theme and language switches are their own small menus off the same
+  component, and language is instant — no reload.
+- **English and Arabic, with real right-to-left layout.** Every string in the
+  app comes from two typed dictionaries (`core/i18n/translations/{en,ar}.ts`);
+  Arabic is typed against English's exact key shape, so a missing Arabic string
+  fails the build, and a test (`dictionaries.spec.ts`) checks the same thing
+  at run time plus that neither dictionary has an empty string anywhere.
+  Switching language flips `<html lang>` and `<html dir>`, is remembered for
+  the next load, and the layout uses logical CSS properties throughout so RTL
+  is a real mirror, not a patch. **This is unit-tested and has never been
+  looked at in a real browser** — see "what does not work" below.
+- **Every button that can be slow shows it.** A shared `fh-button` /
+  `fh-icon-button` takes a `loading` input: the icon becomes a spinner, the
+  label's width holds still, `aria-busy` is set, and a second click while it is
+  busy is blocked at the DOM level (`disabled`), not just by a flag in a
+  handler.
+- **Deleting, retiring, approving, rejecting and withdrawing all ask first.**
+  One `ConfirmService` and one `fh-confirm-dialog`, mounted once in the shell,
+  used everywhere something cannot be undone: delete a request, delete a
+  comment, retire or delete a category or status, approve or reject a waiting
+  comment, withdraw an invitation, delete an account. The destructive ones are
+  red; none of them default focus to the destructive button.
 
 ## What does not work
 
@@ -248,6 +285,30 @@ comment threading (D-05), and search without ranking (D-11).
   "Unknown", never as a blank chip.
 - **Comment counts disappear from the board when comments are switched off**
   (R-42).
+- **The board is a responsive card grid, not a list of rows.** One, two or
+  three columns depending on width. Each card is a single clickable target —
+  the whole card is the link to the request, via a stretched title link — and
+  carries its own vote button, so voting no longer requires opening the
+  request first. Voting from a card is optimistic and independently tested
+  (`request-card.spec.ts`), sharing its rollback logic with the request page
+  through one `VoteService` (`core/requests/vote.service.ts`,
+  `vote.service.spec.ts`).
+- **A pinned request carries a small pin marker in its top corner** — a filled
+  circular badge on the card, plus a tinted card background — replacing the
+  old flat "Pinned" text pill.
+- **Search and filters live in one toolbar.** The search box and sort control
+  are always visible; status and category are Material filter chips behind a
+  Filters button that shows how many are active, and every applied filter also
+  appears as a small removable chip with a Clear all next to it. The filter
+  `<input type="checkbox">` elements are still real checkboxes inside real
+  `<fieldset>`s, just visually rebuilt as chips, so the accessibility tree
+  (and most of the old Cypress selectors) did not have to change.
+- **"New request" is a popup, not a page.** It opens in place over the board
+  as a modal dialog (a native `<dialog>`), so the board's scroll position and
+  filters are never disturbed; on success a snackbar offers "View" to jump
+  straight to the new request. The routes `/requests/new` and
+  `/requests/:id/edit` still exist and still open the same dialog, forced open,
+  so a bookmarked or shared link still works.
 
 ### The front end — a request page
 
@@ -293,24 +354,31 @@ comment threading (D-05), and search without ranking (D-11).
 
 ### The front end — settings and admin
 
-- **Profile, language, email choices and account deletion** (R-54 to R-62). Each
+- **Profile, language, email choices and account deletion** (R-54 to R-62), now
+  split into their own small components (`profile-form`, `account-form`,
+  `device-preferences-form`, `danger-zone`) under `features/settings/`. Each
   part saves on its own and says so, so one failing part cannot make another
-  look unsaved. Deleting an account says what will happen *before* the button
-  appears, and needs the word DELETE typed out. The last admin is refused with
-  the reason (R-62).
+  look unsaved. Deleting an account says what will happen *before* anything is
+  pressed, and now goes through the same confirm dialog as every other
+  destructive action in the app, rather than the old "type DELETE" box — one
+  fewer pattern for a person to learn. The last admin is refused with the
+  reason (R-62).
 - **The settings that live in this browser say so on the screen** — theme,
   default sort and default filters (D-06), so nobody is surprised when their
   theme does not follow them to their phone.
 - **Categories and statuses** (R-43 to R-49), with the count of what uses each
-  one (SRS part 7). Delete is not offered for a row in use; retire is. The first
-  status offers no Retire button at all (R-48).
+  one (SRS part 7). Delete is not offered for a row in use; retire is, and now
+  asks first. The first status offers no Retire button at all (R-48).
 - **Application settings** — sign-up rule, allowed domains, comment approval,
-  all six rate limits, and the comments feature switch (R-67 to R-70). A limit
-  below 1 is refused before it is sent, because zero would mean nobody can
-  write (R-130).
-- **Waiting comments**: approve or reject (R-41). There is deliberately no edit
-  — an admin never rewrites what somebody said (R-36).
-- **Invitations**: invite, see whether it was used, withdraw (R-66).
+  all six rate limits, and the comments feature switch (R-67 to R-70), now
+  three section cards (`registration-card`, `comments-card`,
+  `rate-limits-card`) instead of one long form. A limit below 1 is refused
+  before it is sent, because zero would mean nobody can write (R-130).
+- **Waiting comments**: approve or reject (R-41), each behind its own confirm
+  dialog now. There is deliberately no edit — an admin never rewrites what
+  somebody said (R-36).
+- **Invitations**: invite, see whether it was used, withdraw (R-66) — withdraw
+  now asks first too.
 - **Status and pin on a request** (R-64, R-65), shown to admins only as a
   courtesy — the server refuses both to anybody else (R-70).
 
@@ -323,14 +391,27 @@ queue are built and driven end to end:
   endpoint works and refuses everyone but the author — `04-comments` proves it —
   but the request page offers only Delete, never an inline edit. Deleting is
   built (R-37), and an admin can delete any (R-38).
-- **Arabic and RTL are not done.** The decision is recorded, the fonts load, the
-  language saves to the server and the `dir` attribute is set before the first
-  paint — but no string is translated, so the interface is English only. This is
-  the largest single thing still missing against the SRS (R-57).
 - **The board has no admin status control.** R-64 asks for the status to be
   changeable from the board as well as the request page; only the request page
   has it. The end-to-end suite covers A-2 through the request page, so the
   journey is proven and this half of the rule is not.
+- **Arabic has never been looked at in a real browser.** Every string is
+  translated, the dictionaries are typed against each other and tested for
+  parity, and `I18nStore` flips `<html lang>`/`<html dir>` and is unit-tested
+  doing it — but nobody has switched the running app to Arabic in a browser and
+  looked at it, so a control that overflows, a chip that does not mirror, or an
+  icon that should flip and does not could still be there. `[dir='rtl']
+  .rtl-flip svg { transform: scaleX(-1) }` mirrors the pagination chevrons on
+  purpose; nothing else was checked by eye.
+- **The Cypress suite (`e2e/`) was not touched in this redesign** and was not
+  run against it either — see the end-to-end tests section above. It is not
+  evidence for or against the new UI right now.
+- **The old design system (`tokens.css`, the old `state-panels.ts`, the raw
+  Tailwind utility classes on hand-written `<button>`/`<select>` elements) is
+  gone.** Every screen was rebuilt; nothing was reskinned in place. Anything not
+  mentioned as changed above (the guards, the stores, the interceptor, the
+  bootstrap sequence, the API contract) was left exactly as it was — this was a
+  presentation-layer rebuild, not a rewrite of the app's logic.
 
 Two smaller things that are true and easy to miss:
 
@@ -600,10 +681,14 @@ cd apps/web
 npm test           # Vitest, through Angular's own unit-test builder
 ```
 
-243 tests. They go through what a person sees — role, label and visible text,
+240 tests. They go through what a person sees — role, label and visible text,
 never a CSS class — and cover the browser-side preferences, the error shape, the
-one start-up call, the session renewal, the guards, the board, the request page,
-the request form, the settings screen and the admin screens.
+one start-up call, the session renewal, the guards, the i18n store and its two
+dictionaries, the shared design-system components (button, menu, dialog,
+confirm service, vote service), the board, the request card, the request form
+dialog, and the settings screen. The admin screens carry no component-level
+tests of their own — same as before the redesign — only `admin.store.spec.ts`
+does, and that store was not touched.
 
 Angular 22 needs Node 22.22.3 or newer. On an older one the CLI stops with a
 message about Node, not about the code.
@@ -615,6 +700,14 @@ These run a real browser (Cypress) against the whole stack from
 real Postgres, the real Redis and the real Keycloak. Nothing is mocked, and
 sign-in goes through the real Keycloak login form with a seeded account
 (R-160) — a faked cookie would remove the one thing these tests exist to prove.
+
+**These specs target the pre-redesign UI and have not been run since.** The
+redesign kept the ids and structure most of them depend on — `#board-search`,
+`#board-sort`, the `<fieldset>` filter groups, `<article>` cards — on purpose,
+but the header (a user menu instead of loose buttons), the new-request flow (a
+popup instead of a page), and the confirm dialogs in front of delete/approve/
+reject are all new, and specs written against the old versions of those will
+need updating before this suite means anything again.
 
 ```bash
 docker compose up --build -d --wait   # from the root; --wait holds until healthy

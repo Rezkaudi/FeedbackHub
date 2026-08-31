@@ -1,0 +1,8 @@
+<h1 class="text-xl">{{ 'settings.title' | t }}</h1>
+
+<div class="mt-8 flex max-w-(--fh-measure) flex-col gap-6">
+  <fh-profile-form [initial]="profileInitial()" />
+  <fh-account-form [initial]="accountInitial()" />
+  <fh-device-preferences-form />
+  <fh-danger-zone (confirmedDelete)="onConfirmedDelete()" />
+</div>

@@ -1,0 +1,29 @@
+@switch (admin.state()) {
+  @case ('loading') {
+    <fh-skeleton-rows [count]="3" label="Loading invitations" />
+  }
+  @case ('failed') {
+    <fh-error-panel
+      [heading]="'admin.actionFailed' | t"
+      [requestId]="admin.error()?.requestId ?? ''"
+      [canRetry]="admin.error()?.isRetryable ?? false"
+      [retryLabel]="'common.tryAgain' | t"
+      (retry)="admin.loadInvitations()"
+    />
+  }
+  @case ('ready') {
+    <fh-invite-form (invited)="invite($event)" />
+
+    @if (admin.actionError()) {
+      <p role="alert" class="text-error mt-3 text-sm">{{ 'admin.actionFailed' | t }}</p>
+    }
+
+    <div class="mt-6">
+      @if (admin.invitations().length === 0) {
+        <fh-empty-panel [heading]="'admin.invitationsEmpty' | t" />
+      } @else {
+        <fh-invitation-table [items]="admin.invitations()" (withdrawn)="withdraw($event)" />
+      }
+    </div>
+  }
+}

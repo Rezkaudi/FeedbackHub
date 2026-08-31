@@ -1,0 +1,10 @@
+<main class="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">
+  <h1 class="text-xl">{{ heading() | t }}</h1>
+  <p class="text-on-surface-variant">{{ explanation() | t }}</p>
+  <a
+    href="/v1/auth/sign-in"
+    class="bg-primary text-on-primary inline-flex min-h-11 items-center justify-center rounded-full px-4 font-medium"
+  >
+    {{ 'signInProblem.tryAgain' | t }}
+  </a>
+</main>

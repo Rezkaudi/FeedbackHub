@@ -1,0 +1,18 @@
+@if (confirm.request(); as request) {
+  <fh-dialog
+    [open]="true"
+    [role]="'alertdialog'"
+    size="sm"
+    [heading]="request.title"
+    [hideCloseButton]="true"
+    (closed)="cancel()"
+  >
+    <p class="text-on-surface-variant">{{ request.message }}</p>
+    <div class="mt-6 flex justify-end gap-2">
+      <fh-button variant="text" (click)="cancel()">{{ request.cancelLabel }}</fh-button>
+      <fh-button [variant]="request.tone === 'danger' ? 'danger' : 'filled'" (click)="accept()">
+        {{ request.confirmLabel }}
+      </fh-button>
+    </div>
+  </fh-dialog>
+}

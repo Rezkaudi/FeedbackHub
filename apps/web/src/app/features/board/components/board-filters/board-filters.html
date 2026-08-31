@@ -1,0 +1,31 @@
+<div class="filter-groups">
+  <fieldset class="filter-group">
+    <legend class="filter-group-legend">{{ 'board.statusLabel' | t }}</legend>
+    <div class="filter-group-chips">
+      @for (status of statuses(); track status.id) {
+        <fh-filter-chip
+          [inputId]="'status-' + status.id"
+          [checked]="statusIds().includes(status.id)"
+          (toggled)="statusToggled.emit(status.id)"
+        >
+          {{ status.name }}
+        </fh-filter-chip>
+      }
+    </div>
+  </fieldset>
+
+  <fieldset class="filter-group">
+    <legend class="filter-group-legend">{{ 'board.categoryLabel' | t }}</legend>
+    <div class="filter-group-chips">
+      @for (category of categories(); track category.id) {
+        <fh-filter-chip
+          [inputId]="'category-' + category.id"
+          [checked]="categoryIds().includes(category.id)"
+          (toggled)="categoryToggled.emit(category.id)"
+        >
+          {{ category.name }}
+        </fh-filter-chip>
+      }
+    </div>
+  </fieldset>
+</div>

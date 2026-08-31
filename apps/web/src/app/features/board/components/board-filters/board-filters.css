@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+.filter-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fh-space-5);
+}
+
+.filter-group {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.filter-group-legend {
+  padding: 0;
+  margin-block-end: var(--fh-space-2);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+}
+
+.filter-group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fh-space-2);
+}

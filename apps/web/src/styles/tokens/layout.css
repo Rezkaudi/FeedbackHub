@@ -1,0 +1,10 @@
+:root {
+  --fh-z-sticky: 10;
+  --fh-z-dropdown: 20;
+  --fh-z-scrim: 40;
+  --fh-z-modal: 50;
+  --fh-z-toast: 60;
+
+  --fh-header-height: 4rem;
+  --fh-content-max: 80rem;
+}

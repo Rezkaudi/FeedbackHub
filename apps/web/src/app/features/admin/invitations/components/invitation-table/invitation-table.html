@@ -1,0 +1,34 @@
+<div class="overflow-x-auto">
+  <table class="w-full border-collapse text-start">
+    <caption class="sr-only">{{ 'admin.invitations' | t }}</caption>
+    <thead>
+      <tr class="border-outline-variant border-b">
+        <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.invite' | t }}</th>
+        <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.usedLabel' | t }}</th>
+        <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.actions' | t }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (invitation of items(); track invitation.id) {
+        <tr class="border-outline-variant border-b">
+          <td class="py-3">{{ invitation.email }}</td>
+          <td class="py-3">
+            @if (invitation.acceptedAt; as when) {
+              <time [attr.datetime]="when">{{ when | localizedDate }}</time>
+            }
+          </td>
+          <td class="py-3">
+            @if (!invitation.acceptedAt) {
+              <fh-icon-button
+                icon="trash"
+                variant="danger"
+                [label]="'admin.withdraw' | t"
+                (click)="withdrawn.emit(invitation)"
+              />
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

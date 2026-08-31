@@ -1,0 +1,7 @@
+<fh-request-form-dialog
+  [open]="true"
+  [id]="id()"
+  (closed)="close()"
+  (saved)="onSaved($event.id)"
+  (deleted)="onDeleted()"
+/>

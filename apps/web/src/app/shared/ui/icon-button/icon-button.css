@@ -1,0 +1,67 @@
+:host {
+  display: inline-flex;
+}
+
+.fh-icon-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fh-tap-min);
+  height: var(--fh-tap-min);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  isolation: isolate;
+  transition: background-color var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard);
+}
+
+.fh-icon-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.fh-icon-button:hover::after {
+  opacity: var(--fh-state-hover);
+}
+
+.fh-icon-button:active::after {
+  opacity: var(--fh-state-pressed);
+}
+
+.fh-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.fh-icon-button:disabled::after {
+  opacity: 0;
+}
+
+.fh-icon-button[aria-pressed='true'] {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.variant-filled {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.variant-tonal {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.variant-danger {
+  color: var(--md-sys-color-error);
+}

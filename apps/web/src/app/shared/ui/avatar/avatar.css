@@ -1,0 +1,20 @@
+:host {
+  display: inline-flex;
+  flex: none;
+}
+
+.avatar {
+  border-radius: var(--md-sys-shape-corner-full);
+  flex: none;
+  object-fit: cover;
+}
+
+.initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+}

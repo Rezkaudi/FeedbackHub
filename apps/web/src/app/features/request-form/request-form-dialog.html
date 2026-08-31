@@ -1,0 +1,106 @@
+<fh-dialog
+  [open]="open()"
+  size="lg"
+  labelledBy="request-form-heading"
+  [closeLabel]="'common.close' | t"
+  (closed)="closed.emit()"
+>
+  <h2 id="request-form-heading" class="sr-only">
+    {{ (isEditing() ? 'requestForm.editTitle' : 'requestForm.newTitle') | t }}
+  </h2>
+
+  @switch (store.state()) {
+    @case ('loading') {
+      <p role="status">{{ 'common.loading' | t }}</p>
+    }
+
+    @case ('missing') {
+      <fh-empty-panel [heading]="'requestForm.missingTitle' | t" />
+    }
+
+    @case ('notAllowed') {
+      <fh-empty-panel [heading]="'requestForm.notAllowedTitle' | t" [detail]="'requestForm.notAllowedDetail' | t" />
+    }
+
+    @case ('failed') {
+      <fh-error-panel
+        [heading]="'requestForm.failedTitle' | t"
+        [requestId]="store.error()?.requestId ?? ''"
+        [canRetry]="store.error()?.isRetryable ?? false"
+        [retryLabel]="'common.tryAgain' | t"
+        (retry)="reload()"
+      />
+    }
+
+    @case ('ready') {
+      <form class="flex flex-col gap-5" (submit)="save($event)" novalidate>
+        <fh-field [label]="'requestForm.fieldTitle' | t" fieldId="title" [error]="titleError()" [required]="true">
+          <input
+            id="title"
+            type="text"
+            [formField]="f.title"
+            [attr.aria-describedby]="titleError() ? 'title-error' : null"
+            [attr.aria-invalid]="titleError() ? 'true' : null"
+            class="fh-input"
+          />
+        </fh-field>
+
+        <fh-field
+          [label]="'requestForm.fieldDescription' | t"
+          fieldId="description"
+          [error]="descriptionError()"
+          [required]="true"
+        >
+          <textarea
+            id="description"
+            rows="6"
+            [formField]="f.description"
+            [attr.aria-describedby]="descriptionError() ? 'description-error' : null"
+            [attr.aria-invalid]="descriptionError() ? 'true' : null"
+            class="fh-textarea"
+          ></textarea>
+        </fh-field>
+
+        <fh-field
+          [label]="'requestForm.fieldCategory' | t"
+          fieldId="categoryId"
+          [error]="categoryError()"
+          [hint]="categoryWasRetired() ? ('requestForm.categoryRetired' | t) : ''"
+          [required]="true"
+        >
+          <select id="categoryId" [formField]="f.categoryId" class="fh-select">
+            <option value="">{{ 'requestForm.chooseCategory' | t }}</option>
+            @for (category of bootstrap.activeCategories(); track category.id) {
+              <option [value]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </fh-field>
+
+        @if (store.error(); as failure) {
+          <p role="alert" class="bg-error-container text-on-error-container rounded-lg px-4 py-3 text-sm">
+            @if (failure.retryAt; as retryAt) {
+              {{ 'requestForm.rateLimited' | t: { time: (retryAt | localizedDate: { timeStyle: 'short' }) } }}
+            } @else if (failure.status === 403) {
+              {{ 'requestForm.forbidden' | t }}
+            } @else {
+              {{ 'requestForm.saveFailed' | t }}
+            }
+          </p>
+        }
+
+        <div class="flex flex-wrap items-center gap-3">
+          <fh-button type="submit" [loading]="store.isSaving()">
+            {{ (store.isSaving() ? 'common.saving' : 'common.save') | t }}
+          </fh-button>
+          <fh-button variant="text" type="button" (click)="closed.emit()">{{ 'common.cancel' | t }}</fh-button>
+
+          @if (isEditing()) {
+            <fh-button variant="danger" type="button" class="ms-auto" (click)="askToDelete()">
+              {{ 'common.delete' | t }}
+            </fh-button>
+          }
+        </div>
+      </form>
+    }
+  }
+</fh-dialog>

@@ -1,0 +1,14 @@
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fh-space-4);
+  margin-top: var(--fh-space-6);
+}
+
+.pagination-summary {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  min-width: 8rem;
+  text-align: center;
+}

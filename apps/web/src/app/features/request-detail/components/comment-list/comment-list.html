@@ -1,0 +1,11 @@
+<ul aria-label="Comments" class="flex list-none flex-col gap-4 p-0">
+  @for (comment of items(); track comment.id) {
+    <fh-comment-item [comment]="comment" [canDelete]="canDeleteAny()" (removed)="removed.emit(comment.id)" />
+  }
+</ul>
+
+@if (hasMore()) {
+  <fh-button variant="outlined" class="mt-4 w-full" (click)="loadedMore.emit()">
+    {{ 'requestDetail.showMoreComments' | t }}
+  </fh-button>
+}

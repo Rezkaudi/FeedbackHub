@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal, type Signal } from '@angular/core
 import { firstValueFrom } from 'rxjs';
 import type { components } from '../../core/api/schema';
 import { toApiError, type ApiError } from '../../core/error/api-error';
+import type { VotePatch } from '../../core/requests/vote.service';
 import { isFiltered, type BoardQuery } from './board-query';
 
 type BoardResponse = components['schemas']['BoardResponse'];
@@ -46,6 +47,38 @@ export class BoardStore {
 
   public async load(query: BoardQuery): Promise<void> {
     await this.fetch(query, { mayCorrectPage: true });
+  }
+
+  public patchVote(id: string, patch: VotePatch): void {
+    this.rows.update((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  }
+
+  /**
+   * R-14: delete my own request, or any if I am an admin. The row leaves the
+   * board at once on success; a failure leaves it exactly where it was.
+   */
+  public async deleteRequest(id: string): Promise<ApiError | null> {
+    try {
+      await firstValueFrom(this.http.delete<void>(`/v1/requests/${id}`));
+      this.rows.update((rows) => rows.filter((row) => row.id !== id));
+      this.count.update((total) => Math.max(0, total - 1));
+      return null;
+    } catch (cause) {
+      return toApiError(cause);
+    }
+  }
+
+  /** R-65: pin or unpin. Admin only; the server still decides. */
+  public async setPinned(id: string, pinned: boolean): Promise<ApiError | null> {
+    try {
+      const response = await firstValueFrom(
+        this.http.patch<RequestRow>(`/v1/requests/${id}/pin`, { pinned }),
+      );
+      this.rows.update((rows) => rows.map((row) => (row.id === id ? response : row)));
+      return null;
+    } catch (cause) {
+      return toApiError(cause);
+    }
   }
 
   private async fetch(query: BoardQuery, options: { mayCorrectPage: boolean }): Promise<void> {

@@ -1,0 +1,19 @@
+<form class="mt-4" (submit)="onSubmit($event)">
+  <label for="comment-body" class="mb-1 block text-sm font-medium">{{ 'requestDetail.commentFormLabel' | t }}</label>
+  <textarea
+    id="comment-body"
+    rows="3"
+    maxlength="2000"
+    [value]="draft()"
+    (input)="onInput($event)"
+    class="fh-textarea"
+  ></textarea>
+
+  @if (error()) {
+    <p role="alert" class="text-error mt-2 text-sm">{{ 'requestDetail.commentFailed' | t }}</p>
+  }
+
+  <fh-button type="submit" class="mt-2" [loading]="saving()" [disabled]="draft().trim().length === 0">
+    {{ 'requestDetail.commentSubmit' | t }}
+  </fh-button>
+</form>

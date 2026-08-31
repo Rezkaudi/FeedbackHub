@@ -1,0 +1,40 @@
+<fh-section-card [heading]="'settings.profileHeading' | t" [detail]="'settings.profileDetail' | t">
+  <form class="flex flex-col gap-4" (submit)="save($event)">
+    <fh-field
+      [label]="'settings.displayName' | t"
+      fieldId="displayName"
+      [required]="true"
+      [error]="displayName().trim().length === 0 ? ('settings.displayNameEmpty' | t) : ''"
+    >
+      <input
+        id="displayName"
+        type="text"
+        maxlength="80"
+        [value]="displayName()"
+        (input)="displayName.set($any($event.target).value)"
+        class="fh-input"
+      />
+    </fh-field>
+
+    <fh-field [label]="'settings.avatarUrl' | t" fieldId="avatarUrl" [hint]="'settings.avatarUrlHint' | t">
+      <input
+        id="avatarUrl"
+        type="url"
+        [value]="avatarUrl()"
+        (input)="avatarUrl.set($any($event.target).value)"
+        class="fh-input"
+      />
+    </fh-field>
+
+    @if (store.profileError()) {
+      <p role="alert" class="text-error text-sm">{{ 'settings.profileFailed' | t }}</p>
+    }
+    @if (store.profileSaved()) {
+      <p role="status" class="text-success text-sm">{{ 'common.saved' | t }}</p>
+    }
+
+    <fh-button type="submit" class="self-start" [disabled]="displayName().trim().length === 0">
+      {{ 'settings.saveProfile' | t }}
+    </fh-button>
+  </form>
+</fh-section-card>

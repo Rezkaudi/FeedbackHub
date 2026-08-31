@@ -1,0 +1,25 @@
+@switch (admin.state()) {
+  @case ('loading') {
+    <fh-skeleton-rows [count]="3" label="Loading waiting comments" />
+  }
+  @case ('failed') {
+    <fh-error-panel
+      [heading]="'admin.actionFailed' | t"
+      [requestId]="admin.error()?.requestId ?? ''"
+      [canRetry]="admin.error()?.isRetryable ?? false"
+      [retryLabel]="'common.tryAgain' | t"
+      (retry)="admin.loadPending()"
+    />
+  }
+  @case ('ready') {
+    @if (admin.pending().length === 0) {
+      <fh-empty-panel [heading]="'admin.pendingEmpty' | t" />
+    } @else {
+      <ul aria-label="Waiting comments" class="flex list-none flex-col gap-4 p-0">
+        @for (comment of admin.pending(); track comment.id) {
+          <fh-pending-comment-card [comment]="comment" (approved)="approve(comment)" (rejected)="reject(comment)" />
+        }
+      </ul>
+    }
+  }
+}

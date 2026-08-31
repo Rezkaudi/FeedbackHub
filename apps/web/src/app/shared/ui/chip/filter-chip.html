@@ -1,0 +1,13 @@
+<label class="filter-chip" [class.checked]="checked()">
+  <input
+    type="checkbox"
+    [id]="inputId()"
+    class="sr-only"
+    [checked]="checked()"
+    (change)="toggled.emit()"
+  />
+  @if (checked()) {
+    <fh-icon name="check" [size]="16" />
+  }
+  <span><ng-content /></span>
+</label>

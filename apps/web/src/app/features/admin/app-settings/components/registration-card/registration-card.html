@@ -1,0 +1,22 @@
+<fh-section-card [heading]="'admin.registrationPolicy' | t">
+  <fh-field [label]="'admin.registrationPolicy' | t" fieldId="policy">
+    <select id="policy" [value]="settings().registrationPolicy" (change)="onPolicy($event)" class="fh-select">
+      <option value="open">{{ 'admin.registrationOpen' | t }}</option>
+      <option value="invite_only">{{ 'admin.registrationInviteOnly' | t }}</option>
+      <option value="domain_restricted">{{ 'admin.registrationDomainRestricted' | t }}</option>
+    </select>
+  </fh-field>
+
+  @if (settings().registrationPolicy === 'domain_restricted') {
+    <fh-field [label]="'admin.allowedDomains' | t" fieldId="domains" [hint]="'admin.registrationDomainRestrictedDetail' | t">
+      <input
+        id="domains"
+        type="text"
+        [value]="domains()"
+        (input)="onDomainsInput($event)"
+        (blur)="onDomainsBlur()"
+        class="fh-input"
+      />
+    </fh-field>
+  }
+</fh-section-card>

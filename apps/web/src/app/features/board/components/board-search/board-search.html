@@ -1,0 +1,20 @@
+<div class="board-search">
+  <fh-icon name="search" [size]="20" class="board-search-icon" />
+  <input
+    id="board-search"
+    type="search"
+    [value]="value()"
+    (input)="onInput($event)"
+    [placeholder]="'board.searchPlaceholder' | t"
+    [attr.aria-label]="'board.searchLabel' | t"
+    class="board-search-input"
+  />
+  @if (value().length > 0) {
+    <fh-icon-button
+      icon="close"
+      [label]="'common.close' | t"
+      class="board-search-clear"
+      (click)="clear()"
+    />
+  }
+</div>

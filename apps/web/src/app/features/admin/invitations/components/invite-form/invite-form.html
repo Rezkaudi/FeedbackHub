@@ -1,0 +1,16 @@
+<form class="flex flex-wrap items-end gap-3" (submit)="submit($event)">
+  <fh-field [label]="'admin.invite' | t" fieldId="invite-email">
+    <input
+      id="invite-email"
+      type="email"
+      autocomplete="email"
+      [placeholder]="'admin.invitePlaceholder' | t"
+      [value]="email()"
+      (input)="email.set($any($event.target).value)"
+      class="fh-input"
+    />
+  </fh-field>
+  <fh-button type="submit" icon="mail" [disabled]="email().trim().length === 0">
+    {{ 'admin.invite' | t }}
+  </fh-button>
+</form>

@@ -3,9 +3,9 @@ import { Injectable, computed, inject, signal, type Signal } from '@angular/core
 import { firstValueFrom } from 'rxjs';
 import type { components } from '../../core/api/schema';
 import { toApiError, type ApiError } from '../../core/error/api-error';
+import { VoteService } from '../../core/requests/vote.service';
 
 type RequestResponse = components['schemas']['RequestResponse'];
-type VoteState = components['schemas']['VoteStateResponse'];
 
 /**
  * `missing` is separate from `failed` because SRS 15.2 asks for a different
@@ -18,15 +18,13 @@ export type DetailState = 'loading' | 'ready' | 'missing' | 'failed';
 @Injectable()
 export class RequestDetailStore {
   private readonly http = inject(HttpClient);
+  private readonly voteService = inject(VoteService);
 
   private readonly current = signal<DetailState>('loading');
   private readonly row = signal<RequestResponse | null>(null);
   private readonly failure = signal<ApiError | null>(null);
   private readonly voteFailure = signal<ApiError | null>(null);
   private readonly adminFailure = signal<ApiError | null>(null);
-
-  /** A vote is in flight. A second click while it is must do nothing at all. */
-  private voting = false;
 
   public readonly state: Signal<DetailState> = this.current.asReadonly();
   public readonly request: Signal<RequestResponse | null> = this.row.asReadonly();
@@ -55,61 +53,23 @@ export class RequestDetailStore {
     }
   }
 
-  /**
-   * Vote, or take the vote back — one action, because from the person's side it
-   * is one button (R-31).
-   *
-   * The number moves first (R-30). That is a prediction, and it is allowed to
-   * be wrong: R-28 says the count belongs to the server, so the answer replaces
-   * it outright rather than being added to it. If somebody else voted while
-   * this call was in flight, the server's number is right and ours was not.
-   */
   public async vote(): Promise<void> {
     const before = this.row();
-    if (before === null || this.voting) {
-      // SRS 15.4: a double click is still one vote. The database guarantees that
-      // (R-26); what the screen must add is not sending a second call, which
-      // would be an un-vote and would undo the first.
+    if (before === null) {
       return;
     }
 
-    this.voting = true;
     this.voteFailure.set(null);
 
-    const removing = before.viewerHasVoted;
-    this.row.set({
-      ...before,
-      viewerHasVoted: !removing,
-      voteCount: before.voteCount + (removing ? -1 : 1),
+    const error = await this.voteService.vote(before, (patch) => {
+      this.row.update((row) => (row === null ? row : { ...row, ...patch }));
     });
 
-    try {
-      const url = `/v1/requests/${before.id}/vote`;
-      const answer = await firstValueFrom(
-        removing ? this.http.delete<VoteState>(url) : this.http.post<VoteState>(url, null),
-      );
-
-      // The server's numbers, not ours. The prediction was only ever a way to
-      // make the button feel immediate.
-      this.row.set({
-        ...before,
-        viewerHasVoted: answer.viewerHasVoted,
-        voteCount: answer.voteCount,
-      });
-    } catch (cause) {
-      const error = toApiError(cause);
-
-      // Put it back exactly as it was, then say why (R-30).
-      this.row.set(before);
+    if (error !== null) {
       this.voteFailure.set(error);
-
-      // SRS 15.4: the request was deleted a second ago. Nothing to roll back
-      // to, so the page has to say so.
       if (error.status === 404) {
         this.current.set('missing');
       }
-    } finally {
-      this.voting = false;
     }
   }
 
@@ -159,5 +119,20 @@ export class RequestDetailStore {
   /** After an edit elsewhere on the page, so the screen shows one truth. */
   public replace(request: RequestResponse): void {
     this.row.set(request);
+  }
+
+  /** R-14: delete my own request, or any if I am an admin. */
+  public async deleteRequest(): Promise<ApiError | null> {
+    const before = this.row();
+    if (before === null) {
+      return null;
+    }
+
+    try {
+      await firstValueFrom(this.http.delete<void>(`/v1/requests/${before.id}`));
+      return null;
+    } catch (cause) {
+      return toApiError(cause);
+    }
   }
 }

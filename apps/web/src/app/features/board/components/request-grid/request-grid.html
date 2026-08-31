@@ -1,0 +1,11 @@
+<ul class="request-grid">
+  @for (request of items(); track request.id) {
+    <li>
+      <fh-request-card
+        [request]="request"
+        (voted)="voted.emit({ id: request.id, patch: $event })"
+        (deleted)="deleted.emit(request.id)"
+      />
+    </li>
+  }
+</ul>

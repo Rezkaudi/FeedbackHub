@@ -1,0 +1,29 @@
+@switch (bootstrap.status()) {
+  @case ('ready') {
+    <router-outlet />
+  }
+  @case ('failed') {
+    <main class="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">
+      <h1 class="text-xl">{{ 'bootstrap.startupFailedTitle' | t }}</h1>
+      <p class="text-on-surface-variant">
+        {{
+          bootstrap.error()?.isRetryable
+            ? ('common.networkErrorDetail' | t)
+            : ('common.genericErrorDetail' | t)
+        }}
+      </p>
+      @if (bootstrap.error()?.requestId; as requestId) {
+        <p class="text-on-surface-variant text-sm">
+          {{ 'common.requestIdHint' | t }}
+          <span class="font-mono">{{ requestId }}</span>
+        </p>
+      }
+      @if (bootstrap.error()?.isRetryable) {
+        <fh-button (click)="retry()">{{ 'common.tryAgain' | t }}</fh-button>
+      }
+    </main>
+  }
+  @case ('loading') {
+    <p role="status" class="text-on-surface-variant p-6">{{ 'bootstrap.startingUp' | t }}</p>
+  }
+}

@@ -1,0 +1,56 @@
+:host {
+  display: flex;
+}
+
+.board-sort {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.board-sort-icon {
+  position: absolute;
+  inset-inline-start: var(--fh-space-3);
+  color: var(--md-sys-color-on-surface-variant);
+  pointer-events: none;
+}
+
+.board-sort-chevron {
+  position: absolute;
+  inset-inline-end: var(--fh-space-3);
+  color: var(--md-sys-color-on-surface-variant);
+  pointer-events: none;
+}
+
+.board-sort-select {
+  appearance: none;
+  width: 100%;
+  min-height: var(--fh-tap-min);
+  padding-inline-start: var(--fh-space-8);
+  padding-inline-end: var(--fh-space-8);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font: inherit;
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  cursor: pointer;
+  transition:
+    background-color var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard),
+    border-color var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard);
+}
+
+.board-sort-select:hover {
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.board-sort-select:focus-visible {
+  outline: 2px solid var(--fh-focus-ring);
+  outline-offset: 1px;
+}
+
+.board-sort-select::-ms-expand {
+  display: none;
+}

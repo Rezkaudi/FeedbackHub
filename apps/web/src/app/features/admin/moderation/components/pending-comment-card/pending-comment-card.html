@@ -1,0 +1,11 @@
+<li class="border-outline-variant rounded-2xl border p-4">
+  <p class="text-on-surface-variant text-sm">
+    {{ comment().authorName }} ·
+    <time [attr.datetime]="comment().createdAt">{{ comment().createdAt | localizedDate: { dateStyle: 'medium' } }}</time>
+  </p>
+  <p data-user-text class="mt-2">{{ comment().body }}</p>
+  <div class="mt-3 flex gap-3">
+    <fh-button [attr.aria-label]="'admin.approve' | t" (click)="approved.emit()">{{ 'admin.approve' | t }}</fh-button>
+    <fh-button variant="outlined" [attr.aria-label]="'admin.reject' | t" (click)="rejected.emit()">{{ 'admin.reject' | t }}</fh-button>
+  </div>
+</li>

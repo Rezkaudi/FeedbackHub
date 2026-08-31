@@ -1,0 +1,69 @@
+<h1 class="sr-only">{{ 'board.title' | t }}</h1>
+
+<div class="mt-6">
+  <fh-board-toolbar
+    [query]="query()"
+    [statuses]="bootstrap.activeStatuses()"
+    [categories]="bootstrap.activeCategories()"
+    (searchChange)="onSearch($event)"
+    (sortChange)="onSort($event)"
+    (statusToggled)="toggle('statusIds', $event)"
+    (categoryToggled)="toggle('categoryIds', $event)"
+    (clearedAll)="clearFilters()"
+    (newRequest)="creating.set(true)"
+  />
+</div>
+
+@if (board.state() === 'ready') {
+  <p aria-live="polite" class="text-on-surface-variant mt-6 text-sm">
+    {{ (board.total() === 1 ? 'board.resultFound' : 'board.resultsFound') | t: { count: board.total() } }}
+  </p>
+}
+
+<div class="mt-4">
+  @switch (board.state()) {
+    @case ('loading') {
+      <fh-skeleton-rows [count]="6" [label]="'board.loadingLabel' | t" />
+    }
+    @case ('ready') {
+      <fh-request-grid [items]="board.items()" (voted)="onVoted($event)" (deleted)="onDeleted()" />
+
+      @if (board.pageCount() > 1) {
+        <fh-pagination
+          [page]="board.page()"
+          [pageCount]="board.pageCount()"
+          [previousLabel]="'board.previousPage' | t"
+          [nextLabel]="'board.nextPage' | t"
+          [summary]="'board.pageOf' | t: { page: board.page(), total: board.pageCount() }"
+          (pageChange)="goToPage($event)"
+        />
+      }
+    }
+    @case ('empty') {
+      <fh-empty-panel [heading]="'board.emptyTitle' | t" [detail]="'board.emptyDetail' | t">
+        <a routerLink="/requests/new" class="text-primary underline">{{ 'board.emptyAction' | t }}</a>
+      </fh-empty-panel>
+    }
+    @case ('emptyForFilters') {
+      <fh-empty-panel [heading]="'board.emptyFilteredTitle' | t" [detail]="'board.emptyFilteredDetail' | t">
+        <button type="button" class="text-primary underline" (click)="clearFilters()">
+          {{ 'board.clearFilters' | t }}
+        </button>
+      </fh-empty-panel>
+    }
+    @case ('failed') {
+      <fh-error-panel
+        [heading]="'board.failedTitle' | t"
+        [detail]="board.error()?.isRetryable ? ('common.networkErrorDetail' | t) : ('common.genericErrorDetail' | t)"
+        [requestId]="board.error()?.requestId ?? ''"
+        [canRetry]="board.error()?.isRetryable ?? false"
+        [retryLabel]="'common.tryAgain' | t"
+        (retry)="board.load(query())"
+      />
+    }
+  }
+</div>
+
+@if (creating()) {
+  <fh-request-form-dialog [open]="true" (closed)="creating.set(false)" (saved)="onCreated($event)" />
+}

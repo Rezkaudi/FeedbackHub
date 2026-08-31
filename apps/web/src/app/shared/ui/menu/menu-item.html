@@ -1,0 +1,26 @@
+<ng-template #inner>
+  @if (icon(); as name) {
+    <fh-icon [name]="name" [size]="18" />
+  }
+  <span class="fh-menu-item-label"><ng-content /></span>
+  @if (selected()) {
+    <fh-icon name="check" [size]="18" />
+  }
+</ng-template>
+
+@if (routerLink(); as link) {
+  <a [routerLink]="link" role="menuitem" class="fh-menu-item" [class.danger]="danger()">
+    <ng-container [ngTemplateOutlet]="inner" />
+  </a>
+} @else {
+  <button
+    type="button"
+    role="menuitem"
+    class="fh-menu-item"
+    [class.danger]="danger()"
+    [disabled]="disabled()"
+    [attr.aria-pressed]="selected() ? 'true' : null"
+  >
+    <ng-container [ngTemplateOutlet]="inner" />
+  </button>
+}

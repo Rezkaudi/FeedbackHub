@@ -7,19 +7,6 @@ import { BoardStore } from './board.store';
 import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
 import { DevicePreferencesStore } from '../../core/config/device-preferences.store';
 
-/**
- * R-25 through what a person actually sees. The two empty states are the point:
- * "No requests yet. Be the first." is what a new company meets and it must read
- * as an invitation, while "Nothing matches these filters" needs a Clear button.
- * Showing the first when a filter is on is the bug worth a test.
- *
- * Everything is queried by role, label or visible text — never by class or by
- * component internals.
- */
-// A catch-all so navigations in the component under test resolve. With no
-// routes at all, router.navigate() rejects, and an unhandled rejection in one
-// spec file leaks into the whole run — it poisoned the admin and board suites
-// before this was added.
 const ANY_ROUTE = [{ path: '**', children: [] }];
 
 describe('the board screen', () => {
@@ -50,33 +37,23 @@ describe('the board screen', () => {
       pageCount: signal(1),
       error: signal(null),
       load: vi.fn().mockResolvedValue(undefined),
+      patchVote: vi.fn(),
       ...over,
     };
   }
 
   const category = { id: 'c1', name: 'Bug', slug: 'bug', color: '#DC2626', isActive: true };
-  const status = {
-    id: 's1',
-    name: 'New',
-    slug: 'new',
-    color: '#0369A1',
-    isActive: true,
-    isDefault: true,
-  };
+  const status = { id: 's1', name: 'New', slug: 'new', color: '#0369A1', isActive: true, isDefault: true };
 
   const bootstrap = {
     commentsEnabled: signal(true),
-    // Both lists arrive whole (R-45); the active ones are what a picker offers.
     categories: signal([category]),
     statuses: signal([status]),
     activeCategories: signal([category]),
     activeStatuses: signal([status]),
-    categoryById: (id: string) =>
-      id === 'c1' ? { id, name: 'Bug', slug: 'bug', color: '#DC2626', isActive: true } : undefined,
-    statusById: (id: string) =>
-      id === 's1'
-        ? { id, name: 'New', slug: 'new', color: '#0369A1', isActive: true, isDefault: true }
-        : undefined,
+    isAdmin: signal(false),
+    categoryById: (id: string) => (id === 'c1' ? category : undefined),
+    statusById: (id: string) => (id === 's1' ? status : undefined),
   };
 
   const preferences = {
@@ -85,6 +62,8 @@ describe('the board screen', () => {
     defaultCategoryIds: signal([]),
     knownStatusIds: () => [],
     knownCategoryIds: () => [],
+    storedLanguage: () => null,
+    setStoredLanguage: () => {},
   };
 
   async function renderBoard(store: ReturnType<typeof boardIn>) {
@@ -94,24 +73,15 @@ describe('the board screen', () => {
         { provide: BootstrapStore, useValue: bootstrap },
         { provide: DevicePreferencesStore, useValue: preferences },
       ],
-      // The board provides its own store on the component, so it dies with the
-      // route. A TestBed provider would be shadowed by that; this replaces the
-      // component-level one, which is the thing under test.
       componentProviders: [{ provide: BoardStore, useValue: store }],
     });
     return store;
   }
 
-  /**
-   * R-22 puts the sort in the address, and R-24 lets a saved default stand in
-   * when the address says nothing. Either way the control has to agree with the
-   * board underneath it.
-   *
-   * This is here because it was wrong: the select bound its own `value`, which
-   * is written before an @for has made any options, so the browser fell back to
-   * the first one. The board really was sorted by most votes; the control said
-   * "Newest first". An end-to-end run caught it on a real browser.
-   */
+  async function openFilters(): Promise<void> {
+    await userEvent.click(screen.getByRole('button', { name: /filters/i }));
+  }
+
   describe('the sort control', () => {
     it('shows the sort the board is actually using', async () => {
       preferences.defaultSort.set('most_votes');
@@ -144,9 +114,6 @@ describe('the board screen', () => {
     it('shows the status and the category by name, not by colour alone (R-111)', async () => {
       await renderBoard(boardIn('ready', { items: signal([aRequest()]), total: signal(1) }));
 
-      // Scoped to the row: the same two names are also the filter checkboxes,
-      // and asserting on the page as a whole would pass even if the card showed
-      // neither.
       const row = within(screen.getByRole('listitem'));
       expect(row.getByText('New')).toBeInTheDocument();
       expect(row.getByText('Bug')).toBeInTheDocument();
@@ -160,19 +127,16 @@ describe('the board screen', () => {
     });
 
     it('marks a pinned request', async () => {
-      await renderBoard(
-        boardIn('ready', { items: signal([aRequest({ isPinned: true })]), total: signal(1) }),
-      );
+      await renderBoard(boardIn('ready', { items: signal([aRequest({ isPinned: true })]), total: signal(1) }));
 
-      expect(screen.getByText(/pinned/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/pinned/i)).toBeInTheDocument();
     });
 
-    /** R-42: with comments off, the count is gone from the board entirely. */
     it('hides the comment count when comments are switched off', async () => {
       bootstrap.commentsEnabled.set(false);
       await renderBoard(boardIn('ready', { items: signal([aRequest()]), total: signal(1) }));
 
-      expect(screen.queryByText(/2 comments/)).not.toBeInTheDocument();
+      expect(screen.queryByText('2')).not.toBeInTheDocument();
       bootstrap.commentsEnabled.set(true);
     });
   });
@@ -189,7 +153,6 @@ describe('the board screen', () => {
       await renderBoard(boardIn('emptyForFilters'));
 
       expect(screen.getByText(/nothing matches/i)).toBeInTheDocument();
-      // Not the new-company message: they are different problems.
       expect(screen.queryByText(/no requests yet/i)).not.toBeInTheDocument();
     });
 
@@ -223,7 +186,6 @@ describe('the board screen', () => {
       expect(store.load).toHaveBeenCalled();
     });
 
-    /** R-25: "Filters stay as they were." The search box must not be wiped. */
     it('keeps the filter bar on screen so the filters are not lost', async () => {
       await renderBoard(boardIn('failed', { error: signal(failure) }));
 
@@ -241,6 +203,7 @@ describe('the board screen', () => {
     it('offers only categories that are still open for picking (R-45)', async () => {
       await renderBoard(boardIn('ready', { items: signal([aRequest()]), total: signal(1) }));
 
+      await openFilters();
       expect(screen.getByRole('checkbox', { name: 'Bug' })).toBeInTheDocument();
     });
 
@@ -253,9 +216,7 @@ describe('the board screen', () => {
     });
 
     it('says how many were found, so the count is not only in the rows', async () => {
-      await renderBoard(
-        boardIn('ready', { items: signal([aRequest()]), total: signal(41), pageCount: signal(3) }),
-      );
+      await renderBoard(boardIn('ready', { items: signal([aRequest()]), total: signal(41), pageCount: signal(3) }));
 
       expect(screen.getByText(/41/)).toBeInTheDocument();
     });
@@ -263,21 +224,14 @@ describe('the board screen', () => {
 
   describe('the page buttons', () => {
     it('are not shown when everything fits on one page', async () => {
-      await renderBoard(
-        boardIn('ready', { items: signal([aRequest()]), total: signal(1), pageCount: signal(1) }),
-      );
+      await renderBoard(boardIn('ready', { items: signal([aRequest()]), total: signal(1), pageCount: signal(1) }));
 
       expect(screen.queryByRole('navigation', { name: /pages/i })).not.toBeInTheDocument();
     });
 
     it('disable Previous on the first page rather than hiding it', async () => {
       await renderBoard(
-        boardIn('ready', {
-          items: signal([aRequest()]),
-          total: signal(41),
-          page: signal(1),
-          pageCount: signal(3),
-        }),
+        boardIn('ready', { items: signal([aRequest()]), total: signal(41), page: signal(1), pageCount: signal(3) }),
       );
 
       expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled();
@@ -286,12 +240,7 @@ describe('the board screen', () => {
 
     it('disable Next on the last page', async () => {
       await renderBoard(
-        boardIn('ready', {
-          items: signal([aRequest()]),
-          total: signal(41),
-          page: signal(3),
-          pageCount: signal(3),
-        }),
+        boardIn('ready', { items: signal([aRequest()]), total: signal(41), page: signal(3), pageCount: signal(3) }),
       );
 
       expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();

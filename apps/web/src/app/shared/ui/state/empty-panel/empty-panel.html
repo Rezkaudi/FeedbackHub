@@ -1,0 +1,9 @@
+<div class="empty-panel">
+  <p class="empty-heading">{{ heading() }}</p>
+  @if (detail(); as text) {
+    <p class="empty-detail">{{ text }}</p>
+  }
+  <div class="empty-action">
+    <ng-content />
+  </div>
+</div>

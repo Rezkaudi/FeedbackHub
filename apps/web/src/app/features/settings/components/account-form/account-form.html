@@ -1,0 +1,33 @@
+<fh-section-card [heading]="'settings.accountHeading' | t" [detail]="'settings.accountDetail' | t">
+  <form class="flex flex-col gap-4" (submit)="save($event)">
+    <fh-field [label]="'header.language' | t">
+      <fh-segmented-control
+        [options]="languageOptions"
+        [value]="language()"
+        [ariaLabel]="'header.language' | t"
+        (valueChange)="onLanguage($event)"
+      />
+    </fh-field>
+
+    <fieldset class="flex flex-col gap-3">
+      <legend class="mb-1 font-medium">{{ 'settings.emailMe' | t }}</legend>
+      <div class="flex min-h-11 items-center gap-3">
+        <fh-switch inputId="notify-comment" [checked]="notifyOnComment()" (toggled)="notifyOnComment.set(!notifyOnComment())" />
+        <label for="notify-comment">{{ 'settings.emailOnComment' | t }}</label>
+      </div>
+      <div class="flex min-h-11 items-center gap-3">
+        <fh-switch inputId="notify-status" [checked]="notifyOnStatusChange()" (toggled)="notifyOnStatusChange.set(!notifyOnStatusChange())" />
+        <label for="notify-status">{{ 'settings.emailOnStatus' | t }}</label>
+      </div>
+    </fieldset>
+
+    @if (store.settingsError()) {
+      <p role="alert" class="text-error text-sm">{{ 'settings.accountFailed' | t }}</p>
+    }
+    @if (store.settingsSaved()) {
+      <p role="status" class="text-success text-sm">{{ 'common.saved' | t }}</p>
+    }
+
+    <fh-button type="submit" class="self-start">{{ 'settings.saveAccount' | t }}</fh-button>
+  </form>
+</fh-section-card>

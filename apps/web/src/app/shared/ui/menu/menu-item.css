@@ -1,0 +1,52 @@
+:host {
+  display: block;
+}
+
+.fh-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--fh-space-3);
+  width: 100%;
+  min-height: 2.75rem;
+  padding-inline: var(--fh-space-3);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font-size: 0.875rem;
+  font-weight: 400;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  isolation: isolate;
+}
+
+.fh-menu-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.fh-menu-item:hover::after {
+  opacity: var(--fh-state-hover);
+}
+
+.fh-menu-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.fh-menu-item.danger {
+  color: var(--md-sys-color-error);
+}
+
+.fh-menu-item-label {
+  flex: 1;
+}

@@ -1,0 +1,76 @@
+<fh-menu #menu="fhMenu" align="end">
+  <button
+    menuTrigger
+    type="button"
+    class="user-menu-trigger"
+    [class.open]="menu.open()"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="menu.open()"
+    [attr.aria-label]="i18n.translate('header.userMenu')"
+    (click)="menu.toggle()"
+  >
+    <fh-avatar [name]="bootstrap.user()?.displayName ?? ''" [src]="bootstrap.user()?.avatarUrl ?? null" [size]="32" />
+    <span class="user-menu-name">{{ bootstrap.user()?.displayName }}</span>
+    <fh-icon name="chevron-down" [size]="18" class="user-menu-chevron" />
+  </button>
+
+  <div menuPanel>
+    <div class="user-menu-header">
+      <span class="user-menu-avatar-ring">
+        <fh-avatar [name]="bootstrap.user()?.displayName ?? ''" [src]="bootstrap.user()?.avatarUrl ?? null" [size]="40" />
+      </span>
+      <div class="user-menu-header-text">
+        <div class="user-menu-header-row">
+          <p class="user-menu-header-name">{{ bootstrap.user()?.displayName }}</p>
+          @if (bootstrap.isAdmin()) {
+            <span class="user-menu-header-badge">{{ 'header.admin' | t }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="user-menu-preferences">
+      <div class="user-menu-preference-row">
+        <span class="user-menu-preference-label">{{ 'header.theme' | t }}</span>
+        <fh-segmented-control
+          [options]="themeOptions()"
+          [value]="preferences.theme()"
+          [ariaLabel]="i18n.translate('header.theme')"
+          (valueChange)="chooseTheme($event)"
+        />
+      </div>
+
+      <div class="user-menu-preference-row">
+        <span class="user-menu-preference-label">{{ 'header.language' | t }}</span>
+        <fh-segmented-control
+          [options]="languageOptions()"
+          [value]="i18n.language()"
+          [ariaLabel]="i18n.translate('header.language')"
+          (valueChange)="chooseLanguage($event)"
+        />
+      </div>
+    </div>
+
+    <hr class="user-menu-divider" />
+
+    <div class="user-menu-section">
+      <fh-menu-item icon="user" routerLink="/settings" (click)="menu.close()">
+        {{ 'header.settings' | t }}
+      </fh-menu-item>
+
+      @if (bootstrap.isAdmin()) {
+        <fh-menu-item icon="grid" routerLink="/admin" (click)="menu.close()">
+          {{ 'header.admin' | t }}
+        </fh-menu-item>
+      }
+    </div>
+
+    <hr class="user-menu-divider" />
+
+    <div class="user-menu-section">
+      <fh-menu-item icon="log-out" [danger]="true" (click)="signOut(); menu.close()">
+        {{ 'header.signOut' | t }}
+      </fh-menu-item>
+    </div>
+  </div>
+</fh-menu>

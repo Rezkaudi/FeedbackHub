@@ -1,0 +1,87 @@
+@switch (admin.state()) {
+  @case ('loading') {
+    <fh-skeleton-rows [count]="4" label="Loading categories and statuses" />
+  }
+  @case ('failed') {
+    <fh-error-panel
+      [heading]="'admin.actionFailed' | t"
+      [requestId]="admin.error()?.requestId ?? ''"
+      [canRetry]="admin.error()?.isRetryable ?? false"
+      [retryLabel]="'common.tryAgain' | t"
+      (retry)="admin.loadTaxonomy()"
+    />
+  }
+  @case ('ready') {
+    @if (admin.actionError(); as failure) {
+      <p role="alert" class="bg-error-container text-on-error-container mb-6 rounded-lg px-4 py-3">
+        {{ failure.status === 409 ? failure.message : ('admin.actionFailed' | t) }}
+      </p>
+    }
+
+    <fh-section-card [heading]="'admin.categories' | t">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-start">
+          <caption class="sr-only">{{ 'admin.categories' | t }}</caption>
+          <thead>
+            <tr class="border-outline-variant border-b">
+              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.name' | t }}</th>
+              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.inUseBy' | t }}</th>
+              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.actions' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (category of admin.categories(); track category.id) {
+              <fh-taxonomy-row
+                [item]="category"
+                (retired)="retireCategory(category)"
+                (restored)="restoreCategory(category)"
+                (deleted)="deleteCategory(category)"
+              />
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <fh-taxonomy-form
+        [label]="'admin.addCategory' | t"
+        nameId="new-category"
+        colorId="new-category-color"
+        (created)="addCategory($event)"
+      />
+    </fh-section-card>
+
+    <fh-section-card [heading]="'admin.statuses' | t" class="mt-6 block">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-start">
+          <caption class="sr-only">{{ 'admin.statuses' | t }}</caption>
+          <thead>
+            <tr class="border-outline-variant border-b">
+              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.name' | t }}</th>
+              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.inUseBy' | t }}</th>
+              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.actions' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (status of admin.statuses(); track status.id) {
+              <fh-taxonomy-row
+                [item]="status"
+                [isDefaultStatus]="status.isDefault"
+                [canMakeDefault]="!status.isDefault"
+                (retired)="retireStatus(status)"
+                (restored)="restoreStatus(status)"
+                (madeDefault)="makeDefaultStatus(status)"
+              />
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <fh-taxonomy-form
+        [label]="'admin.addStatus' | t"
+        nameId="new-status"
+        colorId="new-status-color"
+        (created)="addStatus($event)"
+      />
+    </fh-section-card>
+  }
+}

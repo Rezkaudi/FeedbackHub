@@ -202,6 +202,17 @@ and `pageSize` (D-04).
 Every time, it means Git commit history — not a log of status changes. That is
 why we removed the status-history table we had invented (D-08).
 
+**"Remove `/web` before the design structure start point."**
+Read as: remove the *old presentation layer* under `apps/web/src/app` before
+starting the new design, not rename or move the `apps/web` folder itself. The
+folder path is named in five places outside the app (`infra/docker/web/
+Dockerfile`, `docker-compose.yml`, `.github/workflows/ci.yml`, this file, the
+README) and none of them are about visual design — moving the folder would
+have been a rename plus five path edits with nothing to do with how the app
+looks. What was actually removed: `tokens.css`, `styles.css`'s old body, the
+old `state-panels.ts`, every inline `template:` string, and every screen's old
+markup — see D-50.
+
 ---
 
 ## 4. What we assume
@@ -221,6 +232,9 @@ why we removed the status-history table we had invented (D-08).
 - One shared sign-up limit is acceptable. A script can use it all up and a real
   new colleague is told to wait. While an account is being created there is no
   person to count against.
+- The Material 3 blue tonal palette is close enough to Google's own algorithm's
+  output for a seed of `#0B57D0` that hand-tuning it to the right *structure*
+  (D-52) is an acceptable stand-in for running the real HCT computation.
 
 ---
 
@@ -233,39 +247,43 @@ why we removed the status-history table we had invented (D-08).
 5. Add a proper audit log of admin actions (D-12).
 6. Move email preferences to a table, if a third event or Slack appears (D-07).
 7. Add a CSRF token, if the site and the API ever move to different domains (D-02).
+8. Look at the app in Arabic, in a real browser, at every width, and fix what
+   the unit tests cannot catch (D-54; SCOPE §6).
+9. Update the Cypress suite for the redesigned UI and run it — the header, the
+   new-request popup and the confirm dialogs are all new shapes the old specs
+   were never written against (D-51).
 
 ---
 
 ## 6. What was cut, and why
 
-**One thing was cut: Arabic and RTL (R-57).**
+**Arabic and RTL (R-57) is no longer cut — it was built in the redesign pass,
+and this section is left here, corrected, rather than deleted, because the
+history is worth keeping.**
 
-The UI is English only. No string is translated and no screen has been checked
-right-to-left.
+It used to say the UI was English only. It is not, any more: every string
+moved into two typed dictionaries (`en.ts`, `ar.ts`), Arabic is type-checked
+against English's exact key shape so a missing string is a build failure, and
+a test checks the same thing at run time along with "no empty string in either
+dictionary" (`dictionaries.spec.ts`). `dir` and `lang` flip live, are set on
+the document before the first paint (unchanged from before, D-41), and the
+layout uses logical CSS properties throughout rather than left/right, so the
+mirror is real rather than assumed.
 
-What was built, and is real: the language choice saves to the server and comes
-back on the one start-up call, `dir` and `lang` are set on the document before
-the first paint so a translated build would not flash, and IBM Plex Sans Arabic
-is loaded and paired with the Latin face (D-41).
+**What is still missing: eyes on it.** Nobody has switched the running app to
+Arabic in an actual browser and looked at the result. The unit tests prove the
+mechanism — the right key resolves, the attribute flips, no string is empty —
+they do not prove a chip does not overflow, an icon that should mirror does,
+or a number reads correctly. This is now the honest gap, in place of the old
+one, and it is written in `README.md` under what does not work as well.
 
-What is missing is the translation itself: a message file, every visible string
-moved into it, and a pass over every screen in RTL — logical CSS properties
-instead of left/right, mirrored icons, and the vote and comment counts checked
-with Arabic-Indic digits.
-
-**Why it was cut.** It is wide rather than deep. It touches every template in
-the app, and it cannot be done half way and still be honest: a screen that is
-nine-tenths translated is worse than one that is plainly English. Against that,
-the rest of Step 2 and the whole of Step 3 are the parts the brief actually
-grades. The judgement was that eleven working E2E journeys prove more than a
-second language on a board whose accessibility, error handling and authorisation
-had not yet been proven end to end.
-
-**What it costs.** This is the largest single gap against the SRS. The SRS part
-17 test that expects a notification email in Arabic cannot pass. R-57 is not
-met. The backend does its half — it stores the language and the worker reads it
-— so the gap is entirely in the front end. It is also written in `README.md`
-under what does not work, so it is not visible only here.
+**Why the browser pass was not done in this cycle.** Rebuilding the entire
+presentation layer to a new design system, in English, and translating and
+verifying it in a second language and direction, is two large efforts; this
+cycle did the first fully and the second halfway — translated and unit-tested,
+not eyeballed. Finishing the second half is one Cypress spec (switch language,
+assert `dir=rtl`, assert a translated string, reload, assert it persisted) plus
+a manual pass at 375/768/1024/1440 in both directions — see SCOPE §5.
 
 **Everything else in section 2 left the plan because nothing reads it, not
 because the week ran out.** Over three revisions of the SRS, eleven tables became nine. Six

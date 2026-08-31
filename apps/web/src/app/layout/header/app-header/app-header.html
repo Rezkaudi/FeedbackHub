@@ -1,0 +1,21 @@
+<header class="app-header">
+  <div class="app-header-inner">
+    <a routerLink="/" class="brand">{{ 'common.appName' | t }}</a>
+
+    <nav aria-label="Main" class="main-nav">
+      <a
+        routerLink="/"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        ariaCurrentWhenActive="page"
+        class="nav-link"
+      >
+        {{ 'header.requests' | t }}
+      </a>
+    </nav>
+
+    <div class="header-actions">
+      <fh-user-menu />
+    </div>
+  </div>
+</header>

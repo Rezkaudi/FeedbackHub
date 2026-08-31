@@ -1,0 +1,11 @@
+<section class="section-card" [attr.aria-labelledby]="headingId() || null">
+  <div class="section-card-head">
+    <h2 [id]="headingId() || null" class="section-card-heading">{{ heading() }}</h2>
+    @if (detail()) {
+      <p class="section-card-detail">{{ detail() }}</p>
+    }
+  </div>
+  <div class="section-card-body">
+    <ng-content />
+  </div>
+</section>

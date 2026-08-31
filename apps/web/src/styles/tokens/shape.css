@@ -1,0 +1,22 @@
+:root {
+  --md-sys-shape-corner-none: 0;
+  --md-sys-shape-corner-extra-small: 0.25rem;
+  --md-sys-shape-corner-small: 0.5rem;
+  --md-sys-shape-corner-medium: 0.75rem;
+  --md-sys-shape-corner-large: 1rem;
+  --md-sys-shape-corner-extra-large: 1.75rem;
+  --md-sys-shape-corner-full: 9999px;
+
+  --fh-tap-min: 2.75rem;
+
+  --fh-space-1: 0.25rem;
+  --fh-space-2: 0.5rem;
+  --fh-space-3: 0.75rem;
+  --fh-space-4: 1rem;
+  --fh-space-5: 1.25rem;
+  --fh-space-6: 1.5rem;
+  --fh-space-8: 2rem;
+  --fh-space-10: 2.5rem;
+  --fh-space-12: 3rem;
+  --fh-space-16: 4rem;
+}

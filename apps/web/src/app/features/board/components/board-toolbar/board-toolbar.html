@@ -1,0 +1,59 @@
+<section aria-label="Filters" class="board-toolbar">
+  <div class="board-toolbar-row">
+    <fh-board-search [value]="query().search" (searchChange)="searchChange.emit($event)" />
+    <fh-board-sort [value]="query().sort" (sortChange)="sortChange.emit($event)" />
+
+    <div class="filters-group">
+      <fh-button
+        variant="outlined"
+        icon="filter"
+        [attr.aria-expanded]="filtersOpen()"
+        (click)="toggleFilters()"
+      >
+        {{ 'board.filters' | t }}
+        @if (activeCount() > 0) {
+          <span class="filter-count">{{ activeCount() }}</span>
+        }
+      </fh-button>
+
+      <fh-dialog
+        [open]="filtersOpen()"
+        [heading]="'board.filters' | t"
+        [closeLabel]="'common.close' | t"
+        (closed)="closeFilters()"
+      >
+        @if (activeCount() > 0) {
+          <div class="filters-dialog-meta">
+            <span class="filters-dialog-count">{{ 'board.filtersActive' | t: { count: activeCount() } }}</span>
+            <button type="button" class="filters-panel-clear" (click)="clearedAll.emit()">
+              {{ 'board.clearFilters' | t }}
+            </button>
+          </div>
+        }
+
+        <fh-board-filters
+          [statuses]="statuses()"
+          [categories]="categories()"
+          [statusIds]="query().statusIds"
+          [categoryIds]="query().categoryIds"
+          (statusToggled)="statusToggled.emit($event)"
+          (categoryToggled)="categoryToggled.emit($event)"
+        />
+      </fh-dialog>
+    </div>
+
+    <fh-button icon="plus" (click)="newRequest.emit()">
+      {{ 'board.newRequest' | t }}
+    </fh-button>
+  </div>
+
+  <fh-active-filters
+    [search]="query().search"
+    [selectedStatuses]="selectedStatuses()"
+    [selectedCategories]="selectedCategories()"
+    (searchCleared)="searchChange.emit('')"
+    (statusRemoved)="statusToggled.emit($event)"
+    (categoryRemoved)="categoryToggled.emit($event)"
+    (clearedAll)="clearedAll.emit()"
+  />
+</section>

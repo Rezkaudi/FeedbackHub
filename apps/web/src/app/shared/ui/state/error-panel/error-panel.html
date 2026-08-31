@@ -1,0 +1,17 @@
+<div role="alert" class="error-panel">
+  <fh-icon name="alert-circle" [size]="24" />
+  <div class="error-body">
+    <p class="error-heading">{{ heading() }}</p>
+    @if (detail()) {
+      <p class="error-detail">{{ detail() }}</p>
+    }
+    @if (requestId(); as id) {
+      <p class="error-request-id">
+        {{ requestIdHint() }} <span class="font-mono">{{ id }}</span>
+      </p>
+    }
+    @if (canRetry()) {
+      <fh-button variant="outlined" size="sm" (click)="retry.emit()">{{ retryLabel() }}</fh-button>
+    }
+  </div>
+</div>

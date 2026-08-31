@@ -1,0 +1,17 @@
+<button
+  type="button"
+  class="request-vote-button"
+  [class.voted]="hasVoted()"
+  [attr.aria-pressed]="hasVoted()"
+  [attr.aria-label]="label()"
+  [attr.aria-busy]="busy() ? 'true' : null"
+  [disabled]="busy()"
+  (click)="voted.emit()"
+>
+  @if (busy()) {
+    <fh-spinner [size]="20" />
+  } @else {
+    <fh-icon name="arrow-up" [size]="22" />
+  }
+  <span aria-hidden="true" class="vote-count">{{ voteCount() }}</span>
+</button>

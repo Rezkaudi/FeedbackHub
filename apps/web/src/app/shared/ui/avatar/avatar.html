@@ -1,0 +1,7 @@
+@if (src(); as url) {
+  <img [src]="url" alt="" [style.width.px]="size()" [style.height.px]="size()" class="avatar" />
+} @else {
+  <span class="avatar initials" [style.width.px]="size()" [style.height.px]="size()">
+    {{ initials() }}
+  </span>
+}

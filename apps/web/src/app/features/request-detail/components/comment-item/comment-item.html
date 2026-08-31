@@ -1,0 +1,25 @@
+<li class="border-outline-variant rounded-2xl border p-4">
+  @if (comment().state === 'deleted') {
+    <p class="text-on-surface-variant text-sm italic">{{ 'requestDetail.commentDeleted' | t }}</p>
+  } @else {
+    <p class="text-on-surface-variant text-sm">
+      {{ comment().authorName }} ·
+      <time [attr.datetime]="comment().createdAt">{{ comment().createdAt | localizedDate: { dateStyle: 'medium' } }}</time>
+      @if (comment().state === 'pending') {
+        · <span class="text-warning">{{ 'requestDetail.commentWaiting' | t }}</span>
+      }
+    </p>
+    <p data-user-text class="mt-2">{{ comment().body }}</p>
+
+    @if (comment().isMine || canDelete()) {
+      <button
+        type="button"
+        class="text-error mt-2 min-h-11 text-sm underline"
+        [attr.aria-label]="deleteLabel()"
+        (click)="removed.emit()"
+      >
+        {{ 'common.delete' | t }}
+      </button>
+    }
+  }
+</li>

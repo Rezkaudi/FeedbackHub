@@ -1,0 +1,28 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fh-space-2);
+  padding: var(--fh-space-1) var(--fh-space-3);
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--chip) calc(var(--fh-chip-wash) * 100%), var(--md-sys-color-surface));
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid color-mix(in srgb, var(--chip) 35%, transparent);
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--chip);
+  box-shadow: 0 0 0 1px var(--fh-chip-dot-ring);
+  flex: none;
+}
+
+.retired {
+  color: var(--md-sys-color-on-surface);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+}

@@ -1,0 +1,32 @@
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fh-space-2);
+  min-height: 2.25rem;
+  padding-inline: var(--fh-space-4);
+  border-radius: var(--md-sys-shape-corner-small);
+  border: 1px solid var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard),
+    border-color var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard);
+}
+
+.filter-chip:hover {
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.filter-chip.checked {
+  background: var(--md-sys-color-secondary-container);
+  border-color: transparent;
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.filter-chip:has(:focus-visible) {
+  outline: 2px solid var(--fh-focus-ring);
+  outline-offset: 2px;
+}

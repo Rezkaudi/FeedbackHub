@@ -1,0 +1,22 @@
+<h1 class="text-xl">{{ 'admin.title' | t }}</h1>
+
+<nav aria-label="Admin sections" class="admin-nav">
+  <a routerLink="taxonomy" routerLinkActive="active" ariaCurrentWhenActive="page" class="admin-nav-link">
+    {{ 'admin.taxonomy' | t }}
+  </a>
+  <a routerLink="settings" routerLinkActive="active" ariaCurrentWhenActive="page" class="admin-nav-link">
+    {{ 'admin.appSettings' | t }}
+  </a>
+  @if (bootstrap.commentsRequireApproval()) {
+    <a routerLink="comments" routerLinkActive="active" ariaCurrentWhenActive="page" class="admin-nav-link">
+      {{ 'admin.pendingComments' | t }}
+    </a>
+  }
+  <a routerLink="invitations" routerLinkActive="active" ariaCurrentWhenActive="page" class="admin-nav-link">
+    {{ 'admin.invitations' | t }}
+  </a>
+</nav>
+
+<div class="mt-6">
+  <router-outlet />
+</div>

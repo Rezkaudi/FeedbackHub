@@ -14,19 +14,6 @@
       rel="stylesheet"
     />
 
-    <!--
-      R-56: the theme is read before the first paint, so the next load is right
-      with no white flash.
-
-      This is deliberately a blocking inline script and not Angular's job. By the
-      time Angular boots, the browser has already painted; anything that reads
-      localStorage from a component is one frame too late and the person sees a
-      white page flash to dark. Four lines here buy that, and it is the reason
-      the app does not need server-side rendering to avoid a flash.
-
-      It writes nothing and reads one key. A missing or damaged value means
-      "follow the computer", which is the shipped default.
-    -->
     <script>
       (function () {
         try {
@@ -40,7 +27,6 @@
             document.documentElement.dir = 'rtl';
           }
         } catch (error) {
-          /* A private window can throw on localStorage. The default is correct. */
         }
       })();
     </script>

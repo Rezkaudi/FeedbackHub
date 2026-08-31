@@ -1,0 +1,24 @@
+<tr class="border-outline-variant border-b">
+  <td class="py-3">
+    <fh-taxonomy-chip [name]="item().name" [color]="item().color" [isActive]="item().isActive" [retiredLabel]="'board.retired' | t" />
+    @if (isDefaultStatus()) {
+      <span class="text-on-surface-variant ms-2 text-xs">{{ 'admin.default' | t }}</span>
+    }
+  </td>
+  <td class="py-3 text-sm">{{ item().usageCount }}</td>
+  <td class="py-3">
+    <div class="flex items-center gap-1">
+      @if (canMakeDefault()) {
+        <fh-icon-button icon="pin" [label]="'admin.makeDefault' | t" (click)="madeDefault.emit()" />
+      }
+      @if (item().isActive) {
+        <fh-icon-button icon="close" [label]="'admin.retire' | t" (click)="retired.emit()" />
+      } @else {
+        <fh-icon-button icon="check" [label]="'admin.active' | t" (click)="restored.emit()" />
+      }
+      @if (item().usageCount === 0) {
+        <fh-icon-button icon="trash" variant="danger" [label]="'common.delete' | t" (click)="deleted.emit()" />
+      }
+    </div>
+  </td>
+</tr>

@@ -1,0 +1,120 @@
+@switch (detail.state()) {
+  @case ('loading') {
+    <fh-skeleton-rows [count]="1" [label]="'requestDetail.loadingLabel' | t" />
+  }
+
+  @case ('missing') {
+    <fh-empty-panel [heading]="'requestDetail.missingTitle' | t" [detail]="'requestDetail.missingDetail' | t">
+      <a routerLink="/" class="text-primary underline">{{ 'requestDetail.backToBoard' | t }}</a>
+    </fh-empty-panel>
+  }
+
+  @case ('failed') {
+    <fh-error-panel
+      [heading]="'requestDetail.failedTitle' | t"
+      [detail]="detail.error()?.isRetryable ? ('common.networkErrorDetail' | t) : ('common.genericErrorDetail' | t)"
+      [requestId]="detail.error()?.requestId ?? ''"
+      [canRetry]="detail.error()?.isRetryable ?? false"
+      [retryLabel]="'common.tryAgain' | t"
+      (retry)="detail.load(id())"
+    />
+  }
+
+  @case ('ready') {
+    @if (detail.request(); as request) {
+      <article>
+        <div class="flex items-start gap-6">
+          <fh-request-vote-button
+            [voteCount]="detail.voteCount()"
+            [hasVoted]="detail.viewerHasVoted()"
+            [busy]="voting()"
+            (voted)="vote()"
+          />
+          <fh-request-header
+            [request]="request"
+            [status]="status()"
+            [category]="category()"
+            [canDelete]="canDelete()"
+            [deleting]="deleting()"
+            (deleteRequested)="removeRequest()"
+          />
+        </div>
+
+        @if (bootstrap.isAdmin()) {
+          <fh-request-admin-bar
+            [statuses]="bootstrap.activeStatuses()"
+            [currentStatusId]="request.statusId"
+            [isPinned]="request.isPinned"
+            [hasError]="detail.adminError() !== null"
+            (statusChanged)="detail.changeStatus($event)"
+            (pinToggled)="detail.setPinned($event)"
+          />
+        }
+
+        <p data-user-text class="mt-6 max-w-(--fh-measure)">{{ request.description }}</p>
+
+        @if (detail.voteError(); as failure) {
+          <p role="alert" class="bg-error-container text-on-error-container mt-4 rounded-lg px-4 py-3">
+            @if (failure.retryAt; as retryAt) {
+              {{ 'requestDetail.voteRateLimited' | t: { time: (retryAt | localizedDate: { timeStyle: 'short' }) } }}
+            } @else {
+              {{ 'requestDetail.voteFailed' | t }}
+            }
+          </p>
+        }
+      </article>
+
+      @if (bootstrap.commentsEnabled()) {
+        <section class="mt-10" aria-labelledby="comments-heading">
+          <h2 id="comments-heading" class="text-xl">
+            {{ 'requestDetail.commentsHeading' | t }}
+            @if (comments.total() > 0) {
+              <span class="text-on-surface-variant font-normal">({{ comments.total() }})</span>
+            }
+          </h2>
+
+          <fh-comment-form
+            [draft]="comments.draft()"
+            [saving]="comments.isSaving()"
+            [error]="comments.addError() !== null"
+            (draftChange)="onDraft($event)"
+            (submitted)="submitComment()"
+          />
+
+          <div class="mt-6">
+            @switch (comments.state()) {
+              @case ('loading') {
+                <fh-skeleton-rows [count]="3" [label]="'requestDetail.loadingLabel' | t" />
+              }
+              @case ('empty') {
+                <fh-empty-panel
+                  [heading]="'requestDetail.commentsEmptyTitle' | t"
+                  [detail]="'requestDetail.commentsEmptyDetail' | t"
+                />
+              }
+              @case ('failed') {
+                <fh-error-panel
+                  [heading]="'requestDetail.commentsFailedTitle' | t"
+                  [detail]="'requestDetail.commentsFailedDetail' | t"
+                  [requestId]="comments.error()?.requestId ?? ''"
+                  [canRetry]="comments.error()?.isRetryable ?? false"
+                  [retryLabel]="'common.tryAgain' | t"
+                  (retry)="comments.load(id())"
+                />
+              }
+              @case ('ready') {
+                <fh-comment-list
+                  [items]="comments.items()"
+                  [canDeleteAny]="bootstrap.isAdmin()"
+                  [hasMore]="comments.hasMore()"
+                  (removed)="removeComment($event)"
+                  (loadedMore)="comments.loadMore()"
+                />
+              }
+            }
+          </div>
+        </section>
+      }
+    }
+  }
+}

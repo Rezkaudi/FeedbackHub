@@ -1,0 +1,21 @@
+<dialog
+  [class]="'size-' + size()"
+  [attr.role]="role()"
+  [attr.aria-labelledby]="labelledBy() || null"
+  (cancel)="onCancel($event)"
+  (click)="closed.emit()"
+>
+  <div class="surface" (click)="$event.stopPropagation()">
+    <header class="dialog-header">
+      @if (heading()) {
+        <h2 class="dialog-title">{{ heading() }}</h2>
+      }
+      @if (!hideCloseButton()) {
+        <fh-icon-button icon="close" [label]="closeLabel()" (click)="closed.emit()" />
+      }
+    </header>
+    <div class="dialog-body">
+      <ng-content />
+    </div>
+  </div>
+</dialog>

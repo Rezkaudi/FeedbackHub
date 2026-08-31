@@ -1,0 +1,48 @@
+.snackbar {
+  position: fixed;
+  inset-inline-start: 50%;
+  bottom: var(--fh-space-6);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--fh-space-3);
+  max-width: min(90vw, 28rem);
+  padding: var(--fh-space-3) var(--fh-space-3) var(--fh-space-3) var(--fh-space-5);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  box-shadow: var(--md-sys-elevation-3);
+  z-index: var(--fh-z-toast);
+  animation: fh-snackbar-in var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized-decelerate);
+}
+
+[dir='rtl'] .snackbar {
+  transform: translateX(50%);
+}
+
+.snackbar-text {
+  flex: 1;
+  font-size: var(--md-sys-typescale-body-medium-size);
+}
+
+.snackbar-action {
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-inverse-primary);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  min-height: 2.25rem;
+  padding-inline: var(--fh-space-3);
+  border-radius: var(--md-sys-shape-corner-small);
+  cursor: pointer;
+}
+
+@keyframes fh-snackbar-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}

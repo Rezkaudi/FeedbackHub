@@ -1,0 +1,28 @@
+.request-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--fh-space-5);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.request-grid li {
+  display: flex;
+}
+
+.request-grid li > * {
+  width: 100%;
+}
+
+@media (min-width: 40rem) {
+  .request-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 64rem) {
+  .request-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

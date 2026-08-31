@@ -1,0 +1,32 @@
+@switch (admin.state()) {
+  @case ('loading') {
+    <fh-skeleton-rows [count]="3" label="Loading the settings" />
+  }
+  @case ('failed') {
+    <fh-error-panel
+      [heading]="'admin.actionFailed' | t"
+      [requestId]="admin.error()?.requestId ?? ''"
+      [canRetry]="admin.error()?.isRetryable ?? false"
+      [retryLabel]="'common.tryAgain' | t"
+      (retry)="admin.loadSettings()"
+    />
+  }
+  @case ('ready') {
+    @if (admin.settings(); as settings) {
+      @if (admin.actionError()) {
+        <p role="alert" class="bg-error-container text-on-error-container mb-6 rounded-lg px-4 py-3">
+          {{ 'admin.actionFailed' | t }}
+        </p>
+      }
+      @if (admin.wasSaved()) {
+        <p role="status" class="text-success mb-6 text-sm">{{ 'admin.savedNotice' | t }}</p>
+      }
+
+      <div class="flex max-w-(--fh-measure) flex-col gap-6">
+        <fh-registration-card [settings]="settings" (policyChanged)="onPolicy($event)" (domainsChanged)="onDomains($event)" />
+        <fh-comments-card [settings]="settings" (enabledChanged)="onCommentsEnabled($event)" (approvalChanged)="onCommentsApproval($event)" />
+        <fh-rate-limits-card [settings]="settings" (limitChanged)="onLimit($event)" />
+      </div>
+    }
+  }
+}

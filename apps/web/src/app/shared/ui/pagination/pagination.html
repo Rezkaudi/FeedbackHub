@@ -1,0 +1,17 @@
+<nav aria-label="Pages" class="pagination">
+  <fh-icon-button
+    icon="chevron-left"
+    class="rtl-flip"
+    [label]="previousLabel()"
+    [disabled]="page() <= 1"
+    (click)="pageChange.emit(page() - 1)"
+  />
+  <span class="pagination-summary">{{ summary() }}</span>
+  <fh-icon-button
+    icon="chevron-right"
+    class="rtl-flip"
+    [label]="nextLabel()"
+    [disabled]="page() >= pageCount()"
+    (click)="pageChange.emit(page() + 1)"
+  />
+</nav>

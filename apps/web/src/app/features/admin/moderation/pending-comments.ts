@@ -1,79 +1,48 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { DatePipe } from '@angular/common';
-import { AdminStore } from '../admin.store';
-import { EmptyPanel, ErrorPanel, SkeletonRows } from '../../../shared/ui/state/state-panels';
+import { AdminStore, type PendingComment } from '../admin.store';
+import { I18nStore } from '../../../core/i18n/i18n.store';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { ConfirmService } from '../../../shared/ui/dialog/confirm.service';
+import { ErrorPanel } from '../../../shared/ui/state/error-panel/error-panel';
+import { SkeletonRows } from '../../../shared/ui/state/skeleton-rows/skeleton-rows';
+import { EmptyPanel } from '../../../shared/ui/state/empty-panel/empty-panel';
+import { PendingCommentCard } from './components/pending-comment-card/pending-comment-card';
 
-/**
- * Comments waiting for approval (R-41).
- *
- * Approve makes it appear and lets the email go (R-125); reject turns it into
- * the grey line and it is never emailed. There is no edit here, deliberately:
- * R-36 says an admin never rewrites what somebody said.
- */
 @Component({
   selector: 'fh-pending-comments',
-  imports: [DatePipe, EmptyPanel, ErrorPanel, SkeletonRows],
+  imports: [TranslatePipe, ErrorPanel, SkeletonRows, EmptyPanel, PendingCommentCard],
+  templateUrl: './pending-comments.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    @switch (admin.state()) {
-      @case ('loading') {
-        <fh-skeleton-rows [count]="3" label="Loading waiting comments" />
-      }
-      @case ('failed') {
-        <fh-error-panel
-          heading="We could not load the waiting comments"
-          [requestId]="admin.error()?.requestId ?? ''"
-          [canRetry]="admin.error()?.isRetryable ?? false"
-          (retry)="admin.loadPending()"
-        />
-      }
-      @case ('ready') {
-        @if (admin.pending().length === 0) {
-          <fh-empty-panel
-            heading="Nothing is waiting"
-            detail="Every comment has been dealt with."
-          />
-        } @else {
-          <ul aria-label="Waiting comments" class="flex list-none flex-col gap-4 p-0">
-            @for (comment of admin.pending(); track comment.id) {
-              <li class="border-line rounded-lg border p-4">
-                <p class="text-subtle text-sm">
-                  {{ comment.authorName }} ·
-                  <time [attr.datetime]="comment.createdAt">
-                    {{ comment.createdAt | date: 'medium' }}
-                  </time>
-                </p>
-                <p data-user-text class="mt-2">{{ comment.body }}</p>
-                <div class="mt-3 flex gap-3">
-                  <button
-                    type="button"
-                    class="bg-accent text-on-accent min-h-11 rounded px-4 font-medium"
-                    [attr.aria-label]="'Approve the comment by ' + comment.authorName"
-                    (click)="admin.approveComment(comment.id)"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    class="border-danger-line text-danger min-h-11 rounded border px-4"
-                    [attr.aria-label]="'Reject the comment by ' + comment.authorName"
-                    (click)="admin.rejectComment(comment.id)"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </li>
-            }
-          </ul>
-        }
-      }
-    }
-  `,
 })
 export class PendingComments {
   protected readonly admin = inject(AdminStore);
+  private readonly confirm = inject(ConfirmService);
+  private readonly i18n = inject(I18nStore);
 
   public constructor() {
     void this.admin.loadPending();
+  }
+
+  protected async approve(comment: PendingComment): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: this.i18n.translate('admin.approveConfirmTitle'),
+      message: this.i18n.translate('admin.approveConfirmMessage'),
+      confirmLabel: this.i18n.translate('admin.approve'),
+    });
+    if (confirmed) {
+      void this.admin.approveComment(comment.id);
+    }
+  }
+
+  protected async reject(comment: PendingComment): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: this.i18n.translate('admin.rejectConfirmTitle'),
+      message: this.i18n.translate('admin.rejectConfirmMessage'),
+      confirmLabel: this.i18n.translate('admin.reject'),
+      tone: 'danger',
+    });
+    if (confirmed) {
+      void this.admin.rejectComment(comment.id);
+    }
   }
 }
