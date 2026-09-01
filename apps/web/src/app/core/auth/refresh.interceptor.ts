@@ -6,6 +6,7 @@ import {
   type HttpRequest,
 } from '@angular/common/http';
 import {
+  NEVER,
   Observable,
   catchError,
   filter,
@@ -19,9 +20,11 @@ import { HttpEventType } from '@angular/common/http';
 import { Session } from './session';
 
 /**
- * R-9a and SRS 15.8: the access token lives five minutes, and when it runs out
- * the person should notice nothing. One call to /v1/auth/refresh swaps the
- * cookies on the server, and the original request goes again.
+ * R-9a and SRS 15.8: the access token lives one day, and when it runs out the
+ * person should notice nothing. One call to /v1/auth/refresh swaps the cookies
+ * on the server, and the original request goes again. When the refresh token
+ * has also run out (one week), the renewal fails and the person is sent back to
+ * sign-in — never shown the raw 401.
  *
  * There is no header to rewrite here. The browser holds no token (R-3c) — the
  * cookies do all of it, which is why every request goes out with credentials
@@ -103,7 +106,16 @@ export const refreshInterceptor: HttpInterceptorFn = (request, next) => {
         // there is no second renewal, so this cannot loop.
         switchMap(() => next(withCookies)),
         catchError(() => {
-          session.markSignedOut();
+          // The session is over. If markSignedOut redirects to sign-in (a
+          // mid-session expiry, SRS 15.8), the page is on its way out — hand
+          // back a stream that never emits so no store shows an error for a
+          // request the person will never see the result of. Otherwise (the
+          // first bootstrap of an anonymous visit) let the original 401
+          // through, so the bootstrap store can settle on "signed out" and
+          // render the public board.
+          if (session.markSignedOut()) {
+            return NEVER;
+          }
           // Deliberately the original 401, not the renewal's. The caller asked
           // for /v1/requests; an error about /v1/auth/refresh would name a call
           // it never made.

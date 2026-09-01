@@ -133,8 +133,8 @@ export class KeycloakIdentityProvider implements IdentityProvider, OnModuleInit 
     const client = await this.ensureClient();
 
     // introspect() asks the provider itself, which also catches a token revoked
-    // before its five minutes are up — the closest thing we have to ending a
-    // session early (R-9a).
+    // before its day is up — the closest thing we have to ending a session
+    // early (R-9a).
     const claims = await client.introspect(accessToken, 'access_token');
 
     if (claims.active !== true) {

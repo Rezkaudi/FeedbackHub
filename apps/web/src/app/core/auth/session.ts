@@ -2,6 +2,7 @@ import { Injectable, inject, signal, type Signal } from '@angular/core';
 import { DOCUMENT } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { BootstrapStore } from '../bootstrap/bootstrap.store';
 
 /**
  * Signing in and out.
@@ -20,6 +21,7 @@ const RETURN_URL_KEY = 'fh.returnUrl';
 export class Session {
   private readonly document = inject(DOCUMENT);
   private readonly http = inject(HttpClient);
+  private readonly bootstrap = inject(BootstrapStore);
   private readonly signedOut = signal(false);
 
   /** Set when a renewal failed mid-session, so the shell can react. */
@@ -57,9 +59,33 @@ export class Session {
     }
   }
 
-  /** A renewal failed. The cookies are already cleared by the server. */
-  public markSignedOut(): void {
+  /**
+   * A renewal failed. The cookies are already cleared by the server.
+   *
+   * SRS 15.8: a session that was working and then could not be renewed sends
+   * the person back to sign-in, remembering the page they wanted — the person
+   * never sees the raw 401. But the very first `/v1/bootstrap` on a fresh visit
+   * also 401s, and that person is not signed out of anything: they are a
+   * visitor who should just see the public board. So the redirect only happens
+   * once the app has finished starting up (`status() === 'ready'`).
+   *
+   * Returns whether it redirected, so the interceptor knows to swallow the
+   * error instead of letting a store show a "could not be saved" message.
+   */
+  public markSignedOut(): boolean {
+    if (this.signedOut()) {
+      return this.bootstrap.status() === 'ready';
+    }
     this.signedOut.set(true);
+
+    if (this.bootstrap.status() !== 'ready') {
+      return false;
+    }
+
+    const view = this.document.defaultView;
+    const returnUrl = view ? view.location.pathname + view.location.search : undefined;
+    this.signIn(returnUrl);
+    return true;
   }
 
   /**

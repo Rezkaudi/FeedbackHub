@@ -115,7 +115,7 @@ export class AuthController {
   }
 
   /**
-   * R-9a: the access token lives five minutes and the provider rotates the
+   * R-9a: the access token lives one day and the provider rotates the
    * refresh token on every use. The refresh cookie is scoped to the auth path
    * (R-3e), so it reaches here and sign-out, and nowhere else in the app.
    */

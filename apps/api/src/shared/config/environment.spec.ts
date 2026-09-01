@@ -74,8 +74,8 @@ describe('loadEnvironment', () => {
       expect(config.auth.cookies).toEqual({
         accessName: 'at',
         refreshName: 'rt',
-        accessMaxAgeSeconds: 300,
-        refreshMaxAgeSeconds: 1800,
+        accessMaxAgeSeconds: 86400,
+        refreshMaxAgeSeconds: 604800,
         refreshPath: '/v1/auth',
         secure: true,
       });

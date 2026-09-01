@@ -168,12 +168,17 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   remembering the page they wanted. Try again now reloads the page once the
   start-up call succeeds — recovering the store alone left the router's
   cancelled first navigation stuck, so the error cleared to a blank page (D-49).
-- **The session renews itself.** A 401 mid-use triggers one call to
-  `/v1/auth/refresh` and the original request goes again. Requests that fail
-  together share one renewal, because the provider rotates the refresh token and
-  three parallel renewals would end the session they were trying to save.
-  `11-errors-and-resilience` proves the one-attempt, no-loop behaviour; a real
-  token expiry is still only in the "not proven" list below.
+- **The session renews itself.** The access token lives one day; a 401 mid-use
+  triggers one call to `/v1/auth/refresh` and the original request goes again.
+  Requests that fail together share one renewal, because the provider rotates the
+  refresh token and three parallel renewals would end the session they were
+  trying to save. `11-errors-and-resilience` proves the one-attempt, no-loop
+  behaviour; a real token expiry is still only in the "not proven" list below.
+- **A spent session goes back to sign-in, not to an error.** When the refresh
+  token has also run out (one week), the renewal fails; the person is redirected
+  to sign in, with the page they were on remembered, and never sees the raw 401
+  or a "could not be saved" message. A first, never-signed-in visit is different
+  and stays on the public board.
 - **Theme works with no flash.** Read from `localStorage` before the first paint
   by an inline script, and light/dark/system all apply (R-55, R-56).
 - **Sign-in failures are told apart.** "You may not join" and "you were unlucky

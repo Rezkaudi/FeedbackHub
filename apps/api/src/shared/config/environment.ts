@@ -57,8 +57,11 @@ const schema = z.object({
   // R-3f. Names and lifetimes are config, never literals in the code.
   AUTH_COOKIE_ACCESS_NAME: z.string().min(1).default('at'),
   AUTH_COOKIE_REFRESH_NAME: z.string().min(1).default('rt'),
-  AUTH_COOKIE_ACCESS_MAX_AGE: positiveInteger.default(300),
-  AUTH_COOKIE_REFRESH_MAX_AGE: positiveInteger.default(1800),
+  // R-9a: access token one day, refresh token one week. These must match the
+  // Keycloak realm's accessTokenLifespan and ssoSessionIdleTimeout — see
+  // infra/keycloak/realm/README.md.
+  AUTH_COOKIE_ACCESS_MAX_AGE: positiveInteger.default(86400),
+  AUTH_COOKIE_REFRESH_MAX_AGE: positiveInteger.default(604800),
   // Includes the global 'v1' prefix, and covers the whole auth group: both
   // /v1/auth/refresh and /v1/auth/sign-out need this cookie, and a browser
   // sends a cookie only to paths under its Path.

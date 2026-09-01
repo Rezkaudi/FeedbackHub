@@ -421,7 +421,10 @@ nine-minute run, so nothing in the end-to-end suite ever makes the browser renew
 a real session, and every API test replaces the identity provider with a stub.
 `11-errors-and-resilience` proves the interceptor tries a refresh exactly once
 on a 401 and does not loop, but not that a genuine renewal works. D-32 was a bug
-in exactly this area and survived a green pipeline.
+in exactly this area and survived a green pipeline. The same gap covers D-88: the
+"spent refresh token redirects to sign-in instead of an error card" behaviour is
+only unit tested in `refresh.interceptor.spec.ts`, because no test run lasts the
+one week it would take a real refresh token to expire.
 
 **The submission rate limit had no test of its enforcement** until the
 end-to-end suite grew one. The refusal *shape* was unit tested and the window

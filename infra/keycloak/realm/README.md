@@ -10,12 +10,15 @@ with `Unrecognized field`. That is why the notes live here instead.
 
 ## What is in it, and why
 
-**Token lifetimes.** `accessTokenLifespan: 300` and `ssoSessionIdleTimeout: 1800`
-implement R-9a: the access token lives 5 minutes and the refresh token 30.
-These **must** match `AUTH_COOKIE_ACCESS_MAX_AGE` and
-`AUTH_COOKIE_REFRESH_MAX_AGE` in the API's environment. If they drift, a cookie
-outlives its token or dies before it. `revokeRefreshToken: true` with
-`refreshTokenMaxReuse: 0` is the rotation R-9a relies on.
+**Token lifetimes.** `accessTokenLifespan: 86400` and
+`ssoSessionIdleTimeout: 604800` (with `ssoSessionMaxLifespan: 604800`) implement
+R-9a: the access token lives one day and the refresh token one week. These
+**must** match `AUTH_COOKIE_ACCESS_MAX_AGE` and `AUTH_COOKIE_REFRESH_MAX_AGE` in
+the API's environment. If they drift, a cookie outlives its token or dies before
+it. `revokeRefreshToken: true` with `refreshTokenMaxReuse: 0` is the rotation
+R-9a relies on. When the refresh token is finally spent, the web app renews
+once, sees the renewal fail, and sends the person to sign in — it never shows
+the raw 401.
 
 **The client.** `feedbackhub-api` is a *confidential* client (R-3b): its secret
 lives only on our server, in an environment variable, and never in the front-end

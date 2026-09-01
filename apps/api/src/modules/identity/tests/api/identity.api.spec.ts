@@ -222,7 +222,7 @@ describe('identity', () => {
       await expect(api.prisma.vote.count()).resolves.toBe(0);
     });
 
-    it('stops their sign-in working, even with a token still inside its five minutes', async () => {
+    it('stops their sign-in working, even with a token still inside its lifetime', async () => {
       const person = await anActiveUser('leaver@example.com');
       await api.prisma.user.update({
         where: { id: person.id },

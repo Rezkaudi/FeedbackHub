@@ -9,7 +9,7 @@ import { refreshInterceptor } from './refresh.interceptor';
 import { Session } from './session';
 
 /**
- * R-9a: the access token lives five minutes and the identity provider rotates
+ * R-9a: the access token lives one day and the identity provider rotates
  * the refresh token on every use. SRS 15.8 says what a person should notice
  * when it expires mid-use: nothing. "It is renewed quietly. If that fails, back
  * to sign-in, and we remember which page they wanted."
@@ -30,7 +30,7 @@ describe('renewing the session quietly', () => {
   let session: { signIn: ReturnType<typeof vi.fn>; markSignedOut: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    session = { signIn: vi.fn(), markSignedOut: vi.fn() };
+    session = { signIn: vi.fn(), markSignedOut: vi.fn().mockReturnValue(false) };
 
     TestBed.configureTestingModule({
       providers: [
@@ -114,6 +114,26 @@ describe('renewing the session quietly', () => {
       await result.catch(() => undefined);
 
       expect(session.markSignedOut).toHaveBeenCalled();
+    });
+
+    it('swallows the error when it is redirecting to sign in, so no store shows a failure', async () => {
+      // A mid-session expiry: markSignedOut redirects and reports it did.
+      session.markSignedOut.mockReturnValue(true);
+
+      let settled = false;
+      const result = firstValueFrom(http.get('/v1/requests')).then(
+        () => (settled = true),
+        () => (settled = true),
+      );
+
+      backend.expectOne('/v1/requests').flush({}, unauthorized());
+      backend.expectOne('/v1/auth/refresh').flush({}, unauthorized());
+
+      // The page is navigating away; the request stays pending and never
+      // rejects, so nothing downstream turns it into an error message.
+      await Promise.race([result, Promise.resolve()]);
+      expect(settled).toBe(false);
+      backend.verify();
     });
   });
 
