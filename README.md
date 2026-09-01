@@ -312,6 +312,14 @@ comment threading (D-05), and search without ranking (D-11).
 - **Search, filter by status and category, sort, and pages**, all of it in the
   web address (R-22). Copy the address and you get the same board back; the back
   button walks the searches.
+- **The status and category filters list retired rows too** — both on the board
+  and in the Profile page's "Default categories / statuses" chips — so an old
+  request tagged with one stays findable and can be a saved default. The "New
+  request" category picker and the admin status menu still offer only active
+  rows — a retired one can be filtered by, not newly chosen or set (R-45).
+- **Retired status and category chips read as plain chips** on the board cards
+  and the request page — just the name, no "(retired)" note. The note is kept
+  only on the admin taxonomy screen, where retiring is managed.
 - **The saved sort and filters seed the board, and the address overrides them**
   (R-24). An explicitly-cleared filter stays cleared, so a shared link cannot
   quietly revert to the recipient's own saved filters.

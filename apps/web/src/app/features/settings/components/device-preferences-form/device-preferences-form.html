@@ -21,7 +21,7 @@
     <legend class="text-on-surface-variant text-sm font-semibold">{{ 'settings.defaultCategoriesLabel' | t }}</legend>
     <p class="text-on-surface-variant mt-0.5 mb-2 text-xs">{{ 'settings.defaultCategoriesHint' | t }}</p>
     <div class="flex flex-wrap gap-2">
-      @for (category of bootstrap.activeCategories(); track category.id) {
+      @for (category of bootstrap.categories(); track category.id) {
         <fh-filter-chip
           [inputId]="'default-category-' + category.id"
           [checked]="preferences.defaultCategoryIds().includes(category.id)"
@@ -37,7 +37,7 @@
     <legend class="text-on-surface-variant text-sm font-semibold">{{ 'settings.defaultStatusesLabel' | t }}</legend>
     <p class="text-on-surface-variant mt-0.5 mb-2 text-xs">{{ 'settings.defaultStatusesHint' | t }}</p>
     <div class="flex flex-wrap gap-2">
-      @for (status of bootstrap.activeStatuses(); track status.id) {
+      @for (status of bootstrap.statuses(); track status.id) {
         <fh-filter-chip
           [inputId]="'default-status-' + status.id"
           [checked]="preferences.defaultStatusIds().includes(status.id)"

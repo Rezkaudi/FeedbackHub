@@ -19,6 +19,14 @@ describe('the settings screen', () => {
     mySettings: signal({ language: 'en', notifyOnComment: true, notifyOnStatusChange: false }),
     activeCategories: signal([{ id: 'c1', name: 'Bug', color: '#DC2626', isActive: true }]),
     activeStatuses: signal([{ id: 's1', name: 'New', color: '#0369A1', isActive: true }]),
+    categories: signal([
+      { id: 'c1', name: 'Bug', color: '#DC2626', isActive: true },
+      { id: 'c2', name: 'Legacy', color: '#78716C', isActive: false },
+    ]),
+    statuses: signal([
+      { id: 's1', name: 'New', color: '#0369A1', isActive: true },
+      { id: 's2', name: 'Under Review', color: '#78716C', isActive: false },
+    ]),
     applyUser: vi.fn(),
     applyMySettings: vi.fn(),
   };

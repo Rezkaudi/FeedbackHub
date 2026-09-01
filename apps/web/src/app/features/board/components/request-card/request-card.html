@@ -40,13 +40,13 @@
     @if (status(); as row) {
       <span class="meta-group">
         <span class="meta-label">{{ 'board.statusLabel' | t }}</span>
-        <fh-taxonomy-chip [name]="row.name" [color]="row.color" [isActive]="row.isActive" [retiredLabel]="'board.retired' | t" />
+        <fh-taxonomy-chip [name]="row.name" [color]="row.color" />
       </span>
     }
     @if (category(); as row) {
       <span class="meta-group">
         <span class="meta-label">{{ 'board.categoryLabel' | t }}</span>
-        <fh-taxonomy-chip [name]="row.name" [color]="row.color" [isActive]="row.isActive" [retiredLabel]="'board.retired' | t" />
+        <fh-taxonomy-chip [name]="row.name" [color]="row.color" />
       </span>
     }
   </div>

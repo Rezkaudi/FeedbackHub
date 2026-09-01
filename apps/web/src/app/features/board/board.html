@@ -3,8 +3,8 @@
 <div class="mt-6">
   <fh-board-toolbar
     [query]="query()"
-    [statuses]="bootstrap.activeStatuses()"
-    [categories]="bootstrap.activeCategories()"
+    [statuses]="bootstrap.statuses()"
+    [categories]="bootstrap.categories()"
     (searchChange)="onSearch($event)"
     (sortChange)="onSort($event)"
     (statusToggled)="toggle('statusIds', $event)"

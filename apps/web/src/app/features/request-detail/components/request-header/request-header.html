@@ -36,11 +36,11 @@
         (changed)="statusChanged.emit($event)"
       />
     } @else if (status(); as row) {
-      <fh-taxonomy-chip [name]="row.name" [color]="row.color" [isActive]="row.isActive" [retiredLabel]="'board.retired' | t" />
+      <fh-taxonomy-chip [name]="row.name" [color]="row.color" />
     }
 
     @if (category(); as row) {
-      <fh-taxonomy-chip [name]="row.name" [color]="row.color" [isActive]="row.isActive" [retiredLabel]="'board.retired' | t" />
+      <fh-taxonomy-chip [name]="row.name" [color]="row.color" />
     }
   </div>
 

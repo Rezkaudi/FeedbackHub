@@ -203,11 +203,17 @@ describe('the board screen', () => {
   });
 
   describe('the filter bar', () => {
-    it('offers only categories that are still open for picking (R-45)', async () => {
+    it('offers every category for filtering, retired ones included, so old requests stay findable (R-45)', async () => {
+      const retired = { id: 'c2', name: 'Legacy', slug: 'legacy', color: '#DC2626', isActive: false };
+      bootstrap.categories.set([category, retired]);
+
       await renderBoard(boardIn('ready', { items: signal([aRequest()]), total: signal(1) }));
 
       await openFilters();
       expect(screen.getByRole('checkbox', { name: 'Bug' })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: 'Legacy' })).toBeInTheDocument();
+
+      bootstrap.categories.set([category]);
     });
 
     it('names the sort control, and offers the four the server accepts', async () => {
