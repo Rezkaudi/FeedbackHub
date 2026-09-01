@@ -319,6 +319,17 @@ describe('votes and comments', () => {
       expect(theirs.body).toMatchObject({ total: 0 });
     });
 
+    it("does not make an admin's own comment wait: nobody else could approve it", async () => {
+      await requireApproval();
+      api.signInAs(someAdmin);
+      const created = await post(`/v1/requests/${requestId}/comments`, { body: 'Admin note.' });
+      expect((created.body as { state: string }).state).toBe('published');
+
+      api.signInAs(thirdPerson);
+      const theirs = await get(`/v1/requests/${requestId}/comments`);
+      expect(theirs.body).toMatchObject({ total: 1 });
+    });
+
     it('makes it visible once an admin approves it (R-41)', async () => {
       await requireApproval();
       const created = await post(`/v1/requests/${requestId}/comments`, { body: 'Please approve.' });

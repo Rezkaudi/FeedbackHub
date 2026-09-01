@@ -7,12 +7,14 @@ import { SettingsService } from '../../../settings/settings.service';
 import { NotificationsService } from '../../../notifications/notifications.service';
 import { ID_GENERATOR, type IdGenerator } from '../../../../shared/ports';
 import { NotFoundError } from '../../../../shared/errors/app-error';
-import { AuthenticatedUser } from '../../../../shared/auth/authenticated-user';
+import { AuthenticatedUser, isAdmin } from '../../../../shared/auth/authenticated-user';
 
 /**
  * R-32: anyone signed in can comment on any request.
  * R-40: when approval is on, the comment waits and only its writer and admins
- *       see it.
+ *       see it. Departure from R-40: an admin's own comment never waits — the
+ *       only person who could approve it is the admin who just wrote it, so
+ *       the queue step would be pure friction. Written up in SCOPE.md.
  * R-125: the email is sent when the comment becomes *visible*, not when it is
  *        written — so a comment that needs approval emails nobody yet.
  */
@@ -40,7 +42,7 @@ export class WriteComment {
       throw new NotFoundError('Feedback request', requestId);
     }
 
-    const needsApproval = await this.settings.commentsNeedApproval();
+    const needsApproval = isAdmin(author) ? false : await this.settings.commentsNeedApproval();
 
     const comment = await this.comments.add(
       Comment.write({ requestId, authorId: author.id, body }, {

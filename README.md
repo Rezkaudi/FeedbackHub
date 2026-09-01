@@ -399,7 +399,9 @@ comment threading (D-05), and search without ranking (D-11).
 - **Deleting a comment removes it completely** — from the thread and from the
   database, with no tombstone row (this overrides R-38/R-39; see `DECISIONS.md`).
   Admin "reject" of a waiting comment deletes it the same way. A comment waiting
-  for approval is shown to its writer, marked, and not counted (R-40).
+  for approval is shown to its writer, marked, and not counted (R-40). An
+  admin's own comment never waits, even with approval on — see
+  `DECISIONS.md` D-94.
 - **Every page carries a breadcrumb** from the board down to where you are, so
   the deeper screens (a request, a settings tab, an admin section) show their
   place. Not asked for in the brief — a usability addition.

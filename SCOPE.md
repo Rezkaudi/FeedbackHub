@@ -77,6 +77,11 @@ nothing is skipped while people are writing (D-05).
 The comment count is different for different people. A comment waiting for
 approval is counted only for the person who wrote it, and for admins (R-40).
 
+An admin's own comment never waits, even when the setting is on. R-40 does not
+carve out an exception for admins, but an admin is the only person who could
+approve the comment, so making it wait on itself is pure friction with no
+protection behind it (D-94).
+
 Deleting a comment removes it completely — from the thread and from the
 database. This departs from R-38/R-39/R-41, which ask for a "grey line" that
 stays and is not counted; the owner asked for a real delete instead (D-73).
