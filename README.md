@@ -120,7 +120,8 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
 - **`requests`** — create, read, edit, delete, plus admin status change and
   pinning. Status, author and timestamps are set by the server. The board is
   **one SQL statement**: search over title and description, status and category
-  filters (or inside, and between), four sorts from a fixed list, pinned first
+  filters (or inside, and between), a `mine` filter that narrows the board to
+  the caller's own requests (D-93), four sorts from a fixed list, pinned first
   within the chosen filter, paging, and both derived counts — no N+1, one round
   trip whatever the page size. `?sort=; DROP TABLE users` is refused as a bad
   value, and every other value is a bound parameter.
@@ -309,9 +310,15 @@ comment threading (D-05), and search without ranking (D-11).
 
 ### The front end — the board
 
-- **Search, filter by status and category, sort, and pages**, all of it in the
-  web address (R-22). Copy the address and you get the same board back; the back
-  button walks the searches.
+- **Search, filter by status and category, filter down to my own requests, sort,
+  and pages**, all of it in the web address (R-22). Copy the address and you get
+  the same board back; the back button walks the searches.
+- **A "My requests" toggle button** sits between the sort control and the
+  Filters button (D-93), styled the same as `Filters` and `New request` (an
+  `fh-button`, not a filter chip) so the toolbar reads as one family of
+  controls. It follows the same address rule as the other filters — the URL
+  wins, and an explicitly-cleared one stays cleared — and toggling it also
+  sets what this browser opens the board with next time.
 - **The status and category filters list retired rows too** — both on the board
   and in the Profile page's "Default categories / statuses" chips — so an old
   request tagged with one stays findable and can be a saved default. The "New
@@ -450,10 +457,10 @@ comment threading (D-05), and search without ranking (D-11).
 - **The choices that live in this browser** — theme, default sort and default
   filters (D-06) — sit under an **Appearance and defaults** card, kept apart
   from the account-level choices above it. The card has a chip group for the
-  default categories **and** one for the default statuses; both, and the
-  default sort, are also written from the board toolbar itself: pick
-  a sort or toggle a filter chip there and that becomes what this browser opens
-  the board with next time (D-86). A shared link still wins over it while it is
+  default categories **and** one for the default statuses, an "Only my requests"
+  toggle, and the default sort; all of them are also written from the board
+  toolbar itself: pick a sort or toggle a filter chip there and that becomes
+  what this browser opens the board with next time (D-86, D-93). A shared link still wins over it while it is
   on screen (R-24).
 - **The admin area** uses the same shell as the profile page: an identity-style
   header over a sticky section rail on the left and the current screen in a

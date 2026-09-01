@@ -36,10 +36,12 @@ describe('the settings screen', () => {
     defaultSort: signal('newest'),
     defaultCategoryIds: signal<string[]>([]),
     defaultStatusIds: signal<string[]>([]),
+    defaultMine: signal(false),
     setTheme: vi.fn(),
     setDefaultSort: vi.fn(),
     setDefaultCategoryIds: vi.fn(),
     setDefaultStatusIds: vi.fn(),
+    setDefaultMine: vi.fn(),
     setStoredLanguage: vi.fn(),
     storedLanguage: () => null,
   };

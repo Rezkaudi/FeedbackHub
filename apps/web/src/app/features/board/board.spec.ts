@@ -60,11 +60,13 @@ describe('the board screen', () => {
     defaultSort: signal('newest'),
     defaultStatusIds: signal([]),
     defaultCategoryIds: signal([]),
+    defaultMine: signal(false),
     knownStatusIds: () => [],
     knownCategoryIds: () => [],
     setDefaultSort: vi.fn(),
     setDefaultStatusIds: vi.fn(),
     setDefaultCategoryIds: vi.fn(),
+    setDefaultMine: vi.fn(),
     storedLanguage: () => null,
     setStoredLanguage: () => {},
   };
@@ -214,6 +216,15 @@ describe('the board screen', () => {
       expect(screen.getByRole('checkbox', { name: 'Legacy' })).toBeInTheDocument();
 
       bootstrap.categories.set([category]);
+    });
+
+    it('offers a "My requests" toggle and remembers it for the next clean visit', async () => {
+      await renderBoard(boardIn('ready', { items: signal([aRequest()]), total: signal(1) }));
+
+      preferences.setDefaultMine.mockClear();
+      await userEvent.click(screen.getByRole('button', { name: /my requests/i }));
+
+      expect(preferences.setDefaultMine).toHaveBeenCalledWith(true);
     });
 
     it('names the sort control, and offers the four the server accepts', async () => {

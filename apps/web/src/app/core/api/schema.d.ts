@@ -1603,6 +1603,8 @@ export interface operations {
                 search?: string;
                 statusIds?: string[];
                 categoryIds?: string[];
+                /** @description Only the requests written by the person asking. */
+                mine?: boolean;
                 sort?: "newest" | "oldest" | "most_votes" | "most_comments";
                 page?: number;
                 pageSize?: number;

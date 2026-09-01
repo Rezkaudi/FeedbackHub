@@ -16,6 +16,8 @@ export interface BoardQuery {
   readonly search: string;
   readonly statusIds: readonly string[];
   readonly categoryIds: readonly string[];
+  /** Show only the requests I wrote. */
+  readonly mine: boolean;
   readonly sort: Sort;
   readonly page: number;
 }
@@ -30,6 +32,7 @@ export interface SavedDefaults {
   readonly sort: Sort;
   readonly statusIds: readonly string[];
   readonly categoryIds: readonly string[];
+  readonly mine: boolean;
 }
 
 const SORTS: readonly Sort[] = ['newest', 'oldest', 'most_votes', 'most_comments'];
@@ -77,6 +80,10 @@ export function resolveBoardQuery(
       ? ids(params, 'categoryIds', taxonomy.categoryIds)
       : saved.categoryIds.filter((id) => taxonomy.categoryIds.includes(id)),
 
+    // R-24 again: the address wins. The saved default only speaks when the
+    // address carried no filters at all.
+    mine: addressHasFilters ? params.get('mine') === '1' : saved.mine,
+
     // R-20: only a name from the fixed list. Anything else falls back rather
     // than travelling to the server to be refused there.
     sort: SORTS.find((sort) => sort === params.get('sort')) ?? saved.sort,
@@ -101,6 +108,9 @@ export function toQueryParams(query: BoardQuery): Record<string, string | number
   if (query.categoryIds.length > 0) {
     params['categoryIds'] = [...query.categoryIds];
   }
+  if (query.mine) {
+    params['mine'] = '1';
+  }
   if (query.sort !== DEFAULT_SORT) {
     params['sort'] = query.sort;
   }
@@ -114,5 +124,10 @@ export function toQueryParams(query: BoardQuery): Record<string, string | number
 /** Whether the person has narrowed the board at all — the two empty states
  * read differently, and this is what tells them apart (R-25). */
 export function isFiltered(query: BoardQuery): boolean {
-  return query.search.length > 0 || query.statusIds.length > 0 || query.categoryIds.length > 0;
+  return (
+    query.search.length > 0 ||
+    query.statusIds.length > 0 ||
+    query.categoryIds.length > 0 ||
+    query.mine
+  );
 }

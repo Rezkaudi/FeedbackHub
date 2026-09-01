@@ -160,6 +160,9 @@ function paramsFor(query: BoardQuery): HttpParams {
   for (const id of query.categoryIds) {
     params = params.append('categoryIds', id);
   }
+  if (query.mine) {
+    params = params.set('mine', 'true');
+  }
   params = params.set('sort', query.sort);
 
   return params;

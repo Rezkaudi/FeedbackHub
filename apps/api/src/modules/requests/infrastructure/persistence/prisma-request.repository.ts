@@ -83,7 +83,7 @@ export class PrismaRequestRepository implements RequestRepository {
     commentsEnabled: boolean,
   ): Promise<BoardPage> {
     const rows = await this.select(
-      this.filtersFor(query),
+      this.filtersFor(query, viewer),
       Prisma.sql`ORDER BY r.is_pinned DESC, r.pinned_at DESC NULLS LAST, ${ORDER_BY[query.sort]}
                  LIMIT ${query.pageSize} OFFSET ${(query.page - 1) * query.pageSize}`,
       viewer,
@@ -117,8 +117,14 @@ export class PrismaRequestRepository implements RequestRepository {
   }
 
   /** R-18, R-17, R-20 turned into bound SQL. Never a user string in the text. */
-  private filtersFor(query: BoardQuery): Prisma.Sql {
+  private filtersFor(query: BoardQuery, viewer: BoardViewer): Prisma.Sql {
     const filters: Prisma.Sql[] = [];
+
+    // "My requests": the author is the person asking. The id is theirs, from
+    // the session, never a value off the query string.
+    if (query.mine) {
+      filters.push(Prisma.sql`r.author_id = ${viewer.id}::uuid`);
+    }
 
     if (query.search !== undefined && query.search.trim().length > 0) {
       // R-17: over the title and the description, never over comments.

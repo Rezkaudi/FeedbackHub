@@ -36,6 +36,10 @@ export class DevicePreferencesForm {
     }
   }
 
+  protected toggleMine(): void {
+    this.preferences.setDefaultMine(!this.preferences.defaultMine());
+  }
+
   protected toggleCategory(id: string): void {
     const current = this.preferences.defaultCategoryIds();
     this.preferences.setDefaultCategoryIds(

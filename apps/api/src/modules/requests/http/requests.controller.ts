@@ -74,6 +74,7 @@ export class RequestsController {
         search: query.search,
         statusIds: query.statusIds ?? [],
         categoryIds: query.categoryIds ?? [],
+        mine: query.mine ?? false,
         sort: toSort(query.sort),
         page: query.page ?? 1,
         pageSize: query.pageSize ?? DEFAULT_PAGE_SIZE,

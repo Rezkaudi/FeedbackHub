@@ -47,6 +47,7 @@ const KEY = {
   sort: 'fh.defaultSort',
   statusIds: 'fh.defaultStatusIds',
   categoryIds: 'fh.defaultCategoryIds',
+  mine: 'fh.defaultMine',
 } as const;
 
 /**
@@ -107,11 +108,13 @@ export class DevicePreferencesStore {
   private readonly sort: WritableSignal<Sort> = signal(oneOf(SORTS, read(KEY.sort), DEFAULT_SORT));
   private readonly statusIds: WritableSignal<string[]> = signal(readIds(KEY.statusIds));
   private readonly categoryIds: WritableSignal<string[]> = signal(readIds(KEY.categoryIds));
+  private readonly mine: WritableSignal<boolean> = signal(read(KEY.mine) === 'true');
 
   public readonly theme: Signal<Theme> = this.themeChoice.asReadonly();
   public readonly defaultSort: Signal<Sort> = this.sort.asReadonly();
   public readonly defaultStatusIds: Signal<readonly string[]> = this.statusIds.asReadonly();
   public readonly defaultCategoryIds: Signal<readonly string[]> = this.categoryIds.asReadonly();
+  public readonly defaultMine: Signal<boolean> = this.mine.asReadonly();
 
   public setTheme(theme: Theme): void {
     this.themeChoice.set(theme);
@@ -131,6 +134,11 @@ export class DevicePreferencesStore {
   public setDefaultCategoryIds(ids: readonly string[]): void {
     this.categoryIds.set([...ids]);
     write(KEY.categoryIds, JSON.stringify(ids));
+  }
+
+  public setDefaultMine(mine: boolean): void {
+    this.mine.set(mine);
+    write(KEY.mine, mine ? 'true' : 'false');
   }
 
   /**

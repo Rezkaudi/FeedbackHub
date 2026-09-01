@@ -46,6 +46,7 @@ describe('the preferences that live in this browser', () => {
       expect(store.defaultSort()).toBe('newest');
       expect(store.defaultStatusIds()).toEqual([]);
       expect(store.defaultCategoryIds()).toEqual([]);
+      expect(store.defaultMine()).toBe(false);
     });
 
     it('returns to the code default when the browser data is cleared', () => {
@@ -76,11 +77,13 @@ describe('the preferences that live in this browser', () => {
       store.setDefaultSort('most_votes');
       store.setDefaultStatusIds(['s1', 's2']);
       store.setDefaultCategoryIds(['c1']);
+      store.setDefaultMine(true);
 
       const reloaded = reload();
       expect(reloaded.defaultSort()).toBe('most_votes');
       expect(reloaded.defaultStatusIds()).toEqual(['s1', 's2']);
       expect(reloaded.defaultCategoryIds()).toEqual(['c1']);
+      expect(reloaded.defaultMine()).toBe(true);
     });
   });
 

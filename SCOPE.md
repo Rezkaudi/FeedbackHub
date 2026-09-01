@@ -22,7 +22,8 @@ A feedback board for people inside one company.
 
 **Anyone signed in can:**
 - Write a request. Give it a title, a description and a category.
-- See the board. Sort it, filter it by status and category, search it, page through it.
+- See the board. Sort it, filter it by status and category, filter it down to
+  their own requests, search it, page through it.
 - Open a request and read the comments.
 - Upvote a request. Take the vote back. One vote per person per request.
 - Write a comment. Edit their own. Delete their own.
@@ -179,11 +180,12 @@ We are not hiding these. Each one is a choice.
   part 17 depends on it (a notification email written in Arabic). It was planned
   as in scope during Step 1 and dropped during Step 2. What it needs, and what
   was built anyway, is in section 6.
-- **No "only my requests" filter.** Journey U-5 says a person finds their own
-  earlier request, but the board rules R-16 to R-25 never list a mine filter and
-  the API has no such parameter. Requests now carry `isMine`, so a person can
-  recognise their own on the board, but cannot filter the whole board down to
-  them. If that turns out to matter, it is one query parameter and one checkbox.
+- **A "my requests" filter — first cut, then built (D-93).** Journey U-5 says a
+  person finds their own earlier request. The board rules R-16 to R-25 never
+  list a mine filter, so it was left out at first: requests carried `isMine` so
+  a person could recognise their own, but not narrow the board to them. It was
+  added later as one query parameter (`mine`), one filter chip on the board
+  toolbar, and one default toggle under Appearance and defaults — see D-93.
 - **Server validation messages stay English.** The error shape (R-76) promises a
   code the front end translates, and it keeps that promise everywhere except
   `fields`, which the exception filter fills from class-validator's own English

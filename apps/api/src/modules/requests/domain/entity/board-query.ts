@@ -36,6 +36,8 @@ export interface BoardQuery {
   /** R-18: more than one may be picked. Inside one filter it means "or". */
   readonly statusIds: readonly string[];
   readonly categoryIds: readonly string[];
+  /** Narrow the board to the requests written by the person asking. */
+  readonly mine: boolean;
   readonly sort: Sort;
   readonly page: number;
   readonly pageSize: number;

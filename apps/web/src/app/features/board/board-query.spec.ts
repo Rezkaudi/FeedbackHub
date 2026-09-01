@@ -15,6 +15,7 @@ describe('what board the address asks for', () => {
     sort: 'most_votes' as const,
     statusIds: ['s-saved'],
     categoryIds: ['c-saved'],
+    mine: false,
   };
 
   const taxonomy: Taxonomy = {
@@ -24,11 +25,12 @@ describe('what board the address asks for', () => {
 
   describe('when the address says nothing', () => {
     it('uses what this person saved', () => {
-      const query = resolveBoardQuery(new URLSearchParams(), saved, taxonomy);
+      const query = resolveBoardQuery(new URLSearchParams(), { ...saved, mine: true }, taxonomy);
 
       expect(query.sort).toBe('most_votes');
       expect(query.statusIds).toEqual(['s-saved']);
       expect(query.categoryIds).toEqual(['c-saved']);
+      expect(query.mine).toBe(true);
     });
 
     it('starts on the first page, searching for nothing', () => {
@@ -57,6 +59,22 @@ describe('what board the address asks for', () => {
 
       expect(query.statusIds).toEqual([]);
       expect(query.categoryIds).toEqual([]);
+    });
+
+    it('turns the saved "my requests" default off when the address carries filters', () => {
+      const query = resolveBoardQuery(
+        new URLSearchParams('filtered=1'),
+        { ...saved, mine: true },
+        taxonomy,
+      );
+
+      expect(query.mine).toBe(false);
+    });
+
+    it('reads "my requests" back from the address', () => {
+      const query = resolveBoardQuery(new URLSearchParams('filtered=1&mine=1'), saved, taxonomy);
+
+      expect(query.mine).toBe(true);
     });
 
     it('reads more than one value for the same filter (R-18)', () => {
@@ -142,6 +160,7 @@ describe('what board the address asks for', () => {
         search: '',
         statusIds: [],
         categoryIds: [],
+        mine: false,
         sort: 'newest',
         page: 1,
       });
@@ -154,6 +173,7 @@ describe('what board the address asks for', () => {
         search: 'dark',
         statusIds: ['s1'],
         categoryIds: [],
+        mine: true,
         sort: 'most_votes',
         page: 2,
       });
@@ -162,6 +182,7 @@ describe('what board the address asks for', () => {
         filtered: '1',
         search: 'dark',
         statusIds: ['s1'],
+        mine: '1',
         sort: 'most_votes',
         page: 2,
       });
@@ -172,6 +193,7 @@ describe('what board the address asks for', () => {
         search: 'dark mode',
         statusIds: ['s1', 's2'],
         categoryIds: ['c1'],
+        mine: true,
         sort: 'most_comments' as const,
         page: 4,
       };

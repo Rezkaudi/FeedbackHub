@@ -66,6 +66,7 @@ export class Board {
         sort: this.preferences.defaultSort(),
         statusIds: this.preferences.defaultStatusIds(),
         categoryIds: this.preferences.defaultCategoryIds(),
+        mine: this.preferences.defaultMine(),
       },
       {
         statusIds: this.bootstrap.statuses().map((status) => status.id),
@@ -110,10 +111,26 @@ export class Board {
     this.navigate({ ...this.query(), [which]: next, page: 1 });
   }
 
+  protected toggleMine(): void {
+    // R-58/D-06 again: a "My requests" toggle from the toolbar is also what a
+    // clean visit falls back to next time. The URL still wins while on screen.
+    const next = !this.query().mine;
+    this.preferences.setDefaultMine(next);
+    this.navigate({ ...this.query(), mine: next, page: 1 });
+  }
+
   protected clearFilters(): void {
     this.preferences.setDefaultStatusIds([]);
     this.preferences.setDefaultCategoryIds([]);
-    this.navigate({ search: '', statusIds: [], categoryIds: [], sort: this.query().sort, page: 1 });
+    this.preferences.setDefaultMine(false);
+    this.navigate({
+      search: '',
+      statusIds: [],
+      categoryIds: [],
+      mine: false,
+      sort: this.query().sort,
+      page: 1,
+    });
   }
 
   private remember(which: 'statusIds' | 'categoryIds', ids: readonly string[]): void {

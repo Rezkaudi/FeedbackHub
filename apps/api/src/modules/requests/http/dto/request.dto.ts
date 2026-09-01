@@ -65,6 +65,10 @@ export class PinRequestDto {
   public readonly pinned!: boolean;
 }
 
+/** A query string carries "true"/"false" as text; turn the true-ish ones on. */
+const toBool = ({ value }: { value: unknown }): boolean =>
+  value === true || value === 'true' || value === '1';
+
 /** A query string sends one value or many; both must become an array. */
 const toArray = ({ value }: { value: unknown }): string[] => {
   if (Array.isArray(value)) {
@@ -85,6 +89,13 @@ export class BoardQueryDto {
   @ApiPropertyOptional({ type: [String], format: 'uuid' })
   @IsOptional() @Transform(toArray) @IsArray() @IsUUID('4', { each: true })
   public readonly categoryIds?: string[];
+
+  @ApiPropertyOptional({
+    type: Boolean,
+    description: 'Only the requests written by the person asking.',
+  })
+  @IsOptional() @Transform(toBool) @IsBoolean()
+  public readonly mine?: boolean;
 
   /**
    * R-20: only these four names are accepted. Anything else is refused here,

@@ -36,14 +36,27 @@
   font: inherit;
   font-size: var(--md-sys-typescale-label-large-size);
   font-weight: var(--md-sys-typescale-label-large-weight);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
   cursor: pointer;
   transition:
     background-color var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard),
     border-color var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard);
 }
 
+/* Windows and some Linux themes do not colour the native option list from
+ * `color-scheme` alone; name the surface so the open list is not a bright
+ * strip in dark mode. */
+.board-sort-select option {
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+}
+
 .board-sort-select:hover {
   background: var(--md-sys-color-surface-container-high);
+  border-color: var(--md-sys-color-on-surface-variant);
 }
 
 .board-sort-select:focus-visible {

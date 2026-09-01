@@ -26,6 +26,7 @@ export class BoardToolbar {
   public readonly sortChange = output<Sort>();
   public readonly statusToggled = output<string>();
   public readonly categoryToggled = output<string>();
+  public readonly mineToggled = output<void>();
   public readonly clearedAll = output<void>();
   public readonly newRequest = output<void>();
 

@@ -284,6 +284,20 @@ describe('requests and the board', () => {
       expect(contradictory.body).toMatchObject({ total: 0 });
     });
 
+    it('shows only my own requests when mine=true, and everything without it', async () => {
+      await aRequest({ title: 'Mine to keep' });
+      api.signInAs(someAdmin);
+      await aRequest({ title: 'Belongs to the admin' });
+      api.signInAs(someUser);
+
+      const all = await get('/v1/requests');
+      expect(all.body).toMatchObject({ total: 2 });
+
+      const onlyMine = await get('/v1/requests?mine=true');
+      expect(onlyMine.body).toMatchObject({ total: 1 });
+      expect((onlyMine.body as { items: { title: string }[] }).items[0]?.title).toBe('Mine to keep');
+    });
+
     it('refuses a made-up sort name (R-20)', async () => {
       const response = await get('/v1/requests?sort=; DROP TABLE users');
 

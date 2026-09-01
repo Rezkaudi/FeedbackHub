@@ -96,6 +96,13 @@
     background-position: left var(--fh-space-3) center;
   }
 
+  /* Some platforms do not colour the native option list from `color-scheme`
+   * alone; name the surface so the open list matches the field in dark mode. */
+  .fh-select option {
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+  }
+
   .fh-select[aria-invalid='true'] {
     border-color: var(--md-sys-color-error);
   }

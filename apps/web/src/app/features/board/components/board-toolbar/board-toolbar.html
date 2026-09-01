@@ -3,6 +3,15 @@
     <fh-board-search [value]="query().search" (searchChange)="searchChange.emit($event)" />
     <fh-board-sort [value]="query().sort" (sortChange)="sortChange.emit($event)" />
 
+    <fh-button
+      [variant]="query().mine ? 'tonal' : 'outlined'"
+      [icon]="query().mine ? 'check' : undefined"
+      [attr.aria-pressed]="query().mine"
+      (click)="mineToggled.emit()"
+    >
+      {{ 'board.filterMine' | t }}
+    </fh-button>
+
     <div class="filters-group">
       <fh-button
         variant="outlined"

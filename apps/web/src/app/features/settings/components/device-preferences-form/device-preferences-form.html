@@ -17,6 +17,16 @@
     </select>
   </fh-field>
 
+  <fh-field [label]="'settings.defaultMineLabel' | t" [hint]="'settings.defaultMineHint' | t">
+    <fh-filter-chip
+      inputId="default-mine"
+      [checked]="preferences.defaultMine()"
+      (toggled)="toggleMine()"
+    >
+      {{ 'settings.defaultMineChip' | t }}
+    </fh-filter-chip>
+  </fh-field>
+
   <fieldset>
     <legend class="text-on-surface-variant text-sm font-semibold">{{ 'settings.defaultCategoriesLabel' | t }}</legend>
     <p class="text-on-surface-variant mt-0.5 mb-2 text-xs">{{ 'settings.defaultCategoriesHint' | t }}</p>

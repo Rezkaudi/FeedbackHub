@@ -19,6 +19,7 @@ describe('the board', () => {
     search: '',
     statusIds: [],
     categoryIds: [],
+    mine: false,
     sort: 'newest',
     page: 1,
     ...over,
@@ -62,6 +63,7 @@ describe('the board', () => {
           search: 'dark',
           statusIds: ['s1', 's2'],
           categoryIds: ['c1'],
+          mine: true,
           sort: 'most_votes',
           page: 2,
         }),
@@ -73,6 +75,7 @@ describe('the board', () => {
       expect(params.get('search')).toBe('dark');
       expect(params.getAll('statusIds')).toEqual(['s1', 's2']);
       expect(params.getAll('categoryIds')).toEqual(['c1']);
+      expect(params.get('mine')).toBe('true');
       expect(params.get('sort')).toBe('most_votes');
       expect(params.get('page')).toBe('2');
 
@@ -88,6 +91,7 @@ describe('the board', () => {
       const request = http.expectOne((candidate) => candidate.url === '/v1/requests');
       expect(request.request.params.has('search')).toBe(false);
       expect(request.request.params.has('statusIds')).toBe(false);
+      expect(request.request.params.has('mine')).toBe(false);
 
       request.flush({ items: [], total: 0, page: 1, pageSize: 20 });
       await done;
