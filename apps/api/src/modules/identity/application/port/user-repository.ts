@@ -3,6 +3,12 @@ import { TransactionClient } from '../../../../shared/rate-limit/sliding-window'
 
 export interface UserRepository {
   findByExternalId(externalId: string): Promise<User | null>;
+  /**
+   * Used only when a sign-in arrives with an unknown subject: a verified email
+   * that already has a record means the provider gave the same person a new
+   * subject, not that someone new is joining.
+   */
+  findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
   /** One query for many authors, so a comment list is never N+1 (R-103). */
   findManyByIds(ids: readonly string[]): Promise<User[]>;

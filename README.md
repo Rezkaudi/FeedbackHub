@@ -111,8 +111,12 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   from the cookie and never from a header. Admin-ness re-read from the saved row
   before every admin action. Profile edit and account deletion, which wipes name,
   picture, email and votes, keeps requests and comments as "Deleted user", and
-  refuses for the last admin. The tests drive this through a stub provider — see
-  "what does not work" for what that leaves unproven.
+  refuses for the last admin. A sign-in whose Keycloak subject is unknown but
+  whose *verified* email already has an account is re-linked to that account,
+  not made into a second one — a Keycloak user deleted and remade (or a password
+  reset that lands with a new subject) no longer dead-ends on "Signing in failed"
+  (D-89). The tests drive this through a stub provider — see "what does not work"
+  for what that leaves unproven.
 - **`requests`** — create, read, edit, delete, plus admin status change and
   pinning. Status, author and timestamps are set by the server. The board is
   **one SQL statement**: search over title and description, status and category
@@ -252,7 +256,10 @@ Nothing in this list is hidden.
   all until D-33 pointed it at Mailpit, so "Forgot password?" failed every time.
   The realm now carries the setting, but nobody has clicked the link in Mailpit
   and set a new password. Signing out was equally broken until D-32 and is
-  equally untried.
+  equally untried. A reset done by *deleting and remaking* the Keycloak user
+  (new subject, same verified email) was seen to loop on "Signing in failed"
+  until D-89; a normal in-place reset keeps the same subject and was never the
+  cause.
 - **`docker compose up` needs Compose v2** and has not been run start to finish.
   The file uses `depends_on: condition: service_completed_successfully`, which
   Compose v1.29 cannot parse. The same wiring was checked by starting the

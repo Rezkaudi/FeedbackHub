@@ -71,6 +71,37 @@ describe('identity', () => {
       await expect(api.prisma.user.count()).resolves.toBe(1);
     });
 
+    it('re-links the record, keeping the role, when the provider gives a new subject for the same verified email', async () => {
+      const first = await signIn.execute('token');
+      await api.prisma.user.update({ where: { id: first.id }, data: { role: 'admin' } });
+
+      // The Keycloak account was deleted and remade: same verified email, new subject.
+      api.identityProvider.claims = {
+        ...api.identityProvider.claims,
+        subject: 'kc-remade-person',
+      };
+      const again = await signIn.execute('token');
+
+      expect(again.id).toBe(first.id);
+      expect(again.role).toBe('admin');
+      expect(again.externalId).toBe('kc-remade-person');
+      await expect(api.prisma.user.count()).resolves.toBe(1);
+    });
+
+    it('does not re-link on an unverified email — that is not proof of who is signing in', async () => {
+      await signIn.execute('token');
+
+      api.identityProvider.claims = {
+        ...api.identityProvider.claims,
+        subject: 'kc-someone-else',
+        emailVerified: false,
+      };
+
+      // Falls through to the normal sign-up path, which the unique email then stops.
+      await expect(signIn.execute('token')).rejects.toThrow();
+      await expect(api.prisma.user.count()).resolves.toBe(1);
+    });
+
     it('refreshes an email that changed at the provider, but never the role', async () => {
       const first = await signIn.execute('token');
       await api.prisma.user.update({ where: { id: first.id }, data: { role: 'admin' } });

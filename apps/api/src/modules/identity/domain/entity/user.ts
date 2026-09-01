@@ -100,6 +100,18 @@ export class User {
     }
   }
 
+  /**
+   * The identity provider's subject is meant to be forever, but it is not: a
+   * Keycloak account deleted and remade comes back with the same verified email
+   * and a brand new subject. When that happens the person is not a new sign-up —
+   * they already have this record — so their old external id is replaced with
+   * the new one and everything else on the row (their role above all) stays.
+   * Only ever called after the new email has been checked against the old one.
+   */
+  public relinkExternalId(externalId: string): void {
+    this.state.externalId = externalId;
+  }
+
   /** R-54: a person sets their own display name and picture. */
   public changeProfile(changes: { displayName?: string; avatarUrl?: string | null }): void {
     if (changes.displayName !== undefined) {

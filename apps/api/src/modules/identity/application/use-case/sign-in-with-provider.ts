@@ -16,7 +16,10 @@ import { CLOCK, type Clock, ID_GENERATOR, type IdGenerator } from '../../../../s
  *   1. the token is checked (R-5) — done by the caller, which has the token;
  *   2. already known? then just refresh what may have gone stale and return.
  *      Changing the sign-up rule never removes people who already got in
- *      (SRS part 14), so an existing person is never re-checked against it;
+ *      (SRS part 14), so an existing person is never re-checked against it.
+ *      "Known" is by provider subject first, then — if that misses — by a
+ *      verified email that already has a record, whose subject the provider
+ *      has changed under them;
  *   3. the sign-up *rule* — a permanent no;
  *   4. the sign-up *limit* — a "try later", checked last and inside the same
  *      database step as the insert, so it cannot be raced (R-132).
@@ -46,6 +49,26 @@ export class SignInWithProvider {
         displayName: claims.displayName,
       });
       return this.users.save(known);
+    }
+
+    // The subject is unknown, but the provider's subject is not as permanent as
+    // it looks: an account deleted and remade at Keycloak returns with the same
+    // verified email and a new subject. A verified email that already has a
+    // record is that same person, so the record is re-linked to the new subject
+    // rather than a second one being made (which would fail the unique email
+    // anyway). Only a *verified* email may do this — an unverified one is not
+    // proof of who is signing in.
+    if (claims.emailVerified) {
+      const sameEmail = await this.users.findByEmail(claims.email);
+      if (sameEmail !== null && sameEmail.isActive) {
+        sameEmail.relinkExternalId(claims.subject);
+        sameEmail.refreshFromProvider({
+          email: claims.email,
+          emailVerified: claims.emailVerified,
+          displayName: claims.displayName,
+        });
+        return this.users.save(sameEmail);
+      }
     }
 
     const appSettings = await this.settings.appSettings();
