@@ -1,14 +1,10 @@
 <fh-dialog
   [open]="open()"
   size="lg"
-  labelledBy="request-form-heading"
+  [heading]="(isEditing() ? 'requestForm.editTitle' : 'requestForm.newTitle') | t"
   [closeLabel]="'common.close' | t"
   (closed)="closed.emit()"
 >
-  <h2 id="request-form-heading" class="sr-only">
-    {{ (isEditing() ? 'requestForm.editTitle' : 'requestForm.newTitle') | t }}
-  </h2>
-
   @switch (store.state()) {
     @case ('loading') {
       <p role="status">{{ 'common.loading' | t }}</p>
@@ -33,7 +29,7 @@
     }
 
     @case ('ready') {
-      <form class="flex flex-col gap-5" (submit)="save($event)" novalidate>
+      <form class="request-form" (submit)="save($event)" novalidate>
         <fh-field [label]="'requestForm.fieldTitle' | t" fieldId="title" [error]="titleError()" [required]="true">
           <input
             id="title"
@@ -61,23 +57,44 @@
           ></textarea>
         </fh-field>
 
-        <fh-field
-          [label]="'requestForm.fieldCategory' | t"
-          fieldId="categoryId"
-          [error]="categoryError()"
-          [hint]="categoryWasRetired() ? ('requestForm.categoryRetired' | t) : ''"
-          [required]="true"
+        <fieldset
+          class="category-field"
+          [attr.aria-invalid]="categoryError() ? 'true' : null"
+          [attr.aria-describedby]="categoryError() ? 'category-error' : categoryWasRetired() ? 'category-hint' : null"
         >
-          <select id="categoryId" [formField]="f.categoryId" class="fh-select">
-            <option value="">{{ 'requestForm.chooseCategory' | t }}</option>
+          <legend class="category-legend">
+            {{ 'requestForm.fieldCategory' | t }}<span class="category-legend-mark" aria-hidden="true">*</span>
+          </legend>
+
+          <div class="category-options" role="radiogroup" [attr.aria-label]="'requestForm.fieldCategory' | t">
             @for (category of bootstrap.activeCategories(); track category.id) {
-              <option [value]="category.id">{{ category.name }}</option>
+              <label class="category-option" [class.selected]="f.categoryId().value() === category.id">
+                <input
+                  type="radio"
+                  name="categoryId"
+                  class="sr-only"
+                  [value]="category.id"
+                  [checked]="f.categoryId().value() === category.id"
+                  (change)="pickCategory(category.id)"
+                />
+                <span class="category-dot" aria-hidden="true" [style.--dot]="category.color"></span>
+                <span class="category-name">{{ category.name }}</span>
+                @if (f.categoryId().value() === category.id) {
+                  <fh-icon name="check" [size]="16" />
+                }
+              </label>
             }
-          </select>
-        </fh-field>
+          </div>
+
+          @if (categoryError()) {
+            <p id="category-error" class="category-error" role="alert">{{ categoryError() }}</p>
+          } @else if (categoryWasRetired()) {
+            <p id="category-hint" class="category-hint">{{ 'requestForm.categoryRetired' | t }}</p>
+          }
+        </fieldset>
 
         @if (store.error(); as failure) {
-          <p role="alert" class="bg-error-container text-on-error-container rounded-lg px-4 py-3 text-sm">
+          <p role="alert" class="request-form-alert">
             @if (failure.retryAt; as retryAt) {
               {{ 'requestForm.rateLimited' | t: { time: (retryAt | localizedDate: { timeStyle: 'short' }) } }}
             } @else if (failure.status === 403) {
@@ -88,11 +105,11 @@
           </p>
         }
 
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="request-form-footer">
+          <fh-button variant="text" type="button" (click)="closed.emit()">{{ 'common.cancel' | t }}</fh-button>
           <fh-button type="submit" [loading]="store.isSaving()">
             {{ (store.isSaving() ? 'common.saving' : 'common.save') | t }}
           </fh-button>
-          <fh-button variant="text" type="button" (click)="closed.emit()">{{ 'common.cancel' | t }}</fh-button>
         </div>
       </form>
     }

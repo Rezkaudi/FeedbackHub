@@ -20,7 +20,7 @@ describe('Smoke, routing and core navigation', () => {
     cy.contains('h1', /new request/i).should('be.visible');
     cy.get('input#title').should('be.visible');
     cy.get('textarea#description').should('be.visible');
-    cy.get('select#categoryId').should('be.visible');
+    cy.get('[role="radiogroup"]').should('be.visible');
   });
 
   it('opens personal settings and preserves the route', () => {

@@ -1,14 +1,14 @@
 <dialog
   [class]="'size-' + size()"
   [attr.role]="role()"
-  [attr.aria-labelledby]="labelledBy() || null"
+  [attr.aria-labelledby]="labelId()"
   (cancel)="onCancel($event)"
   (click)="closed.emit()"
 >
   <div class="surface" (click)="$event.stopPropagation()">
     <header class="dialog-header">
       @if (heading()) {
-        <h2 class="dialog-title">{{ heading() }}</h2>
+        <h2 class="dialog-title" [id]="titleId">{{ heading() }}</h2>
       }
       @if (!hideCloseButton()) {
         <fh-icon-button icon="close" [label]="closeLabel()" (click)="closed.emit()" />

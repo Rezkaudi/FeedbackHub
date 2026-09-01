@@ -20,14 +20,14 @@ describe('Administration: taxonomy and workflow', () => {
     cy.contains('tr', name).should('be.visible');
 
     cy.visit('/requests/new');
-    cy.get('select#categoryId option').contains(name).should('exist');
+    cy.get('[role="radiogroup"]').contains(name).should('exist');
 
     cy.visit('/admin/taxonomy');
     cy.get(`button[aria-label="Retire ${name}"]`).click();
     cy.get(`button[aria-label="Bring back ${name}"]`).should('be.visible');
 
     cy.visit('/requests/new');
-    cy.get('select#categoryId option').contains(name).should('not.exist');
+    cy.get('[role="radiogroup"]').contains(name).should('not.exist');
 
     cy.visit('/admin/taxonomy');
     cy.get(`button[aria-label="Delete ${name}"]`).click();

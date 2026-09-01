@@ -2,12 +2,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  computed,
   effect,
   inject,
   input,
   output,
 } from '@angular/core';
 import { IconButton } from '../icon-button/icon-button';
+
+let dialogTitleSeq = 0;
 
 @Component({
   selector: 'fh-dialog',
@@ -28,6 +31,10 @@ export class Dialog {
   public readonly hideCloseButton = input<boolean>(false);
 
   public readonly closed = output<void>();
+
+  /** Points aria-labelledby at the visible heading when no explicit labelledBy is given. */
+  protected readonly titleId = `fh-dialog-title-${(dialogTitleSeq += 1)}`;
+  protected readonly labelId = computed(() => this.labelledBy() || (this.heading() ? this.titleId : null));
 
   public constructor() {
     effect(() => {

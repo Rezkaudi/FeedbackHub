@@ -73,16 +73,16 @@ describe('the request form dialog', () => {
 
     expect(screen.getByLabelText('Title')).toBeInTheDocument();
     expect(screen.getByLabelText('Description')).toBeInTheDocument();
-    expect(screen.getByLabelText('Category')).toBeInTheDocument();
+    expect(screen.getByRole('radiogroup', { name: 'Category' })).toBeInTheDocument();
     expect(screen.queryByLabelText(/status/i)).not.toBeInTheDocument();
   });
 
   it('offers only the categories still open for picking (R-45)', async () => {
     await renderCreate();
 
-    const select = screen.getByLabelText('Category');
-    expect(select.querySelectorAll('option')).toHaveLength(2);
-    expect(screen.queryByRole('option', { name: 'Legacy' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('radio')).toHaveLength(1);
+    expect(screen.getByRole('radio', { name: 'Bug' })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Legacy' })).not.toBeInTheDocument();
   });
 
   it('says nothing while somebody is still typing, then says how to fix it once they leave (R-88)', async () => {
@@ -114,7 +114,7 @@ describe('the request form dialog', () => {
 
     await userEvent.type(screen.getByLabelText('Title'), 'Dark mode');
     await userEvent.type(screen.getByLabelText('Description'), 'It is painful at night.');
-    await userEvent.selectOptions(screen.getByLabelText('Category'), 'c1');
+    await userEvent.click(screen.getByRole('radio', { name: 'Bug' }));
     await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     const request = backend.expectOne('/v1/requests');
@@ -131,7 +131,7 @@ describe('the request form dialog', () => {
 
     await userEvent.type(screen.getByLabelText('Title'), 'Dark mode');
     await userEvent.type(screen.getByLabelText('Description'), 'It is painful at night.');
-    await userEvent.selectOptions(screen.getByLabelText('Category'), 'c1');
+    await userEvent.click(screen.getByRole('radio', { name: 'Bug' }));
     await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     backend.expectOne('/v1/requests').flush(

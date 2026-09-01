@@ -18,7 +18,7 @@ describe('Complete business-critical journeys', () => {
       )!;
       cy.get('input#title').type(title);
       cy.get('textarea#description').type('Critical journey description long enough for validation.');
-      cy.get('select#categoryId').select(category.id);
+      cy.get('input[name="categoryId"]').check(category.id, { force: true });
       cy.get('form button[type="submit"]').click();
     });
 

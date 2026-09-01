@@ -9,6 +9,7 @@ import { LocalizedDatePipe } from '../../core/i18n/localized-date.pipe';
 import { Dialog } from '../../shared/ui/dialog/dialog';
 import { Button } from '../../shared/ui/button/button';
 import { Field } from '../../shared/ui/field/field';
+import { Icon } from '../../shared/ui/icon/icon';
 import { EmptyPanel } from '../../shared/ui/state/empty-panel/empty-panel';
 import { ErrorPanel } from '../../shared/ui/state/error-panel/error-panel';
 
@@ -17,8 +18,9 @@ type RequestResponse = components['schemas']['RequestResponse'];
 @Component({
   selector: 'fh-request-form-dialog',
   providers: [RequestFormStore],
-  imports: [FormField, Dialog, Button, Field, EmptyPanel, ErrorPanel, TranslatePipe, LocalizedDatePipe],
+  imports: [FormField, Dialog, Button, Field, Icon, EmptyPanel, ErrorPanel, TranslatePipe, LocalizedDatePipe],
   templateUrl: './request-form-dialog.html',
+  styleUrl: './request-form-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RequestFormDialog {
@@ -101,6 +103,12 @@ export class RequestFormDialog {
     if (saved !== null) {
       this.saved.emit(saved);
     }
+  }
+
+  protected pickCategory(categoryId: string): void {
+    const field = this.f.categoryId();
+    field.value.set(categoryId);
+    field.markAsTouched();
   }
 
   protected reload(): void {

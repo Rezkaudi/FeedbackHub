@@ -315,6 +315,14 @@ comment threading (D-05), and search without ranking (D-11).
   from the request page now. The form dialog has no Delete button: deleting a
   request is done from the trash icon in the request header, which asks first
   the same way it always did.
+- **The form dialog shows its title, and picks a category with chips, not a
+  dropdown.** The heading ("New request" / "Edit request") is now visible at the
+  top of the popup instead of hidden for screen readers only. Category is a row
+  of pill buttons — one real `<input type="radio">` per active category inside a
+  `<fieldset>`, each with the category's colour dot — so every choice is visible
+  at once, arrow keys move between them, and there is no hidden menu. The old
+  native `<select id="categoryId">` is gone; Cypress and unit tests now pick a
+  category by its radio. The popup size did not change.
 
 ### The front end — a request page
 

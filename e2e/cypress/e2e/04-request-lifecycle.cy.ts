@@ -10,7 +10,7 @@ describe('Request creation, editing, ownership and deletion', () => {
       expect(category, 'an active category').to.exist;
       cy.get('input#title').clear().type(title);
       cy.get('textarea#description').clear().type(description);
-      cy.get('select#categoryId').select(category!.id);
+      cy.get('input[name="categoryId"]').check(category!.id, { force: true });
       cy.get('form button[type="submit"]').click();
     });
   }
