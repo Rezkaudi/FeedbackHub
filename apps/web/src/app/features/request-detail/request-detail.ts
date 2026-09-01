@@ -70,6 +70,8 @@ export class RequestDetail {
     () => (this.detail.request()?.isMine ?? false) || this.bootstrap.isAdmin(),
   );
 
+  private leaving = false;
+
   public constructor() {
     effect(() => {
       const id = this.id();
@@ -79,6 +81,22 @@ export class RequestDetail {
         void this.comments.load(id);
       }
     });
+
+    // The request is gone — opened from a stale link, or deleted by someone
+    // else while this page was open. Don't sit on a dead end: say so once and
+    // take the person to the board, which is where "back" would send them.
+    effect(() => {
+      if (this.detail.state() === 'missing' && !this.leaving) {
+        this.leaving = true;
+        this.snackbar.show(this.i18n.translate('snackbar.requestGone'));
+        void this.router.navigate(['/']);
+      }
+    });
+  }
+
+  protected onEditGone(): void {
+    this.editing.set(false);
+    void this.detail.load(this.id());
   }
 
   protected async vote(): Promise<void> {

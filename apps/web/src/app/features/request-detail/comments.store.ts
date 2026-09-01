@@ -164,15 +164,23 @@ export class CommentsStore {
   public async remove(commentId: string): Promise<void> {
     try {
       await firstValueFrom(this.http.delete<void>(`/v1/comments/${commentId}`));
-
-      const remaining = this.rows().filter((comment) => comment.id !== commentId);
-      this.rows.set(remaining);
-      this.count.update((total) => Math.max(0, total - 1));
-      if (remaining.length === 0) {
-        this.current.set('empty');
-      }
     } catch (cause) {
-      this.moreFailure.set(toApiError(cause));
+      const error = toApiError(cause);
+      // A 404 means the comment is already gone — someone else deleted it, or
+      // an admin rejected it. The end the person asked for is already true, so
+      // reconcile the screen to it rather than showing an error for a row that
+      // is about to disappear anyway.
+      if (error.status !== 404) {
+        this.moreFailure.set(error);
+        return;
+      }
+    }
+
+    const remaining = this.rows().filter((comment) => comment.id !== commentId);
+    this.rows.set(remaining);
+    this.count.update((total) => Math.max(0, total - 1));
+    if (remaining.length === 0) {
+      this.current.set('empty');
     }
   }
 

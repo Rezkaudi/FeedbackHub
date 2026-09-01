@@ -269,4 +269,22 @@ describe('the board', () => {
 
     expect(store.pageCount()).toBe(3);
   });
+
+  it('drops a request that is already gone without reporting an error', async () => {
+    const done = store.load(query());
+    http
+      .expectOne((c) => c.url === '/v1/requests')
+      .flush({ items: [aRequest('a'), aRequest('b')], total: 2, page: 1, pageSize: 20 });
+    await done;
+
+    const deleting = store.deleteRequest('b');
+    http.expectOne('/v1/requests/b').flush(
+      { error: { code: 'NOT_FOUND', message: 'Not found.', requestId: 'r' } },
+      { status: 404, statusText: 'Not Found' },
+    );
+
+    expect(await deleting).toBeNull();
+    expect(store.items().map((row) => row.id)).toEqual(['a']);
+    expect(store.total()).toBe(1);
+  });
 });

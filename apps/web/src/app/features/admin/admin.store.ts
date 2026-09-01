@@ -286,7 +286,16 @@ export class AdminStore {
       this.saved.set(true);
       return true;
     } catch (cause) {
-      this.actionFailure.set(toApiError(cause));
+      const error = toApiError(cause);
+      // The row is already gone — an admin in another tab handled that waiting
+      // comment, withdrew that invitation, deleted that category. Re-read so
+      // the stale row drops off the screen, and say nothing: the person asked
+      // for it gone and it is gone.
+      if (error.status === 404) {
+        await reload();
+        return true;
+      }
+      this.actionFailure.set(error);
       return false;
     }
   }

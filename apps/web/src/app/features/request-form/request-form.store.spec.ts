@@ -192,6 +192,17 @@ describe('writing a request', () => {
       expect(await done).toBe(false);
       expect(store.error()?.status).toBe(403);
     });
+
+    it('counts an already-deleted request as done, with no error', async () => {
+      const done = store.remove('r1');
+      http.expectOne('/v1/requests/r1').flush(
+        { error: { code: 'NOT_FOUND', message: 'Feedback request was not found.', requestId: 'r' } },
+        { status: 404, statusText: 'Not Found' },
+      );
+
+      expect(await done).toBe(true);
+      expect(store.error()).toBeNull();
+    });
   });
 
   describe('loading one to change it', () => {

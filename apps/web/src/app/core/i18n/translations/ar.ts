@@ -279,6 +279,7 @@ export const ar: SameShape<Dictionary> = {
     requestCreated: 'تم نشر طلبك.',
     requestUpdated: 'تم حفظ طلبك.',
     requestDeleted: 'تم حذف طلبك.',
+    requestGone: 'هذا الطلب لم يعد موجودًا. هذه هي اللوحة.',
     view: 'عرض',
   },
   notFound: {

@@ -274,6 +274,20 @@ describe('admin work', () => {
       expect(await done).toBe(true);
     });
 
+    it('says nothing when the comment was already handled elsewhere', async () => {
+      const done = store.rejectComment('k1');
+      http.expectOne('/v1/admin/comments/k1/reject').flush(
+        { error: { code: 'NOT_FOUND', message: 'Comment was not found.', requestId: 'r' } },
+        { status: 404, statusText: 'Not Found' },
+      );
+      await settle();
+      http.expectOne('/v1/admin/comments/pending').flush([]);
+
+      expect(await done).toBe(true);
+      expect(store.actionError()).toBeNull();
+      expect(store.pending()).toHaveLength(0);
+    });
+
     /** R-66: only an admin, and the server checks the saved row every time. */
     it('invites an address and re-reads the list', async () => {
       const done = store.invite('new@example.com');

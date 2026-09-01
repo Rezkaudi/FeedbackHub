@@ -15,7 +15,7 @@ afterEach(() => {
 
 const ANY_ROUTE = [{ path: '**', children: [] }];
 const TEMPLATE =
-  '<fh-request-form-dialog [open]="true" [id]="id"></fh-request-form-dialog><fh-confirm-dialog></fh-confirm-dialog>';
+  '<fh-request-form-dialog [open]="true" [id]="id" (gone)="onGone()"></fh-request-form-dialog><fh-confirm-dialog></fh-confirm-dialog>';
 
 describe('the request form dialog', () => {
   const active = { id: 'c1', name: 'Bug', slug: 'bug', color: '#DC2626', isActive: true };
@@ -28,12 +28,17 @@ describe('the request form dialog', () => {
     refreshTaxonomy,
   };
 
-  beforeEach(() => refreshTaxonomy.mockClear());
+  const onGone = vi.fn();
+
+  beforeEach(() => {
+    refreshTaxonomy.mockClear();
+    onGone.mockClear();
+  });
 
   async function renderCreate() {
     const utils = await render(TEMPLATE, {
       imports: [RequestFormDialog, ConfirmDialog],
-      componentProperties: { id: undefined as string | undefined },
+      componentProperties: { id: undefined as string | undefined, onGone },
       providers: [
         provideRouter(ANY_ROUTE),
         provideHttpClient(),
@@ -216,6 +221,7 @@ describe('the request form dialog', () => {
     fixture.detectChanges();
 
     expect(screen.getByText(/does not exist/i)).toBeInTheDocument();
+    expect(onGone).toHaveBeenCalled();
   });
 
   it('asks for another category when the one it used was retired', async () => {

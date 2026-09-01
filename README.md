@@ -191,8 +191,13 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   while the form was open) shows its message next to that field, not only in the
   banner, and the request form re-reads the taxonomy so the dead option leaves
   the picker. An admin error or "Saved" notice no longer follows you from one
-  admin screen to the next. Covered by `error-text.spec.ts`,
-  `request-form-dialog.spec.ts` and `admin.store.spec.ts`. Not yet done: the few
+  admin screen to the next. **Deleting something that is already gone is not an
+  error** — a 404 on a delete or a row-scoped change (someone else removed the
+  comment, the request, the category first) quietly drops the row instead of
+  showing a message, and on the request page it shows a one-line notice and
+  goes to the board rather than stopping on a "does not exist any more" screen.
+  Covered by `error-text.spec.ts`, `request-form-dialog.spec.ts`, the store
+  specs, and `admin.store.spec.ts`. Not yet done: the few
   admin-only "conflict" messages (last category, status in use, …) come straight
   from the server and are English even in Arabic mode — see D-91.
 - **Theme works with no flash.** Read from `localStorage` before the first paint

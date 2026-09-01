@@ -90,10 +90,16 @@ export class RequestFormStore {
       await firstValueFrom(this.http.delete<void>(`/v1/requests/${id}`));
       return true;
     } catch (cause) {
-      // Never navigate away on a failure: the request is still there, and
-      // pretending otherwise would leave the person confused about what
+      const error = toApiError(cause);
+      // A 404 means it is already deleted — that is the outcome that was asked
+      // for, so let the caller carry on as if this call had succeeded.
+      if (error.status === 404) {
+        return true;
+      }
+      // Never navigate away on any other failure: the request is still there,
+      // and pretending otherwise would leave the person confused about what
       // happened to it.
-      this.failure.set(toApiError(cause));
+      this.failure.set(error);
       return false;
     } finally {
       this.busy.set(false);

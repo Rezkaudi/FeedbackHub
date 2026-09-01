@@ -60,12 +60,18 @@ export class BoardStore {
   public async deleteRequest(id: string): Promise<ApiError | null> {
     try {
       await firstValueFrom(this.http.delete<void>(`/v1/requests/${id}`));
-      this.rows.update((rows) => rows.filter((row) => row.id !== id));
-      this.count.update((total) => Math.max(0, total - 1));
-      return null;
     } catch (cause) {
-      return toApiError(cause);
+      const error = toApiError(cause);
+      // Already gone is the outcome that was asked for. Drop the row and say
+      // nothing rather than show an error for a request that is not there.
+      if (error.status !== 404) {
+        return error;
+      }
     }
+
+    this.rows.update((rows) => rows.filter((row) => row.id !== id));
+    this.count.update((total) => Math.max(0, total - 1));
+    return null;
   }
 
   /** R-65: pin or unpin. Admin only; the server still decides. */
@@ -77,7 +83,15 @@ export class BoardStore {
       this.rows.update((rows) => rows.map((row) => (row.id === id ? response : row)));
       return null;
     } catch (cause) {
-      return toApiError(cause);
+      const error = toApiError(cause);
+      // The request was deleted under us. Take it off the board rather than
+      // report a failed pin for something that is gone.
+      if (error.status === 404) {
+        this.rows.update((rows) => rows.filter((row) => row.id !== id));
+        this.count.update((total) => Math.max(0, total - 1));
+        return null;
+      }
+      return error;
     }
   }
 

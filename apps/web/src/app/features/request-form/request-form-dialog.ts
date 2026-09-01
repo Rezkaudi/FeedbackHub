@@ -34,6 +34,9 @@ export class RequestFormDialog {
 
   public readonly closed = output<void>();
   public readonly saved = output<RequestResponse>();
+  /** The request being edited turned out to be gone (deleted elsewhere). The
+   * page that opened this should reconcile — not leave the popup on a dead end. */
+  public readonly gone = output<void>();
 
   protected readonly isEditing = computed(() => this.id() !== undefined);
   private readonly submitted = signal(false);
@@ -91,6 +94,12 @@ export class RequestFormDialog {
         }
       });
     });
+
+    effect(() => {
+      if (this.open() && this.store.state() === 'missing') {
+        this.gone.emit();
+      }
+    });
   }
 
   protected async save(event: Event): Promise<void> {
@@ -116,6 +125,12 @@ export class RequestFormDialog {
     // the dead option leaves the picker, and drop the selection so the person
     // has to choose one that still exists.
     const failure = this.store.error();
+    if (failure?.status === 404) {
+      // Saving an edit for a request that has since been deleted. Nothing to
+      // keep here — let the page that opened this take over.
+      this.gone.emit();
+      return;
+    }
     if (failure?.fields?.['categoryId'] !== undefined) {
       void this.bootstrap.refreshTaxonomy();
       const field = this.f.categoryId();

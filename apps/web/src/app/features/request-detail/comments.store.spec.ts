@@ -302,5 +302,26 @@ describe('the comment thread', () => {
       expect(store.items().map((comment) => comment.id)).toEqual(['a', 'c']);
       expect(store.total()).toBe(2);
     });
+
+    it('treats an already-gone comment as removed, with no error', async () => {
+      const done = store.load(REQUEST);
+      expectList().flush({
+        items: [aComment('a'), aComment('b', { isMine: true })],
+        nextCursor: null,
+        total: 2,
+      });
+      await done;
+
+      const removing = store.remove('b');
+      http.expectOne('/v1/comments/b').flush(
+        { error: { code: 'NOT_FOUND', message: 'Comment was not found.', requestId: 'r' } },
+        { status: 404, statusText: 'Not Found' },
+      );
+      await removing;
+
+      expect(store.items().map((comment) => comment.id)).toEqual(['a']);
+      expect(store.total()).toBe(1);
+      expect(store.moreError()).toBeNull();
+    });
   });
 });

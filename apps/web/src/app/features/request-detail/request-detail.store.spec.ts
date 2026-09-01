@@ -327,4 +327,26 @@ describe('what an admin changes on a request', () => {
     expect(store.request()?.statusId).toBe('s1');
     expect(store.adminError()?.status).toBe(403);
   });
+
+  it('shows the "gone" screen, not an error, when a status change finds it deleted', async () => {
+    const done = store.changeStatus('s2');
+    http.expectOne('/v1/requests/r1/status').flush(
+      { error: { code: 'NOT_FOUND', message: 'Not found.', requestId: 'r' } },
+      { status: 404, statusText: 'Not Found' },
+    );
+
+    expect(await done).toBe(false);
+    expect(store.state()).toBe('missing');
+    expect(store.adminError()).toBeNull();
+  });
+
+  it('counts a delete that returns 404 as done', async () => {
+    const done = store.deleteRequest();
+    http.expectOne('/v1/requests/r1').flush(
+      { error: { code: 'NOT_FOUND', message: 'Not found.', requestId: 'r' } },
+      { status: 404, statusText: 'Not Found' },
+    );
+
+    expect(await done).toBeNull();
+  });
 });

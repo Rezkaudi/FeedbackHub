@@ -109,9 +109,17 @@ export class RequestDetailStore {
       this.row.set((await firstValueFrom(call(before.id))) as RequestResponse);
       return true;
     } catch (cause) {
+      const error = toApiError(cause);
+      // The request was deleted while this page was open. There is nothing to
+      // change and nothing to roll back — show the "does not exist any more"
+      // screen, not an error about a failed change.
+      if (error.status === 404) {
+        this.current.set('missing');
+        return false;
+      }
       // Nothing was changed on screen, so there is nothing to roll back — the
       // row shown is still the row the server has.
-      this.adminFailure.set(toApiError(cause));
+      this.adminFailure.set(error);
       return false;
     }
   }
@@ -132,7 +140,11 @@ export class RequestDetailStore {
       await firstValueFrom(this.http.delete<void>(`/v1/requests/${before.id}`));
       return null;
     } catch (cause) {
-      return toApiError(cause);
+      const error = toApiError(cause);
+      // Already gone is the outcome the person wanted. Treat a 404 as done, so
+      // the page navigates back to the board instead of showing an error for a
+      // request that no longer exists.
+      return error.status === 404 ? null : error;
     }
   }
 }

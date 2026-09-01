@@ -276,6 +276,7 @@ export const en = {
     requestCreated: 'Your request was posted.',
     requestUpdated: 'Your request was saved.',
     requestDeleted: 'Your request was deleted.',
+    requestGone: 'That request no longer exists. Here is the board.',
     view: 'View',
   },
   notFound: {
