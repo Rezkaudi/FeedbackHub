@@ -5,10 +5,15 @@ import { ID_GENERATOR, type IdGenerator } from '../../../../shared/ports';
 import { ConflictError } from '../../../../shared/errors/app-error';
 import { REGISTERED_PEOPLE, type RegisteredPeople } from '../port/registered-people';
 import { NotificationsService } from '../../../notifications/notifications.service';
+import { SettingsService } from '../../../settings/settings.service';
 import {
   APP_ENVIRONMENT,
   type AppEnvironmentToken,
 } from '../../../../shared/config/environment.token';
+
+function domainOf(email: string): string {
+  return email.slice(email.lastIndexOf('@') + 1).toLowerCase();
+}
 
 /** R-66: only an admin can add an invitation. The guard chain proves that. */
 @Injectable()
@@ -18,11 +23,28 @@ export class InvitePerson {
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
     @Inject(REGISTERED_PEOPLE) private readonly people: RegisteredPeople,
     private readonly notifications: NotificationsService,
+    private readonly settings: SettingsService,
     @Inject(APP_ENVIRONMENT) private readonly environment: AppEnvironmentToken,
   ) {}
 
   public async execute(email: string): Promise<Invitation> {
     const invitation = Invitation.create(email, this.ids.next());
+
+    // R-67: under the domain rule, an invitation does not open the door — the
+    // person still has to sign in with an allowed company domain (see
+    // registration-rule.ts). Inviting an address the rule would reject just
+    // sends a link that dead-ends, and the admin never sees why. Name it now,
+    // and say the two ways out: switch the policy to invite only or open, or
+    // add this domain to the allowed list.
+    const appSettings = await this.settings.appSettings();
+    if (
+      appSettings.registrationPolicy === 'domain_restricted' &&
+      !appSettings.allowedEmailDomains.includes(domainOf(invitation.email))
+    ) {
+      throw new ConflictError(
+        'The registration policy is "domain restricted", so this person could not sign in with an invitation. Change the policy to invite only or open, or add this address\'s email domain to the allowed list, then invite again.',
+      );
+    }
 
     // Someone who is already a member has nothing to accept: an invitation for
     // them would sit "Waiting" forever. Name it rather than store it.

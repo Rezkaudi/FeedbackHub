@@ -268,6 +268,8 @@ export const en = {
     inviteSection: 'Send an invitation',
     inviteDetail: 'The person gets a link to sign in with this email.',
     inviteEmailLabel: 'Email address',
+    inviteDomainLockWarning:
+      'The registration policy is "Domain restricted". An invitation only works for an address on an allowed domain — anyone else is turned away at sign-in. Change the policy to "Invite only" or "Open", or add their domain to the allowed list.',
     unsavedChanges: 'You have unsaved changes.',
     saveChanges: 'Save changes',
     discardChanges: 'Discard',

@@ -140,8 +140,12 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   calling the endpoint by hand gets 403 and no row is written. An address is
   stored in one shape, so capitals cannot make a second invitation. An address
   that already belongs to a member is refused (409) — it would have nothing to
-  accept. An invitation flips from "Waiting" to "Accepted" the next time that
-  address signs in, whichever sign-in path it takes.
+  accept. When the registration policy is "domain restricted", inviting an
+  address whose domain is not on the allowed list is refused (409) too: the
+  invitation link would dead-end at sign-in, so the admin is told to switch the
+  policy to invite only or open, or add the domain, and no row is written. An
+  invitation flips from "Waiting" to "Accepted" the next time that address signs
+  in, whichever sign-in path it takes.
 - **`notifications`** — three events and no more. Nobody is emailed about their
   own action, the person's own switch is respected per event, and an invitation
   needs no preference because there is no account yet. A job carries ids only —
@@ -523,7 +527,11 @@ comment threading (D-05), and search without ranking (D-11).
   what was sent as rows (address, "Waiting" or a green "Accepted <date>" line,
   and a **Withdraw** text button) instead of the old bare table (D-80). The
   "Accepted" line appears once that address signs in; inviting an address that
-  is already a member is refused with the server's sentence (D-95).
+  is already a member — or, under the "domain restricted" policy, one whose
+  domain is not allowed — is refused with the server's sentence (D-95, D-97).
+  While the policy is "domain restricted" the invite form also shows a standing
+  warning that an invitation will dead-end at sign-in unless the domain is
+  allowed (D-97).
 - **Status and pin on a request** (R-64, R-65), shown to admins only as a
   courtesy — the server refuses both to anybody else (R-70).
 

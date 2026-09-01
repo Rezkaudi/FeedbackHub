@@ -144,6 +144,44 @@ describe('invitations over HTTP', () => {
     });
   });
 
+  describe('the domain rule and invitations (R-67)', () => {
+    const setPolicy = (body: object) =>
+      request(api.app.getHttpServer())
+        .patch('/v1/settings/app')
+        .set('Origin', TEST_ORIGIN)
+        .send(body);
+
+    // app_settings is the one table truncate() keeps (it is a single seeded
+    // row), so put the policy back or the next test inherits "domain restricted".
+    afterEach(async () => {
+      await setPolicy({ registrationPolicy: 'open', allowedEmailDomains: [] });
+    });
+
+    it('refuses to invite an address the domain rule would reject, and writes nothing', async () => {
+      await setPolicy({
+        registrationPolicy: 'domain_restricted',
+        allowedEmailDomains: ['company.com'],
+      }).expect(200);
+
+      const response = await post('/v1/invitations', { email: 'outsider@example.com' });
+
+      expect(response.status).toBe(409);
+      await expect(countInvitations()).resolves.toBe(0);
+    });
+
+    it('allows an invitation for an address on an allowed domain', async () => {
+      await setPolicy({
+        registrationPolicy: 'domain_restricted',
+        allowedEmailDomains: ['company.com'],
+      }).expect(200);
+
+      const response = await post('/v1/invitations', { email: 'newcomer@company.com' });
+
+      expect(response.status).toBe(201);
+      await expect(countInvitations()).resolves.toBe(1);
+    });
+  });
+
   describe('everything an admin is not (R-66)', () => {
     it('refuses the list to a normal person, and to nobody at all', async () => {
       api.signInAs(someUser);

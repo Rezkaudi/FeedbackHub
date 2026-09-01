@@ -32,7 +32,12 @@ export class Invitations {
   private readonly i18n = inject(I18nStore);
 
   public constructor() {
-    void this.admin.loadInvitations();
+    void this.admin.loadInvitations().then(() => this.admin.loadSettings(true));
+  }
+
+  /** R-67: an invitation dead-ends at sign-in while this policy is on. */
+  protected domainRestricted(): boolean {
+    return this.admin.settings()?.registrationPolicy === 'domain_restricted';
   }
 
   protected invite(email: string): void {

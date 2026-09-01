@@ -18,6 +18,11 @@
         [detail]="'admin.inviteDetail' | t"
         icon="mail"
       >
+        @if (domainRestricted()) {
+          <p role="alert" class="text-warning border-warning/40 bg-warning/10 rounded-md border p-3 text-sm">
+            {{ 'admin.inviteDomainLockWarning' | t }}
+          </p>
+        }
         <fh-invite-form (invited)="invite($event)" />
         @if (admin.actionError(); as failure) {
           <p role="alert" class="text-error text-sm">{{ failure | apiError: 'admin.actionFailed' }}</p>
