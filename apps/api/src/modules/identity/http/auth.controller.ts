@@ -12,7 +12,7 @@ import { Request, Response } from 'express';
 import { ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../shared/http/route-metadata';
 import { APP_ENVIRONMENT, type AppEnvironmentToken } from '../../../shared/config/environment.token';
-import { IDENTITY_PROVIDER, IdentityProvider } from '../application/port/user-repository';
+import { IDENTITY_PROVIDER, IdentityProvider, SessionTokens } from '../application/port/user-repository';
 import { SignInWithProvider } from '../application/use-case/sign-in-with-provider';
 import {
   SIGN_IN_STATE_COOKIE,
@@ -81,8 +81,10 @@ export class AuthController {
       return this.sendToProblemPage(response, 'sign_in_failed');
     }
 
+    let tokens: SessionTokens | undefined;
+
     try {
-      const tokens = await this.provider.completeSignIn({
+      tokens = await this.provider.completeSignIn({
         code,
         codeVerifier,
         expectedState,
@@ -101,16 +103,43 @@ export class AuthController {
     } catch (error) {
       // The three outcomes SRS 15.8 asks to be told apart.
       if (error instanceof SignupNotAllowed) {
+        // They signed in fine at the provider, but our rules say no. We set no
+        // session cookie, yet the provider now holds an SSO session for them —
+        // and every later sign-in link would be answered from it silently,
+        // failing the same way with no login screen and no way out (found in a
+        // real browser: "Try signing in again" looped straight back). Ending
+        // the provider session here means the next attempt is a real prompt,
+        // where they can pick a different account.
+        await this.endProviderSession(tokens);
         return this.sendToProblemPage(response, `cannot_join&reason=${error.reason}`);
       }
       if (error instanceof RateLimitedError) {
         // They are allowed; they were unlucky with the timing. The page must
-        // say to try later, not that they are not allowed.
+        // say to try later, not that they are not allowed. The provider session
+        // is still ended, so "try again in a little while" starts clean.
+        await this.endProviderSession(tokens);
         return this.sendToProblemPage(response, 'cannot_join_yet');
       }
 
       this.logger.warn({ err: error }, 'Sign-in could not be completed');
       return this.sendToProblemPage(response, 'sign_in_failed');
+    }
+  }
+
+  /**
+   * Best effort: if the code exchange got far enough to hand us a refresh
+   * token, use it to end the provider's own session. A failure here must not
+   * change the page the person sees, so it is only logged.
+   */
+  private async endProviderSession(tokens: SessionTokens | undefined): Promise<void> {
+    if (tokens === undefined) {
+      return;
+    }
+
+    try {
+      await this.provider.endSession(tokens.refreshToken);
+    } catch (error) {
+      this.logger.warn({ err: error }, 'Could not end the provider session after a refused sign-in');
     }
   }
 

@@ -179,6 +179,48 @@ describe('identity', () => {
     });
   });
 
+  describe('the callback route when the rule refuses the person (SRS 15.8)', () => {
+    const completeCallback = async () => {
+      const start = await request(api.app.getHttpServer()).get('/v1/auth/sign-in');
+      const handshakeCookies = (start.headers['set-cookie'] as unknown as string[]).map(
+        (c) => c.split(';')[0] ?? '',
+      );
+      return request(api.app.getHttpServer())
+        .get('/v1/auth/callback?code=any&state=state')
+        .set('Cookie', handshakeCookies);
+    };
+
+    it('ends the provider session so "Try again" is a real prompt, not a silent loop', async () => {
+      await setPolicy({ registrationPolicy: 'invite_only' });
+      api.identityProvider.endedSessions.length = 0;
+
+      const response = await completeCallback();
+
+      expect(response.status).toBe(302);
+      expect(response.headers['location']).toContain('/sign-in-problem?problem=cannot_join');
+      expect(response.headers['location']).toContain('reason=policy_invite_only');
+      expect(api.identityProvider.endedSessions).toEqual(['refresh']);
+      await expect(api.prisma.user.count()).resolves.toBe(0);
+    });
+
+    it('also ends the session when the sign-up limit is the reason', async () => {
+      await setPolicy({ signupLimitCount: 1, signupLimitMinutes: 60 });
+      await signIn.execute('token');
+
+      api.identityProvider.claims = {
+        ...api.identityProvider.claims,
+        subject: 'kc-too-late',
+        email: 'too-late@example.com',
+      };
+      api.identityProvider.endedSessions.length = 0;
+
+      const response = await completeCallback();
+
+      expect(response.headers['location']).toContain('problem=cannot_join_yet');
+      expect(api.identityProvider.endedSessions).toEqual(['refresh']);
+    });
+  });
+
   describe('the sign-up limit (R-130, R-132)', () => {
     it('refuses the twenty-first person, and makes no record', async () => {
       await setPolicy({ signupLimitCount: 2, signupLimitMinutes: 60 });

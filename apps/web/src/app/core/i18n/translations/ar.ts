@@ -302,6 +302,7 @@ export const ar: SameShape<Dictionary> = {
     explanationDefault: 'حسابك غير مسموح له بالانضمام إلى فيدباك هَب.',
     explanationGeneric: 'حدث خطأ ما أثناء تسجيل دخولك. عادةً ما تنجح المحاولة مرة أخرى.',
     tryAgain: 'حاول تسجيل الدخول مرة أخرى',
+    tryDifferentAccount: 'سجّل الدخول بحساب آخر',
   },
   bootstrap: {
     startupFailedTitle: 'تعذّر بدء تشغيل فيدباك هَب',

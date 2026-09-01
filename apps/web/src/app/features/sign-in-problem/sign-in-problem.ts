@@ -12,6 +12,19 @@ export class SignInProblem {
   public readonly problem = input<string>('');
   public readonly reason = input<string>('');
 
+  /**
+   * The one action always goes to `/v1/auth/sign-in`. Only the wording changes:
+   * `cannot_join` is a permanent no for this address, so "try again" would be a
+   * lie — the useful move is a different account (and the server has already
+   * ended the provider session, so the next attempt really is a fresh login).
+   * The other two are worth retrying as-is.
+   */
+  protected readonly action = computed<TranslationKey>(() =>
+    this.problem() === 'cannot_join'
+      ? 'signInProblem.tryDifferentAccount'
+      : 'signInProblem.tryAgain',
+  );
+
   protected readonly heading = computed<TranslationKey>(() => {
     if (this.problem() === 'cannot_join_yet') {
       return 'signInProblem.headingCannotJoinYet';

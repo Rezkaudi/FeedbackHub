@@ -187,6 +187,11 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   by an inline script, and light/dark/system all apply (R-55, R-56).
 - **Sign-in failures are told apart.** "You may not join" and "you were unlucky
   with the timing" are different pages, because the second person *is* allowed.
+  When a sign-in is refused after the provider already authenticated the person,
+  the server ends the provider's session too, so the next attempt is a real
+  login screen and not a silent re-refusal. On the "you may not join" page the
+  one button then reads "Sign in with a different account" instead of "Try
+  signing in again" — retrying that exact identity only loops (D-90).
 - Skip link, visible focus, lazy routes, and a design-token file whose every
   colour pair was measured against WCAG AA in both themes.
 - **The whole presentation layer was rebuilt on Material Design 3.** One blue
@@ -239,14 +244,17 @@ Nothing in this list is hidden.
   only a real sign-in can show: no token anywhere a script can read, the two
   cookies by name with their flags and paths, and exactly one call to
   `/bootstrap` afterwards. The cause of the old failure was D-35.
-- **The four `/v1/auth/*` routes still have no *API* test of their own.** Every
-  API test replaces the identity provider with a stub. That is how D-32 went
+- **The `/v1/auth/*` routes are only lightly covered by *API* tests.** Every API
+  test replaces the identity provider with a stub. That is how D-32 went
   unnoticed — the refresh cookie was scoped to a path that did not exist, so
-  refresh and sign-out were both broken while every test passed. Sign-in and
-  sign-out are now covered end to end in a real browser; **refresh is only
-  covered indirectly** — `11-errors-and-resilience` proves a 401 triggers exactly
-  one refresh attempt and does not loop, but no test watches a real expired
-  access cookie be renewed, because it outlives a nine-minute run.
+  refresh and sign-out were both broken while every test passed. The callback
+  route now has two API tests (a refused sign-in redirects to the right problem
+  page *and* ends the provider session, D-90); `sign-in`, `refresh` and
+  `sign-out` still have none. Sign-in and sign-out are covered end to end in a
+  real browser; **refresh is only covered indirectly** — `11-errors-and-resilience`
+  proves a 401 triggers exactly one refresh attempt and does not loop, but no
+  test watches a real expired access cookie be renewed, because it outlives a
+  nine-minute run.
 - **No social sign-in has been seen to work.** Google has been switched on once
   with real credentials and got as far as returning a code to our callback,
   which then failed on D-35 — so the provider side is proven and ours is not.

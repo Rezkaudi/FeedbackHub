@@ -299,6 +299,7 @@ export const en = {
     explanationDefault: 'Your account is not allowed to join FeedbackHub.',
     explanationGeneric: 'Something went wrong while signing you in. Trying again usually works.',
     tryAgain: 'Try signing in again',
+    tryDifferentAccount: 'Sign in with a different account',
   },
   bootstrap: {
     startupFailedTitle: 'We could not start FeedbackHub',

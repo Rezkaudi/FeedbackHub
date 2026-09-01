@@ -87,7 +87,10 @@ export class StubIdentityProvider implements IdentityProvider {
     return Promise.resolve({ accessToken: 'access-2', refreshToken: 'refresh-2' });
   }
 
-  public endSession(): Promise<void> {
+  public readonly endedSessions: string[] = [];
+
+  public endSession(refreshToken: string): Promise<void> {
+    this.endedSessions.push(refreshToken);
     return Promise.resolve();
   }
 }
