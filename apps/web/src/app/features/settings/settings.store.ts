@@ -3,6 +3,7 @@ import { Injectable, inject, signal, type Signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type { components } from '../../core/api/schema';
 import { toApiError, type ApiError } from '../../core/error/api-error';
+import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
 
 type MyProfile = components['schemas']['MyProfileResponse'];
 type MySettings = components['schemas']['MySettingsResponse'];
@@ -31,6 +32,7 @@ export interface SettingsDraft {
 @Injectable()
 export class SettingsStore {
   private readonly http = inject(HttpClient);
+  private readonly bootstrap = inject(BootstrapStore);
 
   private readonly profileOk = signal(false);
   private readonly settingsOk = signal(false);
@@ -63,6 +65,14 @@ export class SettingsStore {
         }),
       );
 
+      // R-53, R-54: the header, the menu and this page all read the viewer from
+      // the bootstrap store. Push the saved values there so the new name and
+      // picture show at once, with no page reload.
+      this.bootstrap.applyUser({
+        displayName: saved.displayName,
+        avatarUrl: saved.avatarUrl,
+      });
+
       this.profileOk.set(true);
       return saved;
     } catch (cause) {
@@ -85,6 +95,14 @@ export class SettingsStore {
           notifyOnStatusChange: draft.notifyOnStatusChange,
         }),
       );
+
+      // R-59: keep the app-wide copy of my settings in step, so the toggles
+      // stay put and the resolved language is right everywhere at once.
+      this.bootstrap.applyMySettings({
+        language: saved.language,
+        notifyOnComment: saved.notifyOnComment,
+        notifyOnStatusChange: saved.notifyOnStatusChange,
+      });
 
       this.settingsOk.set(true);
       return saved;

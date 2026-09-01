@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminStore } from './admin.store';
+import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
 
 /**
  * Admin work (R-43 to R-49, R-64 to R-70).
@@ -15,6 +16,7 @@ import { AdminStore } from './admin.store';
 describe('admin work', () => {
   let store: AdminStore;
   let http: HttpTestingController;
+  let bootstrap: BootstrapStore;
 
   const taxonomy = {
     categories: [
@@ -44,7 +46,22 @@ describe('admin work', () => {
     });
     store = TestBed.inject(AdminStore);
     http = TestBed.inject(HttpTestingController);
+    bootstrap = TestBed.inject(BootstrapStore);
   });
+
+  async function seedBootstrap(): Promise<void> {
+    const done = bootstrap.load();
+    http.expectOne('/v1/bootstrap').flush({
+      user: { id: 'u1', displayName: 'Sam', avatarUrl: null, role: 'admin' },
+      settings: { language: 'en', notifyOnComment: true, notifyOnStatusChange: true },
+      features: { commentsEnabled: true, commentsRequireApproval: false },
+      categories: [{ id: 'c1', name: 'Bug', slug: 'bug', color: '#DC2626', isActive: true }],
+      statuses: [
+        { id: 's1', name: 'New', slug: 'new', color: '#0369A1', isActive: true, isDefault: true },
+      ],
+    });
+    await done;
+  }
 
   afterEach(() => http.verify());
 
@@ -64,6 +81,41 @@ describe('admin work', () => {
       expect(store.state()).toBe('ready');
       expect(store.categories()[0]?.usageCount).toBe(4);
       expect(store.statuses()[0]?.usageCount).toBe(9);
+    });
+
+    /**
+     * R-45 to R-49: the board filters and the request form's category picker
+     * read the taxonomy from the bootstrap store. An admin edit must reach them
+     * with no page reload.
+     */
+    it('pushes every taxonomy read to the app-wide store', async () => {
+      await seedBootstrap();
+
+      const done = store.retireCategory('c1');
+      http.expectOne('/v1/taxonomy/categories/c1/retire').flush(null);
+      await settle();
+      http.expectOne('/v1/taxonomy').flush({
+        categories: [{ ...taxonomy.categories[0], isActive: false }],
+        statuses: taxonomy.statuses,
+      });
+      await done;
+
+      expect(bootstrap.categories()[0]?.isActive).toBe(false);
+      expect(bootstrap.activeCategories()).toHaveLength(0);
+    });
+
+    it('pushes the comment switches to the app-wide store', async () => {
+      await seedBootstrap();
+
+      const done = store.saveSettings({ featureCommentsEnabled: false });
+      http.expectOne('/v1/settings/app').flush({ ...settings, featureCommentsEnabled: false });
+      await settle();
+      http
+        .expectOne('/v1/settings/app')
+        .flush({ ...settings, featureCommentsEnabled: false });
+      await done;
+
+      expect(bootstrap.commentsEnabled()).toBe(false);
     });
 
     /**

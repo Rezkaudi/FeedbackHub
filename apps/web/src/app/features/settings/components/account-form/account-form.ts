@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input, linkedSignal } from '@angular/core';
 import { SettingsStore, type SettingsDraft } from '../../settings.store';
-import { DevicePreferencesStore } from '../../../../core/config/device-preferences.store';
 import { I18nStore, type Language } from '../../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { Field } from '../../../../shared/ui/field/field';
@@ -25,7 +24,6 @@ import {
 })
 export class AccountForm {
   protected readonly store = inject(SettingsStore);
-  private readonly preferences = inject(DevicePreferencesStore);
   private readonly i18n = inject(I18nStore);
 
   public readonly initial = input.required<SettingsDraft>();
@@ -62,7 +60,9 @@ export class AccountForm {
     });
 
     if (saved !== null) {
-      this.preferences.setStoredLanguage(saved.language);
+      // Switch the app over now, not on the next reload. `setLanguage` also
+      // writes the device preference, so the box stays on this choice.
+      this.i18n.setLanguage(saved.language);
     }
   }
 }

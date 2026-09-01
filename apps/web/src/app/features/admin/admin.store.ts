@@ -3,6 +3,7 @@ import { Injectable, inject, signal, type Signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type { components } from '../../core/api/schema';
 import { toApiError, type ApiError } from '../../core/error/api-error';
+import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
 
 type Taxonomy = components['schemas']['TaxonomyResponse'];
 export type AdminCategory = Taxonomy['categories'][number];
@@ -29,6 +30,7 @@ export type AdminState = 'loading' | 'ready' | 'failed';
 @Injectable()
 export class AdminStore {
   private readonly http = inject(HttpClient);
+  private readonly bootstrap = inject(BootstrapStore);
 
   private readonly current = signal<AdminState>('loading');
   private readonly categoryRows = signal<readonly AdminCategory[]>([]);
@@ -57,12 +59,43 @@ export class AdminStore {
       const taxonomy = await firstValueFrom(this.http.get<Taxonomy>('/v1/taxonomy'));
       this.categoryRows.set(taxonomy.categories);
       this.statusRows.set(taxonomy.statuses);
+
+      // R-45 to R-49: the board filters, the request form's category picker and
+      // the status menu all read the taxonomy from the bootstrap store. Every
+      // admin edit re-reads `/v1/taxonomy` through here, so this is the one
+      // place to keep those pickers in step — no page reload.
+      this.bootstrap.applyTaxonomy(
+        taxonomy.categories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          color: category.color,
+          isActive: category.isActive,
+        })),
+        taxonomy.statuses.map((status) => ({
+          id: status.id,
+          name: status.name,
+          slug: status.slug,
+          color: status.color,
+          isActive: status.isActive,
+          isDefault: status.isDefault,
+        })),
+      );
     }, keepShowing);
   }
 
   public async loadSettings(keepShowing = false): Promise<void> {
     await this.read(async () => {
-      this.settingsRow.set(await firstValueFrom(this.http.get<AppSettings>('/v1/settings/app')));
+      const settings = await firstValueFrom(this.http.get<AppSettings>('/v1/settings/app'));
+      this.settingsRow.set(settings);
+
+      // R-42, R-40: the comment section shows or hides and the "pending
+      // comments" admin tab appears based on these two, read from the bootstrap
+      // store. Keep them in step so turning comments off takes effect at once.
+      this.bootstrap.applyFeatures({
+        commentsEnabled: settings.featureCommentsEnabled,
+        commentsRequireApproval: settings.commentsRequireApproval,
+      });
     }, keepShowing);
   }
 

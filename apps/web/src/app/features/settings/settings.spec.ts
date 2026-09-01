@@ -18,6 +18,8 @@ describe('the settings screen', () => {
     user: signal({ id: 'u1', displayName: 'Sam', avatarUrl: null, role: 'user' }),
     mySettings: signal({ language: 'en', notifyOnComment: true, notifyOnStatusChange: false }),
     activeCategories: signal([{ id: 'c1', name: 'Bug', color: '#DC2626', isActive: true }]),
+    applyUser: vi.fn(),
+    applyMySettings: vi.fn(),
   };
 
   const preferences = {

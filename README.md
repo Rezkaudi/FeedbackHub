@@ -254,6 +254,11 @@ Nothing in this list is hidden.
   containers by hand. See [SCOPE.md](SCOPE.md) §8.
 - **A deleted request frees its rate-limit slot**, which R-131 says it should
   not. Everything else about the three limits is built and tested.
+- **The "no refresh needed" write-back is same-session only.** A save in this
+  tab updates this tab (D-85). A change another person makes — an admin retiring
+  a category while I have the board open — still needs a reload to reach me;
+  there is no realtime channel, and the start-up snapshot is only re-fetched on
+  a full page load.
 - **Session refresh is still unproven at the round-trip level.** The access
   cookie outlives every test run, so nothing has ever made the browser renew a
   real session; `11-errors-and-resilience` only proves the interceptor tries
@@ -387,6 +392,16 @@ comment threading (D-05), and search without ranking (D-11).
   destructive action in the app, rather than the old "type DELETE" box — one
   fewer pattern for a person to learn. The last admin is refused with the
   reason (R-62).
+- **A saved change shows everywhere at once, with no page refresh.** The
+  start-up call (`GET /v1/bootstrap`) is the app-wide copy of who I am, my
+  settings, the two comment switches and the taxonomy, and the header, the user
+  menu, the board filters, the category picker and the status labels all read
+  from it. When the profile form saves a new name or picture, when Language and
+  email saves, and when an admin adds, edits or retires a category or status or
+  turns comments on or off, the store that made the call writes the server's
+  answer straight back into that copy — so the change is visible immediately,
+  not on the next reload (D-85). Before this, a renamed person still saw the old
+  name in the header until they refreshed the browser.
 - **The choices that live in this browser** — theme, default sort and default
   filters (D-06) — sit under an **Appearance and defaults** card, kept apart
   from the account-level choices above it.

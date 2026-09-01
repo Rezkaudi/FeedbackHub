@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { SettingsStore } from './settings.store';
+import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
 
 /**
  * My settings (R-54 to R-62).
@@ -21,6 +22,7 @@ import { SettingsStore } from './settings.store';
 describe('my settings', () => {
   let store: SettingsStore;
   let http: HttpTestingController;
+  let bootstrap: BootstrapStore;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -28,7 +30,21 @@ describe('my settings', () => {
     });
     store = TestBed.inject(SettingsStore);
     http = TestBed.inject(HttpTestingController);
+    bootstrap = TestBed.inject(BootstrapStore);
   });
+
+  /** The one start-up call, so the write-back has something to merge into. */
+  async function seedBootstrap(): Promise<void> {
+    const done = bootstrap.load();
+    http.expectOne('/v1/bootstrap').flush({
+      user: { id: 'u1', displayName: 'Sam', avatarUrl: null, role: 'user' },
+      settings: { language: 'en', notifyOnComment: true, notifyOnStatusChange: true },
+      features: { commentsEnabled: true, commentsRequireApproval: false },
+      categories: [],
+      statuses: [],
+    });
+    await done;
+  }
 
   afterEach(() => http.verify());
 
@@ -67,6 +83,39 @@ describe('my settings', () => {
       expect(store.profileError()?.fields?.['displayName']).toBeDefined();
     });
 
+    /**
+     * SRS 15.6: the header and the user menu read the viewer from the bootstrap
+     * store. A saved name must show there at once, with no page reload.
+     */
+    it('pushes the saved name and picture to the app-wide store', async () => {
+      await seedBootstrap();
+
+      const done = store.saveProfile({ displayName: 'Sam Smith', avatarUrl: 'http://x/a.png' });
+      http.expectOne('/v1/me').flush({
+        id: 'u1',
+        email: 's@x.io',
+        displayName: 'Sam Smith',
+        avatarUrl: 'http://x/a.png',
+        role: 'user',
+      });
+      await done;
+
+      expect(bootstrap.user()?.displayName).toBe('Sam Smith');
+      expect(bootstrap.user()?.avatarUrl).toBe('http://x/a.png');
+    });
+
+    it('leaves the app-wide store untouched when the save fails', async () => {
+      await seedBootstrap();
+
+      const done = store.saveProfile({ displayName: '', avatarUrl: null });
+      http
+        .expectOne('/v1/me')
+        .flush({ error: { code: 'VALIDATION_FAILED', message: 'no', requestId: 'r' } }, { status: 400, statusText: 'Bad Request' });
+      await done;
+
+      expect(bootstrap.user()?.displayName).toBe('Sam');
+    });
+
     it('sends no picture as null rather than as an empty string', async () => {
       const done = store.saveProfile({ displayName: 'Sam', avatarUrl: '' });
 
@@ -100,6 +149,23 @@ describe('my settings', () => {
       await done;
 
       expect(store.settingsSaved()).toBe(true);
+    });
+
+    it('pushes the saved choices to the app-wide store', async () => {
+      await seedBootstrap();
+
+      const done = store.saveSettings({
+        language: 'ar',
+        notifyOnComment: false,
+        notifyOnStatusChange: false,
+      });
+      http
+        .expectOne('/v1/settings/me')
+        .flush({ language: 'ar', notifyOnComment: false, notifyOnStatusChange: false });
+      await done;
+
+      expect(bootstrap.mySettings()?.language).toBe('ar');
+      expect(bootstrap.mySettings()?.notifyOnComment).toBe(false);
     });
 
     /**

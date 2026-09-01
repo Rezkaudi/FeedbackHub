@@ -15,6 +15,7 @@ import { toApiError, type ApiError } from '../error/api-error';
 type BootstrapResponse = components['schemas']['BootstrapResponse'];
 export type BootstrapUser = BootstrapResponse['user'];
 export type MySettings = BootstrapResponse['settings'];
+export type Features = BootstrapResponse['features'];
 export type Category = BootstrapResponse['categories'][number];
 export type Status = BootstrapResponse['statuses'][number];
 
@@ -111,5 +112,54 @@ export class BootstrapStore {
       this.failure.set(error);
       this.state.set('failed');
     }
+  }
+
+  /**
+   * Write-back after a successful mutation, so the whole app updates without a
+   * reload (SRS 15.6, 15.7).
+   *
+   * `/v1/bootstrap` is fetched once at start-up (R-52), and every screen reads
+   * the viewer, their settings, the feature switches and the taxonomy from the
+   * signals here. When a person renames themselves, an admin retires a category
+   * or turns comments off, the store that made the call also tells this store
+   * what changed — otherwise the header, the pickers and the filters keep
+   * showing the old value until the next full page load.
+   *
+   * Each merge is a no-op before the first load, and takes the caller's values
+   * as given: they come straight from the server's answer to the write.
+   */
+  public applyUser(patch: Partial<BootstrapUser>): void {
+    this.data.update((data) =>
+      data === null ? data : { ...data, user: { ...data.user, ...patch } },
+    );
+  }
+
+  public applyMySettings(patch: Partial<MySettings>): void {
+    this.data.update((data) =>
+      data === null ? data : { ...data, settings: { ...data.settings, ...patch } },
+    );
+  }
+
+  public applyFeatures(patch: Partial<Features>): void {
+    this.data.update((data) =>
+      data === null ? data : { ...data, features: { ...data.features, ...patch } },
+    );
+  }
+
+  /**
+   * The whole taxonomy at once: an admin edit can retire one row and un-retire
+   * another in the same step (R-47), so guessing the delta locally would risk
+   * showing two defaults. The admin screen has just re-read `/v1/taxonomy`;
+   * these are those rows, narrowed to what bootstrap carries.
+   */
+  public applyTaxonomy(
+    categories: readonly Category[],
+    statuses: readonly Status[],
+  ): void {
+    this.data.update((data) =>
+      data === null
+        ? data
+        : { ...data, categories: [...categories], statuses: [...statuses] },
+    );
   }
 }
