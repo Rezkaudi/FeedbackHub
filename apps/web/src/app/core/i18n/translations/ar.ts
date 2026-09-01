@@ -79,6 +79,7 @@ export const ar: SameShape<Dictionary> = {
     failedTitle: 'تعذّر تحميل اللوحة',
     loadingLabel: 'جارٍ تحميل الطلبات',
     pinned: 'مثبّت',
+    otherRequests: 'طلبات أخرى',
     unknownStatus: 'حالة غير معروفة',
     unknownCategory: 'فئة غير معروفة',
     retired: 'متقاعدة',

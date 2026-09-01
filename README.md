@@ -370,6 +370,13 @@ comment threading (D-05), and search without ranking (D-11).
 - **A pinned request carries a small pin marker in its top corner** — a filled
   circular badge on the card, plus a tinted card background — replacing the
   old flat "Pinned" text pill.
+- **The board splits pinned requests off from the rest with a labelled
+  divider.** When a page holds both pinned and unpinned requests, the grid
+  breaks into a "Pinned" group and a "More requests" group, each with a small
+  heading and a count, and a horizontal line between them. A page with only one
+  kind (later pages, or a board with nothing pinned) shows the plain grid with
+  no heading. The server already returns pinned rows first; this only makes the
+  break visible.
 - **Search and filters live in one toolbar.** The search box and sort control
   are always visible; status and category are Material filter chips behind a
   Filters button that shows how many are active, and every applied filter also

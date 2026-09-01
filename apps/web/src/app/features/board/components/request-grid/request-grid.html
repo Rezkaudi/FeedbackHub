@@ -1,11 +1,54 @@
-<ul class="request-grid">
-  @for (request of items(); track request.id) {
-    <li>
-      <fh-request-card
-        [request]="request"
-        (voted)="voted.emit({ id: request.id, patch: $event })"
-        (deleted)="deleted.emit(request.id)"
-      />
-    </li>
-  }
-</ul>
+@if (grouped()) {
+  <section class="request-group" aria-labelledby="request-group-pinned">
+    <h2 id="request-group-pinned" class="request-group-heading">
+      <fh-icon name="pin" [size]="16" />
+      <span>{{ 'board.pinned' | t }}</span>
+      <span class="request-group-count">{{ pinned().length }}</span>
+    </h2>
+
+    <ul class="request-grid">
+      @for (request of pinned(); track request.id) {
+        <li>
+          <fh-request-card
+            [request]="request"
+            (voted)="voted.emit({ id: request.id, patch: $event })"
+            (deleted)="deleted.emit(request.id)"
+          />
+        </li>
+      }
+    </ul>
+  </section>
+
+  <hr class="request-group-divider" />
+
+  <section class="request-group" aria-labelledby="request-group-rest">
+    <h2 id="request-group-rest" class="request-group-heading">
+      <span>{{ 'board.otherRequests' | t }}</span>
+      <span class="request-group-count">{{ rest().length }}</span>
+    </h2>
+
+    <ul class="request-grid">
+      @for (request of rest(); track request.id) {
+        <li>
+          <fh-request-card
+            [request]="request"
+            (voted)="voted.emit({ id: request.id, patch: $event })"
+            (deleted)="deleted.emit(request.id)"
+          />
+        </li>
+      }
+    </ul>
+  </section>
+} @else {
+  <ul class="request-grid">
+    @for (request of items(); track request.id) {
+      <li>
+        <fh-request-card
+          [request]="request"
+          (voted)="voted.emit({ id: request.id, patch: $event })"
+          (deleted)="deleted.emit(request.id)"
+        />
+      </li>
+    }
+  </ul>
+}

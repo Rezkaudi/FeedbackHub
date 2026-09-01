@@ -162,6 +162,7 @@ We are not hiding these. Each one is a choice.
 | An "edited" mark on a comment | The brief does not ask. `updated_at` still records the edit, so it can be added later. |
 | A record of status changes | The brief never asks. In the brief, "history" always means Git history (D-08). |
 | A "hide closed requests" button | Done requests stay on the board (D-10). |
+| A status-grouped or Feedback/Roadmap board (a section per status, columns) | The board stays one sorted list. The pinned rows now get their own labelled section with a divider (D-98); grouping the rest by status was raised, considered and left for later — it is a much bigger change and its own design question. |
 | A full-text search index | Search still works with `ILIKE`. There is no word stemming and no ranking (D-11). |
 | A "last activity" sort | We do not record when something last happened on a request (D-11). |
 | A record of which admin moderated what | The brief does not ask for an audit log (D-12). |

@@ -76,6 +76,7 @@ export const en = {
     failedTitle: 'We could not load the board',
     loadingLabel: 'Loading requests',
     pinned: 'Pinned',
+    otherRequests: 'More requests',
     unknownStatus: 'Unknown status',
     unknownCategory: 'Unknown category',
     retired: 'retired',

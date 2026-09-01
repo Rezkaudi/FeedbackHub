@@ -1,3 +1,49 @@
+.request-group {
+  display: block;
+}
+
+.request-group + .request-group {
+  margin-block-start: var(--fh-space-6);
+}
+
+.request-group-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-end: var(--fh-space-4);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-title-small-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.request-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding-inline: 0.4rem;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-small-size);
+  letter-spacing: 0;
+}
+
+.request-group-divider {
+  margin-block: var(--fh-space-6);
+  border: 0;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* The pin badge overhangs the top-right of its card; give the first row of the
+   pinned group room so the heading above never clips it. */
+.request-group:first-of-type .request-grid {
+  padding-block-start: 0.625rem;
+}
+
 .request-grid {
   display: grid;
   grid-template-columns: 1fr;
