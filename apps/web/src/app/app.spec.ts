@@ -88,13 +88,17 @@ describe('what the app shows while it is starting', () => {
   });
 
   /**
-   * The guard is already sending them to the identity provider. Drawing any of
-   * the app first would be a flash of a screen they are not signed in for.
+   * A signed-out person is not an error: no "could not start" heading, no
+   * spinner. The router outlet is still mounted — authGuard sends them to the
+   * identity provider off the protected routes, while the public ones
+   * (sign-in-problem) need the outlet to draw at all. Before this, `signedOut`
+   * matched no `@case` and the outlet was never rendered, so /sign-in-problem
+   * was a white page.
    */
-  it('shows nothing at all while a signed-out person is being redirected', async () => {
+  it('is not treated as a start-up error when the person is signed out', async () => {
     await renderWith(bootstrapIn('signedOut'));
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /could not start/i })).not.toBeInTheDocument();
   });
 });

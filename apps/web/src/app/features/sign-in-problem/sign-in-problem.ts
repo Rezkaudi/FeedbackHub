@@ -12,9 +12,17 @@ export class SignInProblem {
   public readonly problem = input<string>('');
   public readonly reason = input<string>('');
 
-  protected readonly heading = computed<TranslationKey>(() =>
-    this.problem() === 'cannot_join' ? 'signInProblem.headingCannotJoin' : 'signInProblem.headingFailed',
-  );
+  protected readonly heading = computed<TranslationKey>(() => {
+    if (this.problem() === 'cannot_join_yet') {
+      return 'signInProblem.headingCannotJoinYet';
+    }
+
+    if (this.problem() === 'cannot_join') {
+      return 'signInProblem.headingCannotJoin';
+    }
+
+    return 'signInProblem.headingFailed';
+  });
 
   protected readonly explanation = computed<TranslationKey>(() => {
     if (this.problem() === 'cannot_join_yet') {

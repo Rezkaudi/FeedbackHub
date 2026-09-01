@@ -1,7 +1,4 @@
 @switch (bootstrap.status()) {
-  @case ('ready') {
-    <router-outlet />
-  }
   @case ('failed') {
     <main class="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">
       <h1 class="text-xl">{{ 'bootstrap.startupFailedTitle' | t }}</h1>
@@ -25,5 +22,11 @@
   }
   @case ('loading') {
     <p role="status" class="text-on-surface-variant p-6">{{ 'bootstrap.startingUp' | t }}</p>
+  }
+  @default {
+    <!-- 'ready' and 'signedOut'. A signed-out person is bounced off the
+         protected routes by authGuard; the public ones (sign-in-problem) still
+         need the outlet to draw at all. -->
+    <router-outlet />
   }
 }

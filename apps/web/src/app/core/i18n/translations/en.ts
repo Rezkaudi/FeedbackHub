@@ -290,6 +290,7 @@ export const en = {
   },
   signInProblem: {
     headingCannotJoin: 'You cannot join FeedbackHub',
+    headingCannotJoinYet: 'You cannot join yet',
     headingFailed: 'Signing in failed',
     explanationBusy: 'FeedbackHub is busy setting up new accounts right now. Please try again in a little while.',
     explanationInviteOnly: 'FeedbackHub is invite only at the moment. Ask an admin to invite your address.',

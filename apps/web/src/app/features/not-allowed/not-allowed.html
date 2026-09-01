@@ -1,5 +1,10 @@
-<main class="mx-auto flex max-w-md flex-col items-start gap-4 p-6">
+<main class="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">
   <h1 class="text-xl">{{ 'notAllowed.title' | t }}</h1>
   <p class="text-on-surface-variant">{{ 'notAllowed.detail' | t }}</p>
-  <a routerLink="/" class="text-primary underline">{{ 'notAllowed.action' | t }}</a>
+  <a
+    routerLink="/"
+    class="bg-primary text-on-primary inline-flex min-h-11 items-center justify-center rounded-full px-4 font-medium"
+  >
+    {{ 'notAllowed.action' | t }}
+  </a>
 </main>

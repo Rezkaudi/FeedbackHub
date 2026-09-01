@@ -293,6 +293,7 @@ export const ar: SameShape<Dictionary> = {
   },
   signInProblem: {
     headingCannotJoin: 'لا يمكنك الانضمام إلى فيدباك هَب',
+    headingCannotJoinYet: 'لا يمكنك الانضمام بعد',
     headingFailed: 'فشل تسجيل الدخول',
     explanationBusy: 'فيدباك هَب مشغول حاليًا بإعداد حسابات جديدة. الرجاء المحاولة بعد قليل.',
     explanationInviteOnly: 'فيدباك هَب بدعوة فقط في الوقت الحالي. اطلب من أحد المسؤولين دعوة عنوانك.',
