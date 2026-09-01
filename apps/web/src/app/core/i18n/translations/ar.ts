@@ -173,6 +173,8 @@ export const ar: SameShape<Dictionary> = {
     defaultSortLabel: 'الترتيب الافتراضي',
     defaultCategoriesLabel: 'الفئات الافتراضية',
     defaultCategoriesHint: 'تُفتح اللوحة مُصفّاة على هذه الفئات.',
+    defaultStatusesLabel: 'الحالات الافتراضية',
+    defaultStatusesHint: 'تُفتح اللوحة مُصفّاة على هذه الحالات.',
     dangerHeading: 'حذف الحساب',
     dangerDetail: 'سيُمحى اسمك وصورتك وبريدك الإلكتروني، ويتوقف تسجيل دخولك، وتُحذف أصواتك. تبقى طلباتك وتعليقاتك، وتظهر باسم "مستخدم محذوف".',
     dangerConfirmTitle: 'حذف حسابك؟',

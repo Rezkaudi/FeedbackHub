@@ -231,7 +231,9 @@ markup — see D-50.
 - No request that changes data is ever a GET.
 - The email and name we copy from Keycloak can go out of date.
 - Theme, sort and filters are per device on purpose. They do not follow a person
-  to another browser or another computer.
+  to another browser or another computer. The board toolbar writes the sort and
+  the filters back to that per-device store as you change them, so the board
+  reopens where you left it (D-86); search text is not remembered.
 - Two languages are enough to show that translation works (SRS Q-18).
 - Two email events are enough for now. A third one is one more column.
 - Nobody asks for a page big enough to hurt the server. Nothing stops them.

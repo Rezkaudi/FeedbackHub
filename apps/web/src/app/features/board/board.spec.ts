@@ -62,6 +62,9 @@ describe('the board screen', () => {
     defaultCategoryIds: signal([]),
     knownStatusIds: () => [],
     knownCategoryIds: () => [],
+    setDefaultSort: vi.fn(),
+    setDefaultStatusIds: vi.fn(),
+    setDefaultCategoryIds: vi.fn(),
     storedLanguage: () => null,
     setStoredLanguage: () => {},
   };

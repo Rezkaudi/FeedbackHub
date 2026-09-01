@@ -18,6 +18,7 @@ describe('the settings screen', () => {
     user: signal({ id: 'u1', displayName: 'Sam', avatarUrl: null, role: 'user' }),
     mySettings: signal({ language: 'en', notifyOnComment: true, notifyOnStatusChange: false }),
     activeCategories: signal([{ id: 'c1', name: 'Bug', color: '#DC2626', isActive: true }]),
+    activeStatuses: signal([{ id: 's1', name: 'New', color: '#0369A1', isActive: true }]),
     applyUser: vi.fn(),
     applyMySettings: vi.fn(),
   };
@@ -26,9 +27,11 @@ describe('the settings screen', () => {
     theme: signal('system'),
     defaultSort: signal('newest'),
     defaultCategoryIds: signal<string[]>([]),
+    defaultStatusIds: signal<string[]>([]),
     setTheme: vi.fn(),
     setDefaultSort: vi.fn(),
     setDefaultCategoryIds: vi.fn(),
+    setDefaultStatusIds: vi.fn(),
     setStoredLanguage: vi.fn(),
     storedLanguage: () => null,
   };

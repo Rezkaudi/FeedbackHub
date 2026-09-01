@@ -96,17 +96,32 @@ export class Board {
   }
 
   protected onSort(sort: Sort): void {
+    // R-58/D-06: a sort picked from the toolbar is also the one this browser
+    // opens the board with next time. The URL still wins while it is on screen;
+    // this only changes what a clean visit falls back to.
+    this.preferences.setDefaultSort(sort);
     this.navigate({ ...this.query(), sort, page: 1 });
   }
 
   protected toggle(which: 'statusIds' | 'categoryIds', id: string): void {
     const current = this.query()[which];
     const next = current.includes(id) ? current.filter((one) => one !== id) : [...current, id];
+    this.remember(which, next);
     this.navigate({ ...this.query(), [which]: next, page: 1 });
   }
 
   protected clearFilters(): void {
+    this.preferences.setDefaultStatusIds([]);
+    this.preferences.setDefaultCategoryIds([]);
     this.navigate({ search: '', statusIds: [], categoryIds: [], sort: this.query().sort, page: 1 });
+  }
+
+  private remember(which: 'statusIds' | 'categoryIds', ids: readonly string[]): void {
+    if (which === 'statusIds') {
+      this.preferences.setDefaultStatusIds(ids);
+    } else {
+      this.preferences.setDefaultCategoryIds(ids);
+    }
   }
 
   protected goToPage(page: number): void {

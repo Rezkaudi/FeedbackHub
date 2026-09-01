@@ -32,4 +32,20 @@
       }
     </div>
   </fieldset>
+
+  <fieldset>
+    <legend class="text-on-surface-variant text-sm font-semibold">{{ 'settings.defaultStatusesLabel' | t }}</legend>
+    <p class="text-on-surface-variant mt-0.5 mb-2 text-xs">{{ 'settings.defaultStatusesHint' | t }}</p>
+    <div class="flex flex-wrap gap-2">
+      @for (status of bootstrap.activeStatuses(); track status.id) {
+        <fh-filter-chip
+          [inputId]="'default-status-' + status.id"
+          [checked]="preferences.defaultStatusIds().includes(status.id)"
+          (toggled)="toggleStatus(status.id)"
+        >
+          {{ status.name }}
+        </fh-filter-chip>
+      }
+    </div>
+  </fieldset>
 </fh-section-card>

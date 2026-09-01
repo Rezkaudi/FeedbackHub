@@ -170,6 +170,8 @@ export const en = {
     defaultSortLabel: 'Default sort',
     defaultCategoriesLabel: 'Default categories',
     defaultCategoriesHint: 'The board opens filtered to these.',
+    defaultStatusesLabel: 'Default statuses',
+    defaultStatusesHint: 'The board opens filtered to these.',
     dangerHeading: 'Delete account',
     dangerDetail: 'Your name, picture and email are wiped, your sign-in stops working and your votes go. Your requests and comments stay, shown as "Deleted user".',
     dangerConfirmTitle: 'Delete your account?',

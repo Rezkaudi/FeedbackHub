@@ -42,4 +42,11 @@ export class DevicePreferencesForm {
       current.includes(id) ? current.filter((one) => one !== id) : [...current, id],
     );
   }
+
+  protected toggleStatus(id: string): void {
+    const current = this.preferences.defaultStatusIds();
+    this.preferences.setDefaultStatusIds(
+      current.includes(id) ? current.filter((one) => one !== id) : [...current, id],
+    );
+  }
 }

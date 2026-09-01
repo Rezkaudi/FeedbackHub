@@ -404,7 +404,12 @@ comment threading (D-05), and search without ranking (D-11).
   name in the header until they refreshed the browser.
 - **The choices that live in this browser** — theme, default sort and default
   filters (D-06) — sit under an **Appearance and defaults** card, kept apart
-  from the account-level choices above it.
+  from the account-level choices above it. The card has a chip group for the
+  default categories **and** one for the default statuses; both, and the
+  default sort, are also written from the board toolbar itself: pick
+  a sort or toggle a filter chip there and that becomes what this browser opens
+  the board with next time (D-86). A shared link still wins over it while it is
+  on screen (R-24).
 - **The admin area** uses the same shell as the profile page: an identity-style
   header over a sticky section rail on the left and the current screen in a
   card column on the right, collapsing to a scroll strip on a phone (D-80). The
