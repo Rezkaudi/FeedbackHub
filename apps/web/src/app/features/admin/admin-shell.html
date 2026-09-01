@@ -1,24 +1,48 @@
 <fh-breadcrumbs class="mb-6 block" [items]="crumbs()" [navLabel]="'nav.breadcrumbLabel' | t" />
 
-<h1 class="text-xl">{{ 'admin.title' | t }}</h1>
+<header class="border-outline-variant flex items-center gap-4 border-b pb-6">
+  <span
+    class="bg-secondary-container text-on-secondary-container flex size-12 flex-none items-center justify-center rounded-full"
+    aria-hidden="true"
+  >
+    <fh-icon name="filter" [size]="22" />
+  </span>
+  <div class="min-w-0">
+    <h1 class="text-xl font-semibold">{{ 'admin.title' | t }}</h1>
+    <p class="text-on-surface-variant mt-1 text-sm">{{ 'admin.subtitle' | t }}</p>
+  </div>
+</header>
 
-<nav aria-label="Admin sections" class="admin-nav">
-  <a routerLink="taxonomy" routerLinkActive="active" ariaCurrentWhenActive="page" class="admin-nav-link">
-    {{ 'admin.taxonomy' | t }}
-  </a>
-  <a routerLink="settings" routerLinkActive="active" ariaCurrentWhenActive="page" class="admin-nav-link">
-    {{ 'admin.appSettings' | t }}
-  </a>
-  @if (bootstrap.commentsRequireApproval()) {
-    <a routerLink="comments" routerLinkActive="active" ariaCurrentWhenActive="page" class="admin-nav-link">
-      {{ 'admin.pendingComments' | t }}
-    </a>
-  }
-  <a routerLink="invitations" routerLinkActive="active" ariaCurrentWhenActive="page" class="admin-nav-link">
-    {{ 'admin.invitations' | t }}
-  </a>
-</nav>
+<div class="mt-8 lg:grid lg:grid-cols-[13rem_minmax(0,46rem)] lg:gap-12">
+  <div class="border-outline-variant mb-6 border-b pb-4 lg:mb-0 lg:border-b-0 lg:pb-0">
+    <nav aria-label="Admin sections" class="admin-nav">
+      <p
+        aria-hidden="true"
+        class="text-on-surface-variant mb-2 hidden px-3 text-xs font-semibold tracking-wide uppercase lg:block"
+      >
+        {{ 'admin.title' | t }}
+      </p>
+      <ul
+        class="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0"
+      >
+        @for (section of sections(); track section.path) {
+          <li class="shrink-0 lg:shrink">
+            <a
+              [routerLink]="section.path"
+              routerLinkActive="active"
+              ariaCurrentWhenActive="page"
+              class="admin-nav-link"
+            >
+              <fh-icon [name]="section.icon" [size]="16" class="admin-nav-icon" />
+              {{ section.label | t }}
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+  </div>
 
-<div class="mt-6">
-  <router-outlet />
+  <div class="min-w-0">
+    <router-outlet />
+  </div>
 </div>

@@ -1,67 +1,38 @@
-<fh-section-card [heading]="'admin.rateLimitsSection' | t">
-  <div class="grid gap-4 sm:grid-cols-2">
-    <fh-field [label]="'admin.submissionLimit' | t" fieldId="submissionLimitCount">
-      <input
-        id="submissionLimitCount"
-        type="number"
-        min="1"
-        [value]="settings().submissionLimitCount"
-        (change)="onChange('submissionLimitCount', $event)"
-        class="fh-input"
-      />
-    </fh-field>
-    <fh-field [label]="'admin.minutesLabel' | t" fieldId="submissionLimitMinutes">
-      <input
-        id="submissionLimitMinutes"
-        type="number"
-        min="1"
-        [value]="settings().submissionLimitMinutes"
-        (change)="onChange('submissionLimitMinutes', $event)"
-        class="fh-input"
-      />
-    </fh-field>
-
-    <fh-field [label]="'admin.voteLimit' | t" fieldId="voteLimitCount">
-      <input
-        id="voteLimitCount"
-        type="number"
-        min="1"
-        [value]="settings().voteLimitCount"
-        (change)="onChange('voteLimitCount', $event)"
-        class="fh-input"
-      />
-    </fh-field>
-    <fh-field [label]="'admin.minutesLabel' | t" fieldId="voteLimitMinutes">
-      <input
-        id="voteLimitMinutes"
-        type="number"
-        min="1"
-        [value]="settings().voteLimitMinutes"
-        (change)="onChange('voteLimitMinutes', $event)"
-        class="fh-input"
-      />
-    </fh-field>
-
-    <fh-field [label]="'admin.signupLimit' | t" fieldId="signupLimitCount">
-      <input
-        id="signupLimitCount"
-        type="number"
-        min="1"
-        [value]="settings().signupLimitCount"
-        (change)="onChange('signupLimitCount', $event)"
-        class="fh-input"
-      />
-    </fh-field>
-    <fh-field [label]="'admin.minutesLabel' | t" fieldId="signupLimitMinutes">
-      <input
-        id="signupLimitMinutes"
-        type="number"
-        min="1"
-        [value]="settings().signupLimitMinutes"
-        (change)="onChange('signupLimitMinutes', $event)"
-        class="fh-input"
-      />
-    </fh-field>
+<fh-section-card
+  [heading]="'admin.rateLimitsSection' | t"
+  [detail]="'admin.rateLimitsDetail' | t"
+  icon="filter"
+>
+  <div class="flex flex-col">
+    @for (limit of limits; track limit.label) {
+      <fieldset class="border-outline-variant border-t py-4 first:border-t-0 first:pt-0">
+        <legend class="mb-3 text-sm font-semibold">{{ limit.label | t }}</legend>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <fh-field [label]="'admin.rateLimitsCount' | t" [fieldId]="limit.countId">
+            <input
+              [id]="limit.countId"
+              type="number"
+              min="1"
+              inputmode="numeric"
+              [value]="value(limit.countId)"
+              (change)="onChange(limit.countId, $event)"
+              class="fh-input"
+            />
+          </fh-field>
+          <fh-field [label]="'admin.rateLimitsWindow' | t" [fieldId]="limit.minutesId">
+            <input
+              [id]="limit.minutesId"
+              type="number"
+              min="1"
+              inputmode="numeric"
+              [value]="value(limit.minutesId)"
+              (change)="onChange(limit.minutesId, $event)"
+              class="fh-input"
+            />
+          </fh-field>
+        </div>
+      </fieldset>
+    }
   </div>
 
   @if (tooSmall()) {

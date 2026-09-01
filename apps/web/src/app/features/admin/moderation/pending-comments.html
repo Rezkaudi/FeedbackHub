@@ -1,6 +1,6 @@
 @switch (admin.state()) {
   @case ('loading') {
-    <fh-skeleton-rows [count]="3" label="Loading waiting comments" />
+    <fh-skeleton-card [cards]="1" [rows]="4" label="Loading waiting comments" />
   }
   @case ('failed') {
     <fh-error-panel

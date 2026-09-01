@@ -1,0 +1,22 @@
+<p role="status" class="sr-only">{{ label() }}</p>
+
+<div aria-hidden="true" class="skeleton-cards">
+  @for (card of list(cards()); track card) {
+    <div class="skeleton-card">
+      <div class="skeleton-card-head">
+        <span class="dot"></span>
+        <span class="line line-title"></span>
+      </div>
+      <div class="line line-detail"></div>
+
+      <div class="skeleton-card-rows">
+        @for (row of list(rows()); track row) {
+          <div class="skeleton-card-row">
+            <span class="line line-chip"></span>
+            <span class="line line-action"></span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

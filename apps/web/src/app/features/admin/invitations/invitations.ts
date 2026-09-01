@@ -4,14 +4,23 @@ import { I18nStore } from '../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ConfirmService } from '../../../shared/ui/dialog/confirm.service';
 import { ErrorPanel } from '../../../shared/ui/state/error-panel/error-panel';
-import { SkeletonRows } from '../../../shared/ui/state/skeleton-rows/skeleton-rows';
+import { SkeletonCard } from '../../../shared/ui/state/skeleton-card/skeleton-card';
 import { EmptyPanel } from '../../../shared/ui/state/empty-panel/empty-panel';
+import { SectionCard } from '../../../shared/ui/section-card/section-card';
 import { InviteForm } from './components/invite-form/invite-form';
 import { InvitationTable } from './components/invitation-table/invitation-table';
 
 @Component({
   selector: 'fh-invitations',
-  imports: [TranslatePipe, ErrorPanel, SkeletonRows, EmptyPanel, InviteForm, InvitationTable],
+  imports: [
+    TranslatePipe,
+    ErrorPanel,
+    SkeletonCard,
+    EmptyPanel,
+    SectionCard,
+    InviteForm,
+    InvitationTable,
+  ],
   templateUrl: './invitations.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

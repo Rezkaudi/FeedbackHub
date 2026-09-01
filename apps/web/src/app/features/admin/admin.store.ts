@@ -52,91 +52,100 @@ export class AdminStore {
 
   // -- reading ---------------------------------------------------------------
 
-  public async loadTaxonomy(): Promise<void> {
+  public async loadTaxonomy(keepShowing = false): Promise<void> {
     await this.read(async () => {
       const taxonomy = await firstValueFrom(this.http.get<Taxonomy>('/v1/taxonomy'));
       this.categoryRows.set(taxonomy.categories);
       this.statusRows.set(taxonomy.statuses);
-    });
+    }, keepShowing);
   }
 
-  public async loadSettings(): Promise<void> {
+  public async loadSettings(keepShowing = false): Promise<void> {
     await this.read(async () => {
       this.settingsRow.set(await firstValueFrom(this.http.get<AppSettings>('/v1/settings/app')));
-    });
+    }, keepShowing);
   }
 
-  public async loadInvitations(): Promise<void> {
+  public async loadInvitations(keepShowing = false): Promise<void> {
     await this.read(async () => {
       this.invitationRows.set(await firstValueFrom(this.http.get<Invitation[]>('/v1/invitations')));
-    });
+    }, keepShowing);
   }
 
-  public async loadPending(): Promise<void> {
+  public async loadPending(keepShowing = false): Promise<void> {
     await this.read(async () => {
       this.pendingRows.set(
         await firstValueFrom(this.http.get<PendingComment[]>('/v1/admin/comments/pending')),
       );
-    });
+    }, keepShowing);
   }
 
   // -- categories and statuses (R-43 to R-49) --------------------------------
 
   public addCategory(name: string, color: string): Promise<boolean> {
-    return this.act(() => this.http.post('/v1/taxonomy/categories', { name, color }), () =>
-      this.loadTaxonomy(),
+    return this.act(
+      () => this.http.post('/v1/taxonomy/categories', { name, color }),
+      () => this.loadTaxonomy(true),
     );
   }
 
   public changeCategory(id: string, patch: Record<string, unknown>): Promise<boolean> {
-    return this.act(() => this.http.patch(`/v1/taxonomy/categories/${id}`, patch), () =>
-      this.loadTaxonomy(),
+    return this.act(
+      () => this.http.patch(`/v1/taxonomy/categories/${id}`, patch),
+      () => this.loadTaxonomy(true),
     );
   }
 
   /** R-45: gone from the picker, still correct on the requests that use it. */
   public retireCategory(id: string): Promise<boolean> {
-    return this.act(() => this.http.post(`/v1/taxonomy/categories/${id}/retire`, null), () =>
-      this.loadTaxonomy(),
+    return this.act(
+      () => this.http.post(`/v1/taxonomy/categories/${id}/retire`, null),
+      () => this.loadTaxonomy(true),
     );
   }
 
   /** R-46: the database refuses one that is in use. Retiring is the way out. */
   public deleteCategory(id: string): Promise<boolean> {
-    return this.act(() => this.http.delete(`/v1/taxonomy/categories/${id}`), () =>
-      this.loadTaxonomy(),
+    return this.act(
+      () => this.http.delete(`/v1/taxonomy/categories/${id}`),
+      () => this.loadTaxonomy(true),
     );
   }
 
   public addStatus(name: string, color: string): Promise<boolean> {
-    return this.act(() => this.http.post('/v1/taxonomy/statuses', { name, color }), () =>
-      this.loadTaxonomy(),
+    return this.act(
+      () => this.http.post('/v1/taxonomy/statuses', { name, color }),
+      () => this.loadTaxonomy(true),
     );
   }
 
   public changeStatus(id: string, patch: Record<string, unknown>): Promise<boolean> {
-    return this.act(() => this.http.patch(`/v1/taxonomy/statuses/${id}`, patch), () =>
-      this.loadTaxonomy(),
+    return this.act(
+      () => this.http.patch(`/v1/taxonomy/statuses/${id}`, patch),
+      () => this.loadTaxonomy(true),
     );
   }
 
   /** R-48: the first status can never be retired. */
   public retireStatus(id: string): Promise<boolean> {
-    return this.act(() => this.http.post(`/v1/taxonomy/statuses/${id}/retire`, null), () =>
-      this.loadTaxonomy(),
+    return this.act(
+      () => this.http.post(`/v1/taxonomy/statuses/${id}/retire`, null),
+      () => this.loadTaxonomy(true),
     );
   }
 
   public deleteStatus(id: string): Promise<boolean> {
-    return this.act(() => this.http.delete(`/v1/taxonomy/statuses/${id}`), () =>
-      this.loadTaxonomy(),
+    return this.act(
+      () => this.http.delete(`/v1/taxonomy/statuses/${id}`),
+      () => this.loadTaxonomy(true),
     );
   }
 
   /** R-47: marking a new first status un-marks the old one, in the same step. */
   public makeDefaultStatus(id: string): Promise<boolean> {
-    return this.act(() => this.http.post(`/v1/taxonomy/statuses/${id}/make-default`, null), () =>
-      this.loadTaxonomy(),
+    return this.act(
+      () => this.http.post(`/v1/taxonomy/statuses/${id}/make-default`, null),
+      () => this.loadTaxonomy(true),
     );
   }
 
@@ -150,47 +159,65 @@ export class AdminStore {
   public async saveSettings(patch: Partial<AppSettings>): Promise<boolean> {
     return this.act(
       () => this.http.patch<AppSettings>('/v1/settings/app', patch),
-      async () => {
-        await this.loadSettings();
-      },
+      () => this.loadSettings(true),
     );
   }
 
   // -- moderation (R-41) and invites (R-66) ----------------------------------
 
   public approveComment(id: string): Promise<boolean> {
-    return this.act(() => this.http.post(`/v1/admin/comments/${id}/approve`, null), () =>
-      this.loadPending(),
+    return this.act(
+      () => this.http.post(`/v1/admin/comments/${id}/approve`, null),
+      () => this.loadPending(true),
     );
   }
 
   /** R-41: rejecting deletes it for good, and it is never emailed (R-125). */
   public rejectComment(id: string): Promise<boolean> {
-    return this.act(() => this.http.post(`/v1/admin/comments/${id}/reject`, null), () =>
-      this.loadPending(),
+    return this.act(
+      () => this.http.post(`/v1/admin/comments/${id}/reject`, null),
+      () => this.loadPending(true),
     );
   }
 
   public invite(email: string): Promise<boolean> {
-    return this.act(() => this.http.post('/v1/invitations', { email }), () =>
-      this.loadInvitations(),
+    return this.act(
+      () => this.http.post('/v1/invitations', { email }),
+      () => this.loadInvitations(true),
     );
   }
 
   public withdrawInvitation(id: string): Promise<boolean> {
-    return this.act(() => this.http.delete(`/v1/invitations/${id}`), () => this.loadInvitations());
+    return this.act(
+      () => this.http.delete(`/v1/invitations/${id}`),
+      () => this.loadInvitations(true),
+    );
   }
 
   // -- the two shapes every method above is built from -----------------------
 
-  private async read(load: () => Promise<void>): Promise<void> {
-    this.current.set('loading');
+  /**
+   * `keepShowing` is for the re-read after an action: the screen already has
+   * data, so swapping it for the loading skeleton and back would just flash.
+   * We leave the current rows and state in place, and on a read error we keep
+   * showing the (still correct) old data rather than blanking to an error page
+   * — the action itself already succeeded.
+   */
+  private async read(load: () => Promise<void>, keepShowing = false): Promise<void> {
+    const quiet = keepShowing && this.current() === 'ready';
+
+    if (!quiet) {
+      this.current.set('loading');
+    }
     this.failure.set(null);
 
     try {
       await load();
       this.current.set('ready');
     } catch (cause) {
+      if (quiet) {
+        return;
+      }
       this.failure.set(toApiError(cause));
       this.current.set('failed');
     }

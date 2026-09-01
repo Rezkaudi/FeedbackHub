@@ -1,6 +1,6 @@
 @switch (admin.state()) {
   @case ('loading') {
-    <fh-skeleton-rows [count]="3" label="Loading invitations" />
+    <fh-skeleton-card [cards]="2" [rows]="2" label="Loading invitations" />
   }
   @case ('failed') {
     <fh-error-panel
@@ -12,18 +12,29 @@
     />
   }
   @case ('ready') {
-    <fh-invite-form (invited)="invite($event)" />
+    <div class="flex max-w-(--fh-measure) flex-col gap-6">
+      <fh-section-card
+        [heading]="'admin.inviteSection' | t"
+        [detail]="'admin.inviteDetail' | t"
+        icon="mail"
+      >
+        <fh-invite-form (invited)="invite($event)" />
+        @if (admin.actionError()) {
+          <p role="alert" class="text-error text-sm">{{ 'admin.actionFailed' | t }}</p>
+        }
+      </fh-section-card>
 
-    @if (admin.actionError()) {
-      <p role="alert" class="text-error mt-3 text-sm">{{ 'admin.actionFailed' | t }}</p>
-    }
-
-    <div class="mt-6">
-      @if (admin.invitations().length === 0) {
-        <fh-empty-panel [heading]="'admin.invitationsEmpty' | t" />
-      } @else {
-        <fh-invitation-table [items]="admin.invitations()" (withdrawn)="withdraw($event)" />
-      }
+      <fh-section-card
+        [heading]="'admin.invitationsHeading' | t"
+        [detail]="'admin.invitationsHeadingDetail' | t"
+        icon="user"
+      >
+        @if (admin.invitations().length === 0) {
+          <fh-empty-panel [heading]="'admin.invitationsEmpty' | t" />
+        } @else {
+          <fh-invitation-table [items]="admin.invitations()" (withdrawn)="withdraw($event)" />
+        }
+      </fh-section-card>
     </div>
   }
 }

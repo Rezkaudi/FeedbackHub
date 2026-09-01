@@ -1,0 +1,83 @@
+/* The row's three cells drop straight into the parent grid so every column
+   lines up across every row. */
+:host {
+  display: contents;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  min-height: 3.25rem;
+  padding-block: var(--fh-space-2);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.cell-name {
+  flex-wrap: wrap;
+  gap: var(--fh-space-2);
+}
+
+.cell-usage {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+}
+
+.default-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--md-sys-color-primary);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Fixed sub-columns so "Retire" sits under "Retire" and "Delete" under
+   "Delete", whichever actions a given row happens to have. */
+.cell-actions {
+  display: grid;
+  grid-template-columns: 5.5rem 5rem;
+  gap: var(--fh-space-1);
+  justify-content: start;
+}
+
+.cell-actions.has-default {
+  grid-template-columns: 6.5rem 5.5rem 5rem;
+}
+
+.slot {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+@media (max-width: 48rem) {
+  .cell {
+    min-height: 0;
+    border-top: none;
+    padding-block: 0;
+  }
+
+  .cell-name {
+    border-top: 1px solid var(--md-sys-color-outline-variant);
+    padding-top: var(--fh-space-3);
+  }
+
+  .cell-usage {
+    padding-bottom: var(--fh-space-1);
+  }
+
+  .cell-actions,
+  .cell-actions.has-default {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: var(--fh-space-1) var(--fh-space-2);
+    padding-bottom: var(--fh-space-3);
+  }
+
+  .slot {
+    justify-content: flex-start;
+  }
+}

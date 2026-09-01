@@ -1,0 +1,40 @@
+<fh-dialog
+  [open]="open()"
+  size="sm"
+  [heading]="heading()"
+  [closeLabel]="'common.close' | t"
+  (closed)="closed.emit()"
+>
+  <form class="flex flex-col gap-5" (submit)="submit($event)">
+    <fh-field [label]="'admin.name' | t" [fieldId]="nameId()" [required]="true">
+      <input
+        [id]="nameId()"
+        type="text"
+        maxlength="40"
+        autocomplete="off"
+        [value]="name()"
+        (input)="name.set($any($event.target).value)"
+        class="fh-input"
+      />
+    </fh-field>
+
+    <fh-field [label]="'admin.color' | t" [fieldId]="colorId()">
+      <input
+        [id]="colorId()"
+        type="color"
+        [value]="color()"
+        (input)="color.set($any($event.target).value)"
+        class="border-outline h-11 w-16 cursor-pointer rounded-lg border bg-transparent p-1"
+      />
+    </fh-field>
+
+    <div class="mt-1 flex flex-wrap justify-end gap-2">
+      <fh-button variant="text" type="button" (click)="closed.emit()">
+        {{ 'common.cancel' | t }}
+      </fh-button>
+      <fh-button type="submit" [loading]="saving()" [disabled]="name().trim().length === 0">
+        {{ submitLabel() }}
+      </fh-button>
+    </div>
+  </form>
+</fh-dialog>

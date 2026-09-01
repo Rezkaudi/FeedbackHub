@@ -1,0 +1,45 @@
+/* Fixed column widths, identical on the Categories and the Statuses screen so
+   the two tables line up with each other. */
+.tax-table {
+  display: grid;
+  grid-template-columns: 14rem 9rem 1fr;
+  column-gap: var(--fh-space-4);
+}
+
+/* The header's three spans join the grid as their own row of column labels. */
+.tax-head {
+  display: contents;
+}
+
+.tax-head > span {
+  padding-bottom: var(--fh-space-2);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: 500;
+}
+
+.tax-head-actions {
+  justify-self: start;
+  /* sit over the text-button label, which carries its own inline padding */
+  padding-inline-start: var(--fh-space-3);
+}
+
+.tax-empty {
+  grid-column: 1 / -1;
+  padding-block: var(--fh-space-6);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  font-size: var(--md-sys-typescale-body-medium-size);
+}
+
+/* Stack every row below the point where three columns get cramped: name, then
+   the usage line, then the actions. The cells are already in that source
+   order, so a single column just works. */
+@media (max-width: 48rem) {
+  .tax-table {
+    grid-template-columns: 1fr;
+  }
+
+  .tax-head > span {
+    display: none;
+  }
+}

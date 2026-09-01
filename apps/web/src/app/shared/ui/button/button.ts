@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Icon, type IconName } from '../icon/icon';
 import { Spinner } from '../spinner/spinner';
 
-export type ButtonVariant = 'filled' | 'tonal' | 'outlined' | 'text' | 'danger';
+export type ButtonVariant = 'filled' | 'tonal' | 'outlined' | 'text' | 'danger' | 'danger-text';
 export type ButtonSize = 'md' | 'sm';
 
 @Component({

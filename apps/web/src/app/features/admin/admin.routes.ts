@@ -15,11 +15,19 @@ export const adminRoutes: Routes = [
     providers: [AdminStore],
     loadComponent: () => import('./admin-shell').then((m) => m.AdminShell),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'taxonomy' },
+      { path: '', pathMatch: 'full', redirectTo: 'categories' },
+      { path: 'taxonomy', pathMatch: 'full', redirectTo: 'categories' },
       {
-        path: 'taxonomy',
+        path: 'categories',
         loadComponent: () => import('./taxonomy/taxonomy-admin').then((m) => m.TaxonomyAdmin),
-        title: 'Categories and statuses · FeedbackHub',
+        data: { kind: 'categories' },
+        title: 'Categories · FeedbackHub',
+      },
+      {
+        path: 'statuses',
+        loadComponent: () => import('./taxonomy/taxonomy-admin').then((m) => m.TaxonomyAdmin),
+        data: { kind: 'statuses' },
+        title: 'Statuses · FeedbackHub',
       },
       {
         path: 'settings',

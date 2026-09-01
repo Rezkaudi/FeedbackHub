@@ -370,8 +370,10 @@ comment threading (D-05), and search without ranking (D-11).
   the user-menu link and the browser tab are titled **Profile**; it lives at
   `/profile` (the old `/settings` path is gone, with no redirect — D-79).
   It opens with an identity header (avatar, name, admin badge) over a sticky
-  in-page nav and a stack of section cards. Each part saves on its own and says
-  so in a footer bar, so one failing part cannot make another look unsaved.
+  in-page nav and a stack of section cards. **Name and picture** has a Save
+  button (free text). **Language and email** saves on change with no Save
+  button and no "Saved" line (D-83). A failure in one part shows its own
+  message and never makes another part look unsaved.
   Deleting an account says what will happen *before* anything is pressed, in a
   red-toned card, and goes through the same confirm dialog as every other
   destructive action in the app, rather than the old "type DELETE" box — one
@@ -380,19 +382,46 @@ comment threading (D-05), and search without ranking (D-11).
 - **The choices that live in this browser** — theme, default sort and default
   filters (D-06) — sit under an **Appearance and defaults** card, kept apart
   from the account-level choices above it.
-- **Categories and statuses** (R-43 to R-49), with the count of what uses each
-  one (SRS part 7). Delete is not offered for a row in use; retire is, and now
-  asks first. The first status offers no Retire button at all (R-48).
+- **The admin area** uses the same shell as the profile page: an identity-style
+  header over a sticky section rail on the left and the current screen in a
+  card column on the right, collapsing to a scroll strip on a phone (D-80). The
+  rail lists Categories · Statuses · Application settings · Invitations, each a
+  real route with its own URL, title and breadcrumb. `/admin` and the old
+  `/admin/taxonomy` redirect to `/admin/categories` (D-81).
+- **Categories** and **Statuses** (R-43 to R-49) are now two separate screens,
+  each a card whose header carries a `+ Add category` / `+ Add status` button
+  in the top-right corner that opens a small popup (name + colour). The list
+  below is a real aligned table — **Name · In use by · Actions** columns, a
+  CSS grid with fixed column widths so the two screens line up with each other
+  and every row's buttons line up, collapsing to a stacked card per row on a
+  narrow screen. Actions are plain text buttons: **Make default**, **Retire** /
+  **Make active**, **Delete** (D-81, D-83). The default status is marked with a
+  small primary-coloured "DEFAULT" label (not a grey pill) and has no Retire
+  button (R-48, D-82).
+  The old markup nested a `<tr>` inside `<fh-taxonomy-row>` inside `<tbody>`,
+  which the browser could not lay out, so the columns collapsed; there is no
+  table now (D-80). Delete only shows for a row nothing uses; Retire asks
+  first. Actions no longer flash the loading skeleton — the row just updates
+  (D-82).
 - **Application settings** — sign-up rule, allowed domains, comment approval,
-  all six rate limits, and the comments feature switch (R-67 to R-70), now
+  all six rate limits, and the comments feature switch (R-67 to R-70), in
   three section cards (`registration-card`, `comments-card`,
-  `rate-limits-card`) instead of one long form. A limit below 1 is refused
-  before it is sent, because zero would mean nobody can write (R-130).
+  `rate-limits-card`), each with an icon and a one-line "what this does". Each
+  control saves the moment it changes — no Save button, no "Saved" banner; a
+  change that failed shows the old value with a message (D-83). A rate limit
+  below 1 is not sent, with the reason shown (R-130). The registration card
+  shows what the chosen policy means below the picker; the comment switches are
+  title-plus-explanation rows like the profile page (D-80).
+  Every admin screen's first-load state is an `fh-skeleton-card` shaped like
+  the section cards it precedes, not the board's card grid (D-81); actions
+  don't re-flash it (D-82).
 - **Waiting comments**: approve or reject (R-41), each behind its own confirm
   dialog now. There is deliberately no edit — an admin never rewrites what
   somebody said (R-36).
 - **Invitations**: invite, see whether it was used, withdraw (R-66) — withdraw
-  now asks first too.
+  now asks first too. Two section cards: one for the invite form, one listing
+  what was sent as rows (address, "Waiting" or a green "Accepted <date>" line,
+  and a **Withdraw** text button) instead of the old bare table (D-80).
 - **Status and pin on a request** (R-64, R-65), shown to admins only as a
   courtesy — the server refuses both to anybody else (R-70).
 

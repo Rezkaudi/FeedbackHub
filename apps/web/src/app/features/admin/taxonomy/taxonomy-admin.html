@@ -1,6 +1,6 @@
 @switch (admin.state()) {
   @case ('loading') {
-    <fh-skeleton-rows [count]="4" label="Loading categories and statuses" />
+    <fh-skeleton-card [cards]="1" [rows]="5" label="Loading" />
   }
   @case ('failed') {
     <fh-error-panel
@@ -18,70 +18,49 @@
       </p>
     }
 
-    <fh-section-card [heading]="'admin.categories' | t">
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-start">
-          <caption class="sr-only">{{ 'admin.categories' | t }}</caption>
-          <thead>
-            <tr class="border-outline-variant border-b">
-              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.name' | t }}</th>
-              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.inUseBy' | t }}</th>
-              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.actions' | t }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (category of admin.categories(); track category.id) {
-              <fh-taxonomy-row
-                [item]="category"
-                (retired)="retireCategory(category)"
-                (restored)="restoreCategory(category)"
-                (deleted)="deleteCategory(category)"
-              />
-            }
-          </tbody>
-        </table>
-      </div>
+    <fh-section-card
+      [heading]="text().heading | t"
+      [detail]="text().detail | t"
+      [icon]="text().icon"
+    >
+      <fh-button card-action icon="plus" size="sm" (click)="adding.set(true)">
+        {{ text().addButton | t }}
+      </fh-button>
 
-      <fh-taxonomy-form
-        [label]="'admin.addCategory' | t"
-        nameId="new-category"
-        colorId="new-category-color"
-        (created)="addCategory($event)"
-      />
+      @let rows = isCategories() ? admin.categories() : admin.statuses();
+
+      <div class="tax-table" role="group" [attr.aria-label]="text().heading | t">
+        <div class="tax-head" aria-hidden="true">
+          <span>{{ 'admin.name' | t }}</span>
+          <span>{{ 'admin.inUseBy' | t }}</span>
+          <span class="tax-head-actions">{{ 'admin.actions' | t }}</span>
+        </div>
+
+        @for (item of rows; track item.id) {
+          <fh-taxonomy-row
+            [item]="item"
+            [hasDefault]="!isCategories()"
+            [isDefaultStatus]="!isCategories() && $any(item).isDefault"
+            [canMakeDefault]="!isCategories() && !$any(item).isDefault"
+            (retired)="retire(item)"
+            (restored)="restore(item)"
+            (deleted)="remove(item)"
+            (madeDefault)="makeDefault($any(item))"
+          />
+        } @empty {
+          <p class="tax-empty text-on-surface-variant">{{ 'admin.taxonomyEmpty' | t }}</p>
+        }
+      </div>
     </fh-section-card>
 
-    <fh-section-card [heading]="'admin.statuses' | t" class="mt-6 block">
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-start">
-          <caption class="sr-only">{{ 'admin.statuses' | t }}</caption>
-          <thead>
-            <tr class="border-outline-variant border-b">
-              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.name' | t }}</th>
-              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.inUseBy' | t }}</th>
-              <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.actions' | t }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (status of admin.statuses(); track status.id) {
-              <fh-taxonomy-row
-                [item]="status"
-                [isDefaultStatus]="status.isDefault"
-                [canMakeDefault]="!status.isDefault"
-                (retired)="retireStatus(status)"
-                (restored)="restoreStatus(status)"
-                (madeDefault)="makeDefaultStatus(status)"
-              />
-            }
-          </tbody>
-        </table>
-      </div>
-
-      <fh-taxonomy-form
-        [label]="'admin.addStatus' | t"
-        nameId="new-status"
-        colorId="new-status-color"
-        (created)="addStatus($event)"
-      />
-    </fh-section-card>
+    <fh-taxonomy-dialog
+      [open]="adding()"
+      [heading]="text().addHeading | t"
+      [submitLabel]="text().addButton | t"
+      [nameId]="text().nameId"
+      [colorId]="text().colorId"
+      (created)="create($event)"
+      (closed)="adding.set(false)"
+    />
   }
 }

@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, input, linkedSignal, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  linkedSignal,
+  output,
+} from '@angular/core';
 import { TranslatePipe } from '../../../../../core/i18n/translate.pipe';
 import { Field } from '../../../../../shared/ui/field/field';
 import { SectionCard } from '../../../../../shared/ui/section-card/section-card';
@@ -19,6 +26,17 @@ export class RegistrationCard {
   public readonly domainsChanged = output<readonly string[]>();
 
   protected readonly domains = linkedSignal(() => this.settings().allowedEmailDomains.join(', '));
+
+  protected readonly policyHint = computed(() => {
+    switch (this.settings().registrationPolicy) {
+      case 'invite_only':
+        return 'admin.registrationInviteOnlyDetail' as const;
+      case 'domain_restricted':
+        return 'admin.registrationDomainRestrictedDetail' as const;
+      default:
+        return 'admin.registrationOpenDetail' as const;
+    }
+  });
 
   protected onPolicy(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;

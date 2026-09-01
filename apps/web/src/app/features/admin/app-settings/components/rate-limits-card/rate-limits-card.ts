@@ -25,6 +25,20 @@ export class RateLimitsCard {
 
   protected readonly tooSmall = signal(false);
 
+  protected readonly limits = [
+    {
+      label: 'admin.submissionLimit',
+      countId: 'submissionLimitCount',
+      minutesId: 'submissionLimitMinutes',
+    },
+    { label: 'admin.voteLimit', countId: 'voteLimitCount', minutesId: 'voteLimitMinutes' },
+    { label: 'admin.signupLimit', countId: 'signupLimitCount', minutesId: 'signupLimitMinutes' },
+  ] as const satisfies readonly { label: string; countId: LimitField; minutesId: LimitField }[];
+
+  protected value(field: LimitField): number {
+    return this.settings()[field];
+  }
+
   protected onChange(field: LimitField, event: Event): void {
     const parsed = Number((event.target as HTMLInputElement).value);
 

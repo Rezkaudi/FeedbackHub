@@ -1,19 +1,35 @@
-<fh-section-card [heading]="'admin.commentsSection' | t">
-  <div class="flex items-center gap-3">
-    <fh-switch
-      inputId="comments-enabled"
-      [checked]="settings().featureCommentsEnabled"
-      (toggled)="enabledChanged.emit(!settings().featureCommentsEnabled)"
-    />
-    <label for="comments-enabled">{{ 'admin.commentsEnabled' | t }}</label>
-  </div>
+<fh-section-card
+  [heading]="'admin.commentsSection' | t"
+  [detail]="'admin.commentsDetail' | t"
+  icon="message-circle"
+>
+  <div class="flex flex-col">
+    <div class="border-outline-variant flex items-start justify-between gap-4 border-t py-3">
+      <div class="min-w-0">
+        <label for="comments-enabled" class="block text-sm font-medium">
+          {{ 'admin.commentsEnabled' | t }}
+        </label>
+        <p class="text-on-surface-variant mt-0.5 text-xs">{{ 'admin.commentsEnabledHint' | t }}</p>
+      </div>
+      <fh-switch
+        inputId="comments-enabled"
+        [checked]="settings().featureCommentsEnabled"
+        (toggled)="enabledChanged.emit(!settings().featureCommentsEnabled)"
+      />
+    </div>
 
-  <div class="flex items-center gap-3">
-    <fh-switch
-      inputId="comments-approval"
-      [checked]="settings().commentsRequireApproval"
-      (toggled)="approvalChanged.emit(!settings().commentsRequireApproval)"
-    />
-    <label for="comments-approval">{{ 'admin.commentsRequireApproval' | t }}</label>
+    <div class="border-outline-variant flex items-start justify-between gap-4 border-t py-3">
+      <div class="min-w-0">
+        <label for="comments-approval" class="block text-sm font-medium">
+          {{ 'admin.commentsRequireApproval' | t }}
+        </label>
+        <p class="text-on-surface-variant mt-0.5 text-xs">{{ 'admin.commentsApprovalHint' | t }}</p>
+      </div>
+      <fh-switch
+        inputId="comments-approval"
+        [checked]="settings().commentsRequireApproval"
+        (toggled)="approvalChanged.emit(!settings().commentsRequireApproval)"
+      />
+    </div>
   </div>
 </fh-section-card>

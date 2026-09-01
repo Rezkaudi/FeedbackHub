@@ -1,34 +1,27 @@
-<div class="overflow-x-auto">
-  <table class="w-full border-collapse text-start">
-    <caption class="sr-only">{{ 'admin.invitations' | t }}</caption>
-    <thead>
-      <tr class="border-outline-variant border-b">
-        <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.invite' | t }}</th>
-        <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.usedLabel' | t }}</th>
-        <th scope="col" class="py-2 text-start text-sm font-medium">{{ 'admin.actions' | t }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (invitation of items(); track invitation.id) {
-        <tr class="border-outline-variant border-b">
-          <td class="py-3">{{ invitation.email }}</td>
-          <td class="py-3">
-            @if (invitation.acceptedAt; as when) {
-              <time [attr.datetime]="when">{{ when | localizedDate }}</time>
-            }
-          </td>
-          <td class="py-3">
-            @if (!invitation.acceptedAt) {
-              <fh-icon-button
-                icon="trash"
-                variant="danger"
-                [label]="'admin.withdraw' | t"
-                (click)="withdrawn.emit(invitation)"
-              />
-            }
-          </td>
-        </tr>
+<ul class="border-outline-variant border-b">
+  @for (invitation of items(); track invitation.id) {
+    <li
+      class="border-outline-variant flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t py-3"
+    >
+      <div class="min-w-0">
+        <p class="truncate text-sm font-medium">{{ invitation.email }}</p>
+        <p class="mt-0.5 text-xs">
+          @if (invitation.acceptedAt; as when) {
+            <span class="text-success inline-flex items-center gap-1">
+              <fh-icon name="check-circle" [size]="14" />
+              {{ 'admin.inviteStatusAccepted' | t: { date: (when | localizedDate) } }}
+            </span>
+          } @else {
+            <span class="text-on-surface-variant">{{ 'admin.inviteStatusPending' | t }}</span>
+          }
+        </p>
+      </div>
+
+      @if (!invitation.acceptedAt) {
+        <fh-button variant="danger-text" size="sm" icon="trash" (click)="withdrawn.emit(invitation)">
+          {{ 'admin.withdraw' | t }}
+        </fh-button>
       }
-    </tbody>
-  </table>
-</div>
+    </li>
+  }
+</ul>

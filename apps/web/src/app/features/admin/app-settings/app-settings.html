@@ -1,6 +1,6 @@
 @switch (admin.state()) {
   @case ('loading') {
-    <fh-skeleton-rows [count]="3" label="Loading the settings" />
+    <fh-skeleton-card [cards]="3" [rows]="2" label="Loading the settings" />
   }
   @case ('failed') {
     <fh-error-panel
@@ -18,13 +18,18 @@
           {{ 'admin.actionFailed' | t }}
         </p>
       }
-      @if (admin.wasSaved()) {
-        <p role="status" class="text-success mb-6 text-sm">{{ 'admin.savedNotice' | t }}</p>
-      }
 
       <div class="flex max-w-(--fh-measure) flex-col gap-6">
-        <fh-registration-card [settings]="settings" (policyChanged)="onPolicy($event)" (domainsChanged)="onDomains($event)" />
-        <fh-comments-card [settings]="settings" (enabledChanged)="onCommentsEnabled($event)" (approvalChanged)="onCommentsApproval($event)" />
+        <fh-registration-card
+          [settings]="settings"
+          (policyChanged)="onPolicy($event)"
+          (domainsChanged)="onDomains($event)"
+        />
+        <fh-comments-card
+          [settings]="settings"
+          (enabledChanged)="onCommentsEnabled($event)"
+          (approvalChanged)="onCommentsApproval($event)"
+        />
         <fh-rate-limits-card [settings]="settings" (limitChanged)="onLimit($event)" />
       </div>
     }

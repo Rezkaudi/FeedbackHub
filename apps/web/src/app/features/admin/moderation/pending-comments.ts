@@ -4,13 +4,13 @@ import { I18nStore } from '../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ConfirmService } from '../../../shared/ui/dialog/confirm.service';
 import { ErrorPanel } from '../../../shared/ui/state/error-panel/error-panel';
-import { SkeletonRows } from '../../../shared/ui/state/skeleton-rows/skeleton-rows';
+import { SkeletonCard } from '../../../shared/ui/state/skeleton-card/skeleton-card';
 import { EmptyPanel } from '../../../shared/ui/state/empty-panel/empty-panel';
 import { PendingCommentCard } from './components/pending-comment-card/pending-comment-card';
 
 @Component({
   selector: 'fh-pending-comments',
-  imports: [TranslatePipe, ErrorPanel, SkeletonRows, EmptyPanel, PendingCommentCard],
+  imports: [TranslatePipe, ErrorPanel, SkeletonCard, EmptyPanel, PendingCommentCard],
   templateUrl: './pending-comments.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,24 +1,62 @@
-<tr class="border-outline-variant border-b">
-  <td class="py-3">
-    <fh-taxonomy-chip [name]="item().name" [color]="item().color" [isActive]="item().isActive" [retiredLabel]="'board.retired' | t" />
-    @if (isDefaultStatus()) {
-      <span class="text-on-surface-variant ms-2 text-xs">{{ 'admin.default' | t }}</span>
+<div class="cell cell-name">
+  <fh-taxonomy-chip
+    [name]="item().name"
+    [color]="item().color"
+    [isActive]="item().isActive"
+    [retiredLabel]="'board.retired' | t"
+  />
+  @if (isDefaultStatus()) {
+    <span class="default-mark">
+      <fh-icon name="check-circle" [size]="13" />
+      {{ 'admin.default' | t }}
+    </span>
+  }
+</div>
+
+<div class="cell cell-usage">
+  @switch (item().usageCount) {
+    @case (0) {
+      {{ 'admin.usedByNone' | t }}
     }
-  </td>
-  <td class="py-3 text-sm">{{ item().usageCount }}</td>
-  <td class="py-3">
-    <div class="flex items-center gap-1">
+    @case (1) {
+      {{ 'admin.usedByOne' | t }}
+    }
+    @default {
+      {{ 'admin.usedBy' | t: { count: item().usageCount } }}
+    }
+  }
+</div>
+
+<div class="cell cell-actions" [class.has-default]="hasDefault()">
+  @if (hasDefault()) {
+    <span class="slot">
       @if (canMakeDefault()) {
-        <fh-icon-button icon="pin" [label]="'admin.makeDefault' | t" (click)="madeDefault.emit()" />
+        <fh-button variant="text" size="sm" (click)="madeDefault.emit()">
+          {{ 'admin.makeDefault' | t }}
+        </fh-button>
       }
-      @if (item().isActive) {
-        <fh-icon-button icon="close" [label]="'admin.retire' | t" (click)="retired.emit()" />
-      } @else {
-        <fh-icon-button icon="check" [label]="'admin.active' | t" (click)="restored.emit()" />
-      }
-      @if (item().usageCount === 0) {
-        <fh-icon-button icon="trash" variant="danger" [label]="'common.delete' | t" (click)="deleted.emit()" />
-      }
-    </div>
-  </td>
-</tr>
+    </span>
+  }
+
+  <span class="slot">
+    @if (isDefaultStatus()) {
+      <!-- R-48: the default status can never be retired. -->
+    } @else if (item().isActive) {
+      <fh-button variant="text" size="sm" (click)="retired.emit()">
+        {{ 'admin.retire' | t }}
+      </fh-button>
+    } @else {
+      <fh-button variant="text" size="sm" (click)="restored.emit()">
+        {{ 'admin.makeActive' | t }}
+      </fh-button>
+    }
+  </span>
+
+  <span class="slot">
+    @if (item().usageCount === 0) {
+      <fh-button variant="danger-text" size="sm" (click)="deleted.emit()">
+        {{ 'common.delete' | t }}
+      </fh-button>
+    }
+  </span>
+</div>

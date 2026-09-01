@@ -20,10 +20,26 @@
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
 }
 
+.section-card-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fh-space-3);
+}
+
 .section-card-title {
   display: flex;
   align-items: center;
   gap: var(--fh-space-3);
+  min-width: 0;
+}
+
+.section-card-action {
+  flex: none;
+}
+
+.section-card-action:empty {
+  display: none;
 }
 
 .section-card-icon {
