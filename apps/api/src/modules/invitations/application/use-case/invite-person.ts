@@ -4,6 +4,11 @@ import { Invitation } from '../../domain/entity/invitation';
 import { ID_GENERATOR, type IdGenerator } from '../../../../shared/ports';
 import { ConflictError } from '../../../../shared/errors/app-error';
 import { REGISTERED_PEOPLE, type RegisteredPeople } from '../port/registered-people';
+import { NotificationsService } from '../../../notifications/notifications.service';
+import {
+  APP_ENVIRONMENT,
+  type AppEnvironmentToken,
+} from '../../../../shared/config/environment.token';
 
 /** R-66: only an admin can add an invitation. The guard chain proves that. */
 @Injectable()
@@ -12,6 +17,8 @@ export class InvitePerson {
     @Inject(INVITATION_REPOSITORY) private readonly invitations: InvitationRepository,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
     @Inject(REGISTERED_PEOPLE) private readonly people: RegisteredPeople,
+    private readonly notifications: NotificationsService,
+    @Inject(APP_ENVIRONMENT) private readonly environment: AppEnvironmentToken,
   ) {}
 
   public async execute(email: string): Promise<Invitation> {
@@ -29,6 +36,14 @@ export class InvitePerson {
       throw new ConflictError('That address has already been invited.');
     }
 
-    return this.invitations.add(invitation);
+    const saved = await this.invitations.add(invitation);
+
+    // R-73/R-126: the invited person is emailed the sign-in link in a background
+    // job. A mail problem can never undo the saved invitation (R-72) — the
+    // notifications module swallows its own failures.
+    const signUpUrl = `${this.environment.appBaseUrl}/v1/auth/sign-in`;
+    await this.notifications.invitationCreated(saved.email, signUpUrl);
+
+    return saved;
   }
 }

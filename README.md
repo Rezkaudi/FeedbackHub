@@ -16,8 +16,10 @@ what is actually being worked on.
 > full English and Arabic text and RTL, right after this line was written — the
 > Cypress suite below is the *old* UI's suite and has **not** been re-run or
 > updated against the new one yet, so it is not proof of anything until it is.
-> What is still *not* proven is real outgoing mail. The two lists below say
-> exactly which is which.
+> Outgoing mail now works into the local catcher: comment, status-change and
+> invitation emails have all been watched landing in Mailpit. What is still
+> *not* proven is a real external SMTP server. The two lists below say exactly
+> which is which.
 
 ---
 
@@ -147,7 +149,9 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   account deleted meanwhile is sent nothing. A failed send is logged without the
   address and dropped: **there is no retry**. Losing Redis loses queued emails
   and nothing else — proved against a real Redis, including that a job which
-  cannot be read is dropped rather than blocking the queue behind it.
+  cannot be read is dropped rather than blocking the queue behind it. All three
+  emails have been watched arriving in Mailpit over SMTP; the invitation email
+  is sent from the invite use case with a sign-in link.
 - **`bootstrap`** — one start-up call returning who I am, my settings, the
   switches, the categories and the statuses, composed from the other modules'
   published services.
@@ -255,10 +259,15 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
 
 Nothing in this list is hidden.
 
-- **No email has ever been seen to arrive.** The queue, the worker, the wording
-  and the drop-on-failure rule are all tested, but nothing has been watched
-  landing in Mailpit, and no real SMTP server has been contacted. The last hop is
-  unproven.
+- **No *real* SMTP server has been contacted.** Comment, status-change and
+  invitation emails have all been watched landing in Mailpit over SMTP, so the
+  queue, the worker, the wording and the last local hop are proven. What is
+  untested is a real mail provider with TLS and a login — `SMTP_USER` /
+  `SMTP_PASSWORD` and `secure` are wired but have never run against one.
+- **The email worker must actually be running.** `docker compose up` starts it,
+  but if the stack is brought up service-by-service without `worker`, jobs pile
+  up unsent in the Redis list `feedbackhub:notifications` and no email leaves.
+  There is no alert for this.
 - ~~**No sign-in has ever completed.**~~ It does now, and it is proven on every
   run. The end-to-end suite signs in through the real Keycloak login form with a
   seeded account (R-160), lands on the board, and then checks the parts that

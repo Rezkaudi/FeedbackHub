@@ -8,9 +8,11 @@ import { IdentityRegisteredPeople } from './infrastructure/identity/identity-reg
 import { InvitePerson } from './application/use-case/invite-person';
 import { ListInvitations } from './application/use-case/list-invitations';
 import { CancelInvitation } from './application/use-case/cancel-invitation';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /** Owns the `invitations` table. Nothing else touches it (R-141). */
 @Module({
+  imports: [NotificationsModule],
   controllers: [InvitationsController],
   providers: [
     { provide: INVITATION_REPOSITORY, useClass: PrismaInvitationRepository },
