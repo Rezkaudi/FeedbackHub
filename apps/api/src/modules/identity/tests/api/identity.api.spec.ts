@@ -138,6 +138,20 @@ describe('identity', () => {
       expect(invitation.acceptedAt).not.toBeNull();
     });
 
+    it('marks the invitation used when an already-known member signs in again', async () => {
+      await signIn.execute('token');
+      // The invitation is added after they already joined, so it is still
+      // "Waiting" and the next sign-in takes the known-by-subject path.
+      await api.prisma.invitation.create({ data: { email: 'new@example.com' } });
+
+      await signIn.execute('token');
+
+      const invitation = await api.prisma.invitation.findUniqueOrThrow({
+        where: { email: 'new@example.com' },
+      });
+      expect(invitation.acceptedAt).not.toBeNull();
+    });
+
     it('refuses a checked email from another domain', async () => {
       await setPolicy({
         registrationPolicy: 'domain_restricted',

@@ -66,6 +66,13 @@ describe('invitations over HTTP', () => {
       await expect(countInvitations()).resolves.toBe(1);
     });
 
+    it('refuses to invite an address that already belongs to a member, and writes nothing', async () => {
+      const response = await post('/v1/invitations', { email: someUser.email });
+
+      expect(response.status).toBe(409);
+      await expect(countInvitations()).resolves.toBe(0);
+    });
+
     /**
      * The address is matched against the one the identity provider confirms, so
      * capitals must not make a second invitation. It is stored lowercase.

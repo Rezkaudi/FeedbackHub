@@ -40,7 +40,24 @@ export class SignInWithProvider {
 
   public async execute(accessToken: string): Promise<User> {
     const claims = await this.provider.verifyAccessToken(accessToken);
+    const user = await this.resolveOrCreate(claims);
 
+    // R-4: an invitation is used up once the person really exists — whichever
+    // path got them here (a fresh sign-up, or a record picked up again after
+    // the provider changed their subject). markAccepted does nothing when there
+    // is no open invitation for the address, so it is safe on every sign-in.
+    await this.invitations.markAccepted(user.email, this.clock.now());
+
+    return user;
+  }
+
+  private async resolveOrCreate(claims: {
+    subject: string;
+    email: string;
+    emailVerified: boolean;
+    displayName: string;
+    avatarUrl?: string | null;
+  }): Promise<User> {
     const known = await this.users.findByExternalId(claims.subject);
     if (known !== null) {
       known.refreshFromProvider({
@@ -98,9 +115,6 @@ export class SignInWithProvider {
       appSettings.signupLimit,
       this.clock.now(),
     );
-
-    // R-4: an invitation is used up only once the person really exists.
-    await this.invitations.markAccepted(created.email, this.clock.now());
 
     return created;
   }

@@ -136,7 +136,10 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   server refuses reads, writes, edits and deletes — for admins too.
 - **`invitations`** — admin only, and refused by the server: a normal person
   calling the endpoint by hand gets 403 and no row is written. An address is
-  stored in one shape, so capitals cannot make a second invitation.
+  stored in one shape, so capitals cannot make a second invitation. An address
+  that already belongs to a member is refused (409) — it would have nothing to
+  accept. An invitation flips from "Waiting" to "Accepted" the next time that
+  address signs in, whichever sign-in path it takes.
 - **`notifications`** — three events and no more. Nobody is emailed about their
   own action, the person's own switch is respected per event, and an invitation
   needs no preference because there is no account yet. A job carries ids only —
@@ -503,7 +506,9 @@ comment threading (D-05), and search without ranking (D-11).
 - **Invitations**: invite, see whether it was used, withdraw (R-66) — withdraw
   now asks first too. Two section cards: one for the invite form, one listing
   what was sent as rows (address, "Waiting" or a green "Accepted <date>" line,
-  and a **Withdraw** text button) instead of the old bare table (D-80).
+  and a **Withdraw** text button) instead of the old bare table (D-80). The
+  "Accepted" line appears once that address signs in; inviting an address that
+  is already a member is refused with the server's sentence (D-95).
 - **Status and pin on a request** (R-64, R-65), shown to admins only as a
   courtesy — the server refuses both to anybody else (R-70).
 

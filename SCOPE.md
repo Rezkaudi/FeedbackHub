@@ -36,7 +36,8 @@ A feedback board for people inside one company.
 - Add and remove categories and statuses.
 - Delete a comment.
 - Change app-wide settings, including one feature flag.
-- Send and cancel invitations.
+- Send and cancel invitations. An address that is already a member is refused;
+  an invitation is marked used the next time that address signs in (D-95).
 
 ### The stack
 

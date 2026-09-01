@@ -4,8 +4,9 @@ import { PersonDisplay, UserView } from './contract';
 import { USER_REPOSITORY, UserRepository } from './application/port/user-repository';
 
 /**
- * The published service (R-141). `notifications` needs to know who to email and
- * `bootstrap` needs who I am; neither reads the `users` table itself.
+ * The published service (R-141). `notifications` needs to know who to email,
+ * `bootstrap` needs who I am, and `invitations` needs to know whether an address
+ * is already a member; none of them read the `users` table itself.
  */
 @Injectable()
 export class IdentityService {
@@ -25,6 +26,16 @@ export class IdentityService {
       email: user.email,
       isActive: user.isActive,
     };
+  }
+
+  /**
+   * Whether a live account already uses this address. `invitations` asks before
+   * it adds a name to the list, so an admin cannot invite someone who is already
+   * in. A wiped account (R-61) does not count — its address is free again.
+   */
+  public async isEmailRegistered(email: string): Promise<boolean> {
+    const user = await this.users.findByEmail(email);
+    return user !== null && user.isActive;
   }
 
   /**

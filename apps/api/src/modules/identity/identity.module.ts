@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AuthController } from './http/auth.controller';
 import { ProfileController } from './http/profile.controller';
 import { IdentityService } from './identity.service';
@@ -21,7 +21,13 @@ import { InvitationsModule } from '../invitations/invitations.module';
  * It exports two things: IdentityService for other modules (R-141), and
  * CURRENT_USER_SOURCE, which is the implementation the guard chain in AppModule
  * binds to (D-25).
+ *
+ * It is @Global because `invitations` needs IdentityService too, and
+ * `identity` already imports `invitations` (for the sign-up gate). A plain
+ * import both ways is a module cycle; making this module global lets
+ * `invitations` reach IdentityService without importing IdentityModule.
  */
+@Global()
 @Module({
   imports: [SettingsModule, InvitationsModule],
   controllers: [AuthController, ProfileController],
