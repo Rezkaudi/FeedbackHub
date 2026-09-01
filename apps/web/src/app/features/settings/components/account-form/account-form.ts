@@ -5,13 +5,14 @@ import { I18nStore, type Language } from '../../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { Field } from '../../../../shared/ui/field/field';
 import { Button } from '../../../../shared/ui/button/button';
+import { Icon } from '../../../../shared/ui/icon/icon';
 import { Switch } from '../../../../shared/ui/switch/switch';
 import { SectionCard } from '../../../../shared/ui/section-card/section-card';
 import { SegmentedControl, type SegmentedOption } from '../../../../shared/ui/segmented-control/segmented-control';
 
 @Component({
   selector: 'fh-account-form',
-  imports: [TranslatePipe, Field, Button, Switch, SectionCard, SegmentedControl],
+  imports: [TranslatePipe, Field, Button, Icon, Switch, SectionCard, SegmentedControl],
   templateUrl: './account-form.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

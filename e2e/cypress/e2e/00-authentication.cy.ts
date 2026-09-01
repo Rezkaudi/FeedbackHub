@@ -85,7 +85,7 @@ describe('Authentication, cookies and session lifecycle', () => {
 
   it('requires authentication for protected application routes', () => {
     cy.clearCookies();
-    cy.visit('/settings');
+    cy.visit('/profile');
     cy.url({ timeout: 20_000 }).should('match', KEYCLOAK_AUTH);
   });
 });

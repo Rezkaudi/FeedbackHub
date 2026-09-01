@@ -4,7 +4,7 @@ describe('Personal settings and preferences', () => {
   beforeEach(() => cy.signIn(SAM));
 
   it('updates display name and persists after reload', () => {
-    cy.visit('/settings');
+    cy.visit('/profile');
     cy.get('input#displayName').clear().type('Sam Updated');
     cy.contains('button', /save profile/i).click();
     cy.contains(/^Saved\.?$/).should('be.visible');
@@ -18,7 +18,7 @@ describe('Personal settings and preferences', () => {
   });
 
   it('switches theme and persists the explicit preference', () => {
-    cy.visit('/settings');
+    cy.visit('/profile');
     cy.get('select#theme').select('dark');
     cy.get('html').should('have.attr', 'data-theme', 'dark');
     cy.reload();
@@ -28,7 +28,7 @@ describe('Personal settings and preferences', () => {
   });
 
   it('changes notification preferences and confirms the save', () => {
-    cy.visit('/settings');
+    cy.visit('/profile');
     cy.contains('fieldset', /email me/i)
       .find('input[type="checkbox"]')
       .first()

@@ -31,9 +31,9 @@ export const routes: Routes = [
         title: 'Request · FeedbackHub',
       },
       {
-        path: 'settings',
+        path: 'profile',
         loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
-        title: 'Settings · FeedbackHub',
+        title: 'Profile · FeedbackHub',
       },
       {
         path: 'admin',

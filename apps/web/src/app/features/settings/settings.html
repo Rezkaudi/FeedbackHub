@@ -1,10 +1,54 @@
 <fh-breadcrumbs class="mb-6 block" [items]="crumbs()" [navLabel]="'nav.breadcrumbLabel' | t" />
 
-<h1 class="text-xl">{{ 'settings.title' | t }}</h1>
+<header class="border-outline-variant flex items-center gap-4 border-b pb-6">
+  <fh-avatar [name]="displayName()" [src]="avatarUrl()" [size]="56" />
+  <div class="min-w-0">
+    <div class="flex flex-wrap items-center gap-2">
+      <h1 class="text-xl font-semibold">{{ 'settings.title' | t }}</h1>
+      @if (isAdmin()) {
+        <span class="bg-secondary-container text-on-secondary-container rounded-full px-2 py-0.5 text-xs font-semibold">
+          {{ 'header.admin' | t }}
+        </span>
+      }
+    </div>
+    <p class="text-on-surface-variant mt-1 text-sm">{{ 'settings.subtitle' | t }}</p>
+  </div>
+</header>
 
-<div class="mt-8 flex max-w-(--fh-measure) flex-col gap-6">
-  <fh-profile-form [initial]="profileInitial()" />
-  <fh-account-form [initial]="accountInitial()" />
-  <fh-device-preferences-form />
-  <fh-danger-zone (confirmedDelete)="onConfirmedDelete()" />
+<div class="mt-8 lg:grid lg:grid-cols-[13rem_minmax(0,42rem)] lg:gap-12">
+  <div class="border-outline-variant mb-6 border-b pb-4 lg:mb-0 lg:border-b-0 lg:pb-0">
+    <nav [attr.aria-label]="'settings.navLabel' | t" class="settings-nav">
+      <p
+        aria-hidden="true"
+        class="text-on-surface-variant mb-2 hidden px-3 text-xs font-semibold tracking-wide uppercase lg:block"
+      >
+        {{ 'settings.navLabel' | t }}
+      </p>
+      <ul
+        class="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0"
+      >
+        @for (section of sections(); track section.id) {
+          <li class="shrink-0 lg:shrink">
+            <a
+              routerLink="/profile"
+              [fragment]="section.id"
+              (click)="activeSection.set(section.id)"
+              [attr.aria-current]="activeSection() === section.id ? 'location' : null"
+              class="settings-nav-link"
+            >
+              <fh-icon [name]="section.icon" [size]="16" class="settings-nav-icon" />
+              {{ section.label }}
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+  </div>
+
+  <div class="flex min-w-0 flex-col gap-6">
+    <fh-profile-form id="profile" class="block" [initial]="profileInitial()" />
+    <fh-account-form id="account" class="block" [initial]="accountInitial()" />
+    <fh-device-preferences-form id="device" class="block" />
+    <fh-danger-zone id="danger" class="block" (confirmedDelete)="onConfirmedDelete()" />
+  </div>
 </div>

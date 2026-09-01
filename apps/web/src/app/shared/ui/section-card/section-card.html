@@ -1,6 +1,17 @@
-<section class="section-card" [attr.aria-labelledby]="headingId() || null">
+<section
+  class="section-card"
+  [class.tone-danger]="tone() === 'danger'"
+  [attr.aria-labelledby]="headingId() || null"
+>
   <div class="section-card-head">
-    <h2 [id]="headingId() || null" class="section-card-heading">{{ heading() }}</h2>
+    <div class="section-card-title">
+      @if (icon(); as name) {
+        <span class="section-card-icon" aria-hidden="true">
+          <fh-icon [name]="name" [size]="18" />
+        </span>
+      }
+      <h2 [id]="headingId() || null" class="section-card-heading">{{ heading() }}</h2>
+    </div>
     @if (detail()) {
       <p class="section-card-detail">{{ detail() }}</p>
     }

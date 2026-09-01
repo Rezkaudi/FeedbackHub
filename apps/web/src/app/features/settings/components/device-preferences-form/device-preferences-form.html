@@ -1,14 +1,14 @@
-<fh-section-card [heading]="'settings.deviceHeading' | t" [detail]="'settings.deviceDetail' | t">
-  <fh-field [label]="'header.theme' | t">
+<fh-section-card [heading]="'settings.deviceHeading' | t" headingId="device-heading" icon="monitor">
+  <fh-field [label]="'settings.themeLabel' | t">
     <fh-segmented-control
       [options]="themeOptions()"
       [value]="preferences.theme()"
-      [ariaLabel]="'header.theme' | t"
+      [ariaLabel]="'settings.themeLabel' | t"
       (valueChange)="onTheme($event)"
     />
   </fh-field>
 
-  <fh-field [label]="'board.sortLabel' | t" fieldId="defaultSort">
+  <fh-field [label]="'settings.defaultSortLabel' | t" fieldId="defaultSort">
     <select id="defaultSort" [value]="preferences.defaultSort()" (change)="onSort($event)" class="fh-select">
       <option value="newest">{{ 'board.sortNewest' | t }}</option>
       <option value="oldest">{{ 'board.sortOldest' | t }}</option>
@@ -18,7 +18,8 @@
   </fh-field>
 
   <fieldset>
-    <legend class="text-on-surface-variant mb-2 text-sm font-medium">{{ 'board.categoryLabel' | t }}</legend>
+    <legend class="text-on-surface-variant text-sm font-semibold">{{ 'settings.defaultCategoriesLabel' | t }}</legend>
+    <p class="text-on-surface-variant mt-0.5 mb-2 text-xs">{{ 'settings.defaultCategoriesHint' | t }}</p>
     <div class="flex flex-wrap gap-2">
       @for (category of bootstrap.activeCategories(); track category.id) {
         <fh-filter-chip

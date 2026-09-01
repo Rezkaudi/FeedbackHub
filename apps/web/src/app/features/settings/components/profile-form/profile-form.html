@@ -1,40 +1,68 @@
-<fh-section-card [heading]="'settings.profileHeading' | t" [detail]="'settings.profileDetail' | t">
-  <form class="flex flex-col gap-4" (submit)="save($event)">
+<fh-section-card
+  [heading]="'settings.profileHeading' | t"
+  [detail]="'settings.profileDetail' | t"
+  headingId="profile-heading"
+  icon="user"
+>
+  <form class="flex flex-col gap-5" (submit)="save($event)">
+    <div class="flex items-center gap-4">
+      <fh-avatar [name]="displayName()" [src]="previewUrl()" [size]="64" />
+      <div class="min-w-0">
+        <p class="text-sm font-medium">{{ 'settings.pictureLabel' | t }}</p>
+        <p class="text-on-surface-variant text-xs">{{ 'settings.avatarUrlHint' | t }}</p>
+      </div>
+    </div>
+
     <fh-field
       [label]="'settings.displayName' | t"
       fieldId="displayName"
       [required]="true"
-      [error]="displayName().trim().length === 0 ? ('settings.displayNameEmpty' | t) : ''"
+      [error]="isEmpty() ? ('settings.displayNameEmpty' | t) : ''"
+      [hint]="'settings.displayNameCount' | t: { count: displayName().length }"
     >
       <input
         id="displayName"
         type="text"
         maxlength="80"
+        autocomplete="name"
         [value]="displayName()"
         (input)="displayName.set($any($event.target).value)"
+        [attr.aria-invalid]="isEmpty() ? 'true' : null"
         class="fh-input"
       />
     </fh-field>
 
-    <fh-field [label]="'settings.avatarUrl' | t" fieldId="avatarUrl" [hint]="'settings.avatarUrlHint' | t">
+    <fh-field
+      [label]="'settings.avatarUrl' | t"
+      fieldId="avatarUrl"
+      [hint]="'settings.avatarUrlHint' | t"
+    >
       <input
         id="avatarUrl"
         type="url"
+        inputmode="url"
         [value]="avatarUrl()"
         (input)="avatarUrl.set($any($event.target).value)"
         class="fh-input"
       />
     </fh-field>
 
-    @if (store.profileError()) {
-      <p role="alert" class="text-error text-sm">{{ 'settings.profileFailed' | t }}</p>
-    }
-    @if (store.profileSaved()) {
-      <p role="status" class="text-success text-sm">{{ 'common.saved' | t }}</p>
-    }
-
-    <fh-button type="submit" class="self-start" [disabled]="displayName().trim().length === 0">
-      {{ 'settings.saveProfile' | t }}
-    </fh-button>
+    <div
+      class="border-outline-variant -mx-6 mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 border-t px-6 pt-5"
+    >
+      <fh-button type="submit" [disabled]="isEmpty()">{{ 'settings.saveProfile' | t }}</fh-button>
+      @if (store.profileSaved()) {
+        <p role="status" class="text-success inline-flex items-center gap-1.5 text-sm">
+          <fh-icon name="check-circle" [size]="16" />
+          {{ 'common.saved' | t }}
+        </p>
+      }
+      @if (store.profileError()) {
+        <p role="alert" class="text-error inline-flex items-center gap-1.5 text-sm">
+          <fh-icon name="alert-circle" [size]="16" />
+          {{ 'settings.profileFailed' | t }}
+        </p>
+      }
+    </div>
   </form>
 </fh-section-card>

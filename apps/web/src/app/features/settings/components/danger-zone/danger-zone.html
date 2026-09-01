@@ -1,9 +1,12 @@
-<section aria-labelledby="danger-heading" class="border-error rounded-2xl border p-6">
-  <h2 id="danger-heading" class="text-error text-lg font-semibold">{{ 'settings.dangerHeading' | t }}</h2>
-  <p class="text-on-surface-variant mt-2">{{ 'settings.dangerDetail' | t }}</p>
-
+<fh-section-card
+  [heading]="'settings.dangerHeading' | t"
+  [detail]="'settings.dangerDetail' | t"
+  headingId="danger-heading"
+  icon="trash"
+  tone="danger"
+>
   @if (store.deleteError()) {
-    <p role="alert" class="text-error mt-4 text-sm">
+    <p role="alert" class="bg-error-container text-on-error-container rounded-lg px-4 py-3 text-sm">
       @if (store.deleteError()?.status === 409) {
         {{ 'settings.deleteLastAdmin' | t }}
       } @else {
@@ -12,7 +15,9 @@
     </p>
   }
 
-  <fh-button variant="danger" class="mt-4" [loading]="store.isSaving()" (click)="askToDelete()">
-    {{ 'settings.dangerButton' | t }}
-  </fh-button>
-</section>
+  <div>
+    <fh-button variant="danger" [loading]="store.isSaving()" (click)="askToDelete()">
+      {{ 'settings.dangerButton' | t }}
+    </fh-button>
+  </div>
+</fh-section-card>

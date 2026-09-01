@@ -24,9 +24,9 @@ describe('Smoke, routing and core navigation', () => {
   });
 
   it('opens personal settings and preserves the route', () => {
-    cy.visit('/settings');
+    cy.visit('/profile');
     cy.get('input#displayName').should('be.visible');
-    cy.location('pathname').should('eq', '/settings');
+    cy.location('pathname').should('eq', '/profile');
   });
 
   it('handles not-found and not-allowed screens', () => {

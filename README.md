@@ -362,20 +362,24 @@ comment threading (D-05), and search without ranking (D-11).
   (SRS 15.2), rather than a form that will fail on save.
 - **A category retired while the form was open** asks for another one.
 
-### The front end — settings and admin
+### The front end — profile and admin
 
-- **Profile, language, email choices and account deletion** (R-54 to R-62), now
+- **Profile, language, email choices and account deletion** (R-54 to R-62),
   split into their own small components (`profile-form`, `account-form`,
-  `device-preferences-form`, `danger-zone`) under `features/settings/`. Each
-  part saves on its own and says so, so one failing part cannot make another
-  look unsaved. Deleting an account says what will happen *before* anything is
-  pressed, and now goes through the same confirm dialog as every other
+  `device-preferences-form`, `danger-zone`) under `features/settings/`. The page,
+  the user-menu link and the browser tab are titled **Profile**; it lives at
+  `/profile` (the old `/settings` path is gone, with no redirect — D-79).
+  It opens with an identity header (avatar, name, admin badge) over a sticky
+  in-page nav and a stack of section cards. Each part saves on its own and says
+  so in a footer bar, so one failing part cannot make another look unsaved.
+  Deleting an account says what will happen *before* anything is pressed, in a
+  red-toned card, and goes through the same confirm dialog as every other
   destructive action in the app, rather than the old "type DELETE" box — one
   fewer pattern for a person to learn. The last admin is refused with the
   reason (R-62).
-- **The settings that live in this browser say so on the screen** — theme,
-  default sort and default filters (D-06), so nobody is surprised when their
-  theme does not follow them to their phone.
+- **The choices that live in this browser** — theme, default sort and default
+  filters (D-06) — sit under an **Appearance and defaults** card, kept apart
+  from the account-level choices above it.
 - **Categories and statuses** (R-43 to R-49), with the count of what uses each
   one (SRS part 7). Delete is not offered for a row in use; retire is, and now
   asks first. The first status offers no Retire button at all (R-48).

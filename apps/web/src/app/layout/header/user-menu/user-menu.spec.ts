@@ -53,10 +53,10 @@ describe('the user menu', () => {
     expect(preferences.setTheme).toHaveBeenCalledWith('dark');
   });
 
-  it('lists Settings and Admin as menu items', async () => {
+  it('lists Profile and Admin as menu items', async () => {
     await renderMenu();
 
-    expect(screen.getByRole('menuitem', { name: /settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /profile/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /admin/i })).toBeInTheDocument();
   });
 });

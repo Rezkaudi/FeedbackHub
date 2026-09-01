@@ -79,12 +79,6 @@ describe('the settings screen', () => {
     expect(screen.getByText(/cannot be empty/i)).toBeInTheDocument();
   });
 
-  it('says plainly which settings stay on this device', async () => {
-    await renderSettings();
-
-    expect(screen.getByText(/on this device/i)).toBeInTheDocument();
-  });
-
   it('changes the theme without asking the server', async () => {
     await renderSettings();
 

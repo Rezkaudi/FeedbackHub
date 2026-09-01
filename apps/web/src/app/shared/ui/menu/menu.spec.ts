@@ -16,7 +16,7 @@ import { MenuItem } from './menu-item';
         Account menu
       </button>
       <div menuPanel>
-        <fh-menu-item icon="user" routerLink="/settings">First item</fh-menu-item>
+        <fh-menu-item icon="user" routerLink="/profile">First item</fh-menu-item>
         <fh-menu-item icon="log-out">Second item</fh-menu-item>
       </div>
     </fh-menu>
