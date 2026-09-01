@@ -1,57 +1,63 @@
 <section aria-label="Filters" class="board-toolbar">
   <div class="board-toolbar-row">
-    <fh-board-search [value]="query().search" (searchChange)="searchChange.emit($event)" />
-    <fh-board-sort [value]="query().sort" (sortChange)="sortChange.emit($event)" />
+    <div class="board-toolbar-filters">
+      <fh-board-search [value]="query().search" (searchChange)="searchChange.emit($event)" />
+      <fh-board-sort [value]="query().sort" (sortChange)="sortChange.emit($event)" />
 
-    <fh-button
-      [variant]="query().mine ? 'tonal' : 'outlined'"
-      [icon]="query().mine ? 'check' : undefined"
-      [attr.aria-pressed]="query().mine"
-      (click)="mineToggled.emit()"
-    >
-      {{ 'board.filterMine' | t }}
-    </fh-button>
+      <span class="board-toolbar-divider" aria-hidden="true"></span>
 
-    <div class="filters-group">
-      <fh-button
-        variant="outlined"
-        icon="filter"
-        [attr.aria-expanded]="filtersOpen()"
-        (click)="toggleFilters()"
-      >
-        {{ 'board.filters' | t }}
-        @if (activeCount() > 0) {
-          <span class="filter-count">{{ activeCount() }}</span>
-        }
-      </fh-button>
+      <div class="board-toolbar-toggles">
+        <fh-button
+          [variant]="query().mine ? 'tonal' : 'outlined'"
+          [icon]="query().mine ? 'check' : 'user'"
+          [attr.aria-pressed]="query().mine"
+          (click)="mineToggled.emit()"
+        >
+          {{ 'board.filterMine' | t }}
+        </fh-button>
 
-      <fh-dialog
-        [open]="filtersOpen()"
-        [heading]="'board.filters' | t"
-        [closeLabel]="'common.close' | t"
-        (closed)="closeFilters()"
-      >
-        @if (activeCount() > 0) {
-          <div class="filters-dialog-meta">
-            <span class="filters-dialog-count">{{ 'board.filtersActive' | t: { count: activeCount() } }}</span>
-            <button type="button" class="filters-panel-clear" (click)="clearedAll.emit()">
-              {{ 'board.clearFilters' | t }}
-            </button>
-          </div>
-        }
+        <div class="filters-group">
+          <fh-button
+            [variant]="activeCount() > 0 ? 'tonal' : 'outlined'"
+            icon="filter"
+            [attr.aria-expanded]="filtersOpen()"
+            (click)="toggleFilters()"
+          >
+            {{ 'board.filters' | t }}
+            @if (activeCount() > 0) {
+              <span class="filter-count">{{ activeCount() }}</span>
+            }
+          </fh-button>
 
-        <fh-board-filters
-          [statuses]="statuses()"
-          [categories]="categories()"
-          [statusIds]="query().statusIds"
-          [categoryIds]="query().categoryIds"
-          (statusToggled)="statusToggled.emit($event)"
-          (categoryToggled)="categoryToggled.emit($event)"
-        />
-      </fh-dialog>
+          <fh-dialog
+            [open]="filtersOpen()"
+            [heading]="'board.filters' | t"
+            [closeLabel]="'common.close' | t"
+            (closed)="closeFilters()"
+          >
+            @if (activeCount() > 0) {
+              <div class="filters-dialog-meta">
+                <span class="filters-dialog-count">{{ 'board.filtersActive' | t: { count: activeCount() } }}</span>
+                <button type="button" class="filters-panel-clear" (click)="clearedAll.emit()">
+                  {{ 'board.clearFilters' | t }}
+                </button>
+              </div>
+            }
+
+            <fh-board-filters
+              [statuses]="statuses()"
+              [categories]="categories()"
+              [statusIds]="query().statusIds"
+              [categoryIds]="query().categoryIds"
+              (statusToggled)="statusToggled.emit($event)"
+              (categoryToggled)="categoryToggled.emit($event)"
+            />
+          </fh-dialog>
+        </div>
+      </div>
     </div>
 
-    <fh-button icon="plus" (click)="newRequest.emit()">
+    <fh-button class="board-toolbar-cta" icon="plus" (click)="newRequest.emit()">
       {{ 'board.newRequest' | t }}
     </fh-button>
   </div>

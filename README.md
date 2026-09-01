@@ -384,6 +384,19 @@ comment threading (D-05), and search without ranking (D-11).
   `<input type="checkbox">` elements are still real checkboxes inside real
   `<fieldset>`s, just visually rebuilt as chips, so the accessibility tree
   (and most of the old Cypress selectors) did not have to change.
+- **The toolbar reads as one narrow-things cluster plus one action.** Search,
+  sort, "My requests" and "Filters" sit together on the left, split from the
+  filled "New request" button which is pushed to the far end — so the primary
+  action never reads as a peer of the filters. Search and sort now share one
+  quiet surface (`surface-container` with a hairline border, not the old loud
+  grey), the same height, and the same focus treatment (a ring plus a primary
+  border); a thin divider separates the two inputs from the toggle buttons. On
+  a phone the toolbar stacks: full-width search, full-width sort, then "My
+  requests" and "Filters" splitting one line, then a full-width "New request"
+  at the foot (the desktop "push the button to the end" would otherwise
+  strand it mid-row). The result count sits directly under the toolbar in
+  medium weight with
+  tabular figures so it does not jump as the number changes.
 - **"New request" and "Edit request" are popups, not pages.** Both open in
   place as a modal dialog (a native `<dialog>`): "New request" over the board,
   so its scroll position and filters are never disturbed; "Edit" over the

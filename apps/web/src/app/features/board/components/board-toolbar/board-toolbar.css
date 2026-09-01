@@ -1,7 +1,7 @@
 .board-toolbar {
   display: flex;
   flex-direction: column;
-  gap: var(--fh-space-4);
+  gap: var(--fh-space-3);
 }
 
 .board-toolbar-row {
@@ -9,6 +9,40 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--fh-space-3);
+}
+
+/* The find-and-narrow cluster. It grows to fill the row; the primary action
+   is pushed to the far end so the two never read as peers. */
+.board-toolbar-filters {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fh-space-2);
+  min-width: 0;
+}
+
+.board-toolbar-cta {
+  margin-inline-start: auto;
+  flex: none;
+}
+
+.board-toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  min-height: 1.5rem;
+  margin-inline: var(--fh-space-1);
+  background: var(--md-sys-color-outline-variant);
+}
+
+.filters-group {
+  display: inline-flex;
+}
+
+/* On desktop the two toggles flow straight into the filter row; the wrapper
+   only becomes a real flex box on a phone, where it holds them on one line. */
+.board-toolbar-toggles {
+  display: contents;
 }
 
 .filter-count {
@@ -24,10 +58,6 @@
   font-size: var(--md-sys-typescale-label-small-size);
   font-weight: 600;
   margin-inline-start: var(--fh-space-1);
-}
-
-.filters-group {
-  display: inline-flex;
 }
 
 .filters-dialog-meta {
@@ -62,13 +92,58 @@
   background: var(--md-sys-color-surface-container-high);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 40rem) {
+  /* Stack the toolbar: full-width search, then a full-width sort, then "My
+     requests" and "Filters" splitting one line, then a full-width "New
+     request" at the foot. The desktop "push the CTA to the end" trick strands
+     the button mid-row on a phone, so it is dropped here. */
   .board-toolbar-row {
-    row-gap: var(--fh-space-3);
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--fh-space-3);
   }
 
-  fh-board-search {
+  .board-toolbar-filters {
+    flex: none;
+    align-items: stretch;
+    row-gap: var(--fh-space-2);
+  }
+
+  fh-board-search,
+  fh-board-sort {
     flex-basis: 100%;
-    order: -1;
+    max-width: none;
+  }
+
+  .board-toolbar-divider {
+    display: none;
+  }
+
+  /* The two toggles become a real row that splits the width in half. */
+  .board-toolbar-toggles {
+    display: flex;
+    flex-basis: 100%;
+    gap: var(--fh-space-2);
+  }
+
+  /* Equal halves, whatever the label length. */
+  .board-toolbar-toggles > fh-button,
+  .board-toolbar-toggles > .filters-group {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .board-toolbar-cta {
+    margin-inline-start: 0;
+  }
+
+  /* Column flow on the button hosts makes each inner control stretch to the
+     full width without a style reaching past the component boundary. */
+  .board-toolbar-toggles fh-button,
+  .filters-group,
+  fh-button.board-toolbar-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
   }
 }

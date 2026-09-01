@@ -16,7 +16,7 @@
 </div>
 
 @if (board.state() === 'ready') {
-  <p aria-live="polite" class="text-on-surface-variant mt-6 text-sm">
+  <p aria-live="polite" class="text-on-surface-variant mt-4 text-sm font-medium tabular-nums">
     {{ (board.total() === 1 ? 'board.resultFound' : 'board.resultsFound') | t: { count: board.total() } }}
   </p>
 }
