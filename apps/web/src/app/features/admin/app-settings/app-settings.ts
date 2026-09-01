@@ -1,21 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { AdminStore } from '../admin.store';
+import { AdminStore, type AppSettings as AppSettingsShape } from '../admin.store';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ApiErrorPipe } from '../../../core/error/api-error.pipe';
 import { ErrorPanel } from '../../../shared/ui/state/error-panel/error-panel';
 import { SkeletonCard } from '../../../shared/ui/state/skeleton-card/skeleton-card';
 import {
   RegistrationCard,
-  type RegistrationPolicy,
+  type RegistrationChange,
 } from './components/registration-card/registration-card';
 import { CommentsCard } from './components/comments-card/comments-card';
 import { RateLimitsCard } from './components/rate-limits-card/rate-limits-card';
 
 /**
- * Each control saves itself the moment it changes (R-69: no restart, takes
- * effect at once). There is no Save button and no "Saved" banner — a change
- * that failed shows the old value with a message (SRS 15.7), a change that
- * worked just stays.
+ * The comment switches and rate limits save the moment they change (R-69: no
+ * restart, takes effect at once) — no "Saved" banner; a change that failed
+ * shows the old value with a message (SRS 15.7). The registration policy also
+ * saves on change, except "domain restricted": that needs a domain in the same
+ * save (R-67), so the domains field has its own Save button and emits both.
  */
 @Component({
   selector: 'fh-app-settings',
@@ -30,12 +31,12 @@ export class AppSettings {
     void this.admin.loadSettings();
   }
 
-  protected onPolicy(registrationPolicy: RegistrationPolicy): void {
-    void this.admin.saveSettings({ registrationPolicy });
-  }
-
-  protected onDomains(allowedEmailDomains: readonly string[]): void {
-    void this.admin.saveSettings({ allowedEmailDomains: [...allowedEmailDomains] });
+  protected onRegistration(change: RegistrationChange): void {
+    const patch: Partial<AppSettingsShape> = { registrationPolicy: change.registrationPolicy };
+    if (change.allowedEmailDomains !== undefined) {
+      patch.allowedEmailDomains = [...change.allowedEmailDomains];
+    }
+    void this.admin.saveSettings(patch);
   }
 
   protected onCommentsEnabled(featureCommentsEnabled: boolean): void {

@@ -196,6 +196,14 @@ export class AdminStore {
     );
   }
 
+  /**
+   * Drop a stale "could not be saved" banner once the person starts fixing the
+   * value it was about — the message is about a value that no longer exists.
+   */
+  public dismissActionError(): void {
+    this.actionFailure.set(null);
+  }
+
   // -- moderation (R-41) and invites (R-66) ----------------------------------
 
   public approveComment(id: string): Promise<boolean> {

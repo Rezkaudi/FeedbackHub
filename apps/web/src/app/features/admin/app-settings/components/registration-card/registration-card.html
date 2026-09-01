@@ -3,38 +3,66 @@
   [detail]="'admin.registrationDetail' | t"
   icon="globe"
 >
-  <fh-field
-    [label]="'admin.registrationPolicy' | t"
-    fieldId="policy"
-    [hint]="policyHint() | t"
-  >
-    <select
-      id="policy"
-      [value]="settings().registrationPolicy"
-      (change)="onPolicy($event)"
-      class="fh-select"
-    >
-      <option value="open">{{ 'admin.registrationOpen' | t }}</option>
-      <option value="invite_only">{{ 'admin.registrationInviteOnly' | t }}</option>
-      <option value="domain_restricted">{{ 'admin.registrationDomainRestricted' | t }}</option>
-    </select>
-  </fh-field>
-
-  @if (settings().registrationPolicy === 'domain_restricted') {
+  <div class="flex flex-col gap-4">
     <fh-field
-      [label]="'admin.allowedDomains' | t"
-      fieldId="domains"
-      [hint]="'admin.registrationDomainRestrictedDetail' | t"
+      [label]="'admin.registrationPolicy' | t"
+      fieldId="policy"
+      [hint]="policyHint() | t"
     >
-      <input
-        id="domains"
-        type="text"
-        placeholder="example.com, team.co"
-        [value]="domains()"
-        (input)="onDomainsInput($event)"
-        (blur)="onDomainsBlur()"
-        class="fh-input"
-      />
+      <select
+        id="policy"
+        [value]="pendingPolicy()"
+        (change)="onPolicy($event)"
+        class="fh-select"
+      >
+        <option value="open">{{ 'admin.registrationOpen' | t }}</option>
+        <option value="invite_only">{{ 'admin.registrationInviteOnly' | t }}</option>
+        <option value="domain_restricted">{{ 'admin.registrationDomainRestricted' | t }}</option>
+      </select>
     </fh-field>
-  }
+
+    @if (pendingPolicy() === 'domain_restricted') {
+      <form (submit)="$event.preventDefault(); onSaveDomains()" class="flex flex-col gap-3">
+        <fh-field
+          [label]="'admin.allowedDomains' | t"
+          fieldId="domains"
+          [hint]="'admin.registrationDomainRestrictedDetail' | t"
+        >
+          <input
+            id="domains"
+            type="text"
+            placeholder="example.com, team.co"
+            [value]="domains()"
+            (input)="onDomainsInput($event)"
+            class="fh-input"
+          />
+        </fh-field>
+
+        @if (needsDomain()) {
+          <p role="alert" class="text-error text-sm">
+            {{ 'admin.registrationNeedsDomain' | t }}
+          </p>
+        } @else if (badDomains().length > 0) {
+          <p role="alert" class="text-error text-sm">
+            {{ 'admin.registrationBadDomain' | t: { domains: badDomains().join(', ') } }}
+          </p>
+        } @else if (tooManyDomains()) {
+          <p role="alert" class="text-error text-sm">
+            {{ 'admin.registrationTooManyDomains' | t: { max: 50 } }}
+          </p>
+        }
+
+        <div class="flex items-center justify-between gap-3">
+          @if (domainDirty()) {
+            <p class="text-on-surface-variant text-sm">{{ 'admin.unsavedChanges' | t }}</p>
+          } @else {
+            <span></span>
+          }
+          <fh-button type="submit" size="sm" icon="check" [disabled]="!canSaveDomains()">
+            {{ 'common.save' | t }}
+          </fh-button>
+        </div>
+      </form>
+    }
+  </div>
 </fh-section-card>

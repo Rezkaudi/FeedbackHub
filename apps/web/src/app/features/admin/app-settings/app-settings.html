@@ -22,8 +22,8 @@
       <div class="flex max-w-(--fh-measure) flex-col gap-6">
         <fh-registration-card
           [settings]="settings"
-          (policyChanged)="onPolicy($event)"
-          (domainsChanged)="onDomains($event)"
+          (saved)="onRegistration($event)"
+          (touched)="admin.dismissActionError()"
         />
         <fh-comments-card
           [settings]="settings"

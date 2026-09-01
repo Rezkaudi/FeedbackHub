@@ -491,12 +491,18 @@ comment threading (D-05), and search without ranking (D-11).
 - **Application settings** — sign-up rule, allowed domains, comment approval,
   all six rate limits, and the comments feature switch (R-67 to R-70), in
   three section cards (`registration-card`, `comments-card`,
-  `rate-limits-card`), each with an icon and a one-line "what this does". Each
-  control saves the moment it changes — no Save button, no "Saved" banner; a
-  change that failed shows the old value with a message (D-83). A rate limit
-  below 1 is not sent, with the reason shown (R-130). The registration card
-  shows what the chosen policy means below the picker; the comment switches are
-  title-plus-explanation rows like the profile page (D-80).
+  `rate-limits-card`), each with an icon and a one-line "what this does". The
+  comment switches and rate limits save the moment they change — no "Saved"
+  banner; a change that failed shows the old value with a message (D-83). A
+  rate limit below 1 is not sent, with the reason shown (R-130). The comment
+  switches are title-plus-explanation rows like the profile page (D-80). The
+  registration policy picker also saves on change — except "Domain restricted",
+  which reveals a domains field with its own Save button (D-96). The policy and
+  the domains are then saved together in one call. The domain list is checked
+  in the browser the same way the server checks it — at least one domain, each
+  one shaped like `example.com`, 50 at most — so a typo shows an inline message
+  and Save stays disabled instead of hitting the server (R-67). Starting to fix
+  the value also clears the red "could not be saved" banner.
   Every admin screen's first-load state is an `fh-skeleton-card` shaped like
   the section cards it precedes, not the board's card grid (D-81); actions
   don't re-flash it (D-82).
