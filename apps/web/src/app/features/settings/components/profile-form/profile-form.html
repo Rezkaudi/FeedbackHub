@@ -57,10 +57,10 @@
           {{ 'common.saved' | t }}
         </p>
       }
-      @if (store.profileError()) {
+      @if (store.profileError(); as failure) {
         <p role="alert" class="text-error inline-flex items-center gap-1.5 text-sm">
           <fh-icon name="alert-circle" [size]="16" />
-          {{ 'settings.profileFailed' | t }}
+          {{ failure | apiError: 'settings.profileFailed' }}
         </p>
       }
     </div>

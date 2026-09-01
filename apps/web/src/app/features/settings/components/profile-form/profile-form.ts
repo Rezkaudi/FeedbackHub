@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { SettingsStore, type ProfileDraft } from '../../settings.store';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { ApiErrorPipe } from '../../../../core/error/api-error.pipe';
 import { Field } from '../../../../shared/ui/field/field';
 import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
@@ -9,7 +10,7 @@ import { SectionCard } from '../../../../shared/ui/section-card/section-card';
 
 @Component({
   selector: 'fh-profile-form',
-  imports: [TranslatePipe, Field, Button, Icon, Avatar, SectionCard],
+  imports: [TranslatePipe, ApiErrorPipe, Field, Button, Icon, Avatar, SectionCard],
   templateUrl: './profile-form.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

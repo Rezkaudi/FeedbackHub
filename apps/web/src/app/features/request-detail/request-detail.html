@@ -44,8 +44,10 @@
           {{ request.description }}
         </p>
 
-        @if (detail.adminError() !== null) {
-          <p role="alert" class="text-error mt-4 text-sm">{{ 'requestDetail.adminChangeFailed' | t }}</p>
+        @if (detail.adminError(); as failure) {
+          <p role="alert" class="text-error mt-4 text-sm">
+            {{ failure | apiError: 'requestDetail.adminChangeFailed' }}
+          </p>
         }
 
         <fh-request-vote-button
@@ -58,11 +60,7 @@
 
         @if (detail.voteError(); as failure) {
           <p role="alert" class="bg-error-container text-on-error-container mt-3 rounded-xl px-4 py-3">
-            @if (failure.retryAt; as retryAt) {
-              {{ 'requestDetail.voteRateLimited' | t: { time: (retryAt | localizedDate: { timeStyle: 'short' }) } }}
-            } @else {
-              {{ 'requestDetail.voteFailed' | t }}
-            }
+            {{ failure | apiError: 'requestDetail.voteFailed' : 'requestDetail.voteRateLimited' }}
           </p>
         }
       </article>
@@ -81,7 +79,7 @@
           <fh-comment-form
             [draft]="comments.draft()"
             [saving]="comments.isSaving()"
-            [error]="comments.addError() !== null"
+            [error]="comments.addError()"
             (draftChange)="onDraft($event)"
             (submitted)="submitComment()"
           />

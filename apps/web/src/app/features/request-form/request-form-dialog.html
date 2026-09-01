@@ -95,12 +95,10 @@
 
         @if (store.error(); as failure) {
           <p role="alert" class="request-form-alert">
-            @if (failure.retryAt; as retryAt) {
-              {{ 'requestForm.rateLimited' | t: { time: (retryAt | localizedDate: { timeStyle: 'short' }) } }}
-            } @else if (failure.status === 403) {
+            @if (failure.status === 403) {
               {{ 'requestForm.forbidden' | t }}
             } @else {
-              {{ 'requestForm.saveFailed' | t }}
+              {{ failure | apiError: 'requestForm.saveFailed' : 'requestForm.rateLimited' }}
             }
           </p>
         }

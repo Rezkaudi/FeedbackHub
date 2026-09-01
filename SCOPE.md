@@ -164,6 +164,7 @@ We are not hiding these. Each one is a choice.
 | A rate limit on invitations | Only an admin can invite, so the risk is smaller — not zero (D-15). |
 | A table for email preferences | Two options do not pay for a table and a join (D-07). |
 | "Similar requests" while you type | Doing it correctly needs an AI model and vector search. A whole extra system. The brief never asks for it. |
+| Granular API error codes for the taxonomy `CONFLICT` refusals | One `CONFLICT` code covers ~7 admin refusals (last category, status in use, duplicate name, …). The front end shows the server's own English sentence for each, which means those few admin-only messages are not translated to Arabic. Splitting them into their own codes with their own translated keys is the fix, left for later (D-91). |
 
 ---
 

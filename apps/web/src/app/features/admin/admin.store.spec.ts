@@ -159,6 +159,23 @@ describe('admin work', () => {
       expect(store.actionError()?.code).toBe('CONFLICT');
     });
 
+    it('drops a stale action error when another admin screen opens', async () => {
+      const failed = store.deleteCategory('c1');
+      http.expectOne('/v1/taxonomy/categories/c1').flush(
+        { error: { code: 'CONFLICT', message: 'Something still uses it.', requestId: 'r' } },
+        { status: 409, statusText: 'Conflict' },
+      );
+      await failed;
+      expect(store.actionError()).not.toBeNull();
+
+      const opened = store.loadInvitations();
+      http.expectOne('/v1/invitations').flush([]);
+      await opened;
+
+      expect(store.actionError()).toBeNull();
+      expect(store.wasSaved()).toBe(false);
+    });
+
     it('leaves the rows alone when an action fails, so nothing half-changes', async () => {
       const read = store.loadTaxonomy();
       http.expectOne('/v1/taxonomy').flush(taxonomy);

@@ -162,4 +162,40 @@ export class BootstrapStore {
         : { ...data, categories: [...categories], statuses: [...statuses] },
     );
   }
+
+  /**
+   * Re-read the taxonomy on its own, for a non-admin who just learned it is
+   * stale: the request form submitted a category the server has since retired
+   * (another tab, another person), so the picker is showing an option that no
+   * longer exists. This pulls the current list so the dead row drops out.
+   */
+  public async refreshTaxonomy(): Promise<void> {
+    try {
+      const taxonomy = await firstValueFrom(
+        this.http.get<TaxonomyResponse>('/v1/taxonomy', { withCredentials: true }),
+      );
+      this.applyTaxonomy(
+        taxonomy.categories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          color: category.color,
+          isActive: category.isActive,
+        })),
+        taxonomy.statuses.map((status) => ({
+          id: status.id,
+          name: status.name,
+          slug: status.slug,
+          color: status.color,
+          isActive: status.isActive,
+          isDefault: status.isDefault,
+        })),
+      );
+    } catch {
+      // Best effort. If it fails the picker keeps what it had, and the form's
+      // own error message still tells the person what went wrong.
+    }
+  }
 }
+
+type TaxonomyResponse = components['schemas']['TaxonomyResponse'];

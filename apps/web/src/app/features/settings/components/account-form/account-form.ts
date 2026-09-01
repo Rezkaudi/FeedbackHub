@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, linkedSignal } from 
 import { SettingsStore, type SettingsDraft } from '../../settings.store';
 import { I18nStore, type Language } from '../../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { ApiErrorPipe } from '../../../../core/error/api-error.pipe';
 import { Field } from '../../../../shared/ui/field/field';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { Switch } from '../../../../shared/ui/switch/switch';
@@ -18,7 +19,7 @@ import {
  */
 @Component({
   selector: 'fh-account-form',
-  imports: [TranslatePipe, Field, Icon, Switch, SectionCard, SegmentedControl],
+  imports: [TranslatePipe, ApiErrorPipe, Field, Icon, Switch, SectionCard, SegmentedControl],
   templateUrl: './account-form.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

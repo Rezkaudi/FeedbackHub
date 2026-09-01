@@ -5,12 +5,12 @@
   icon="trash"
   tone="danger"
 >
-  @if (store.deleteError()) {
+  @if (store.deleteError(); as failure) {
     <p role="alert" class="bg-error-container text-on-error-container rounded-lg px-4 py-3 text-sm">
-      @if (store.deleteError()?.status === 409) {
+      @if (failure.status === 409) {
         {{ 'settings.deleteLastAdmin' | t }}
       } @else {
-        {{ 'settings.deleteFailed' | t }}
+        {{ failure | apiError: 'settings.deleteFailed' }}
       }
     </p>
   }

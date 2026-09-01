@@ -9,8 +9,8 @@
     class="fh-textarea"
   ></textarea>
 
-  @if (error()) {
-    <p role="alert" class="text-error mt-2 text-sm">{{ 'requestDetail.commentFailed' | t }}</p>
+  @if (error(); as failure) {
+    <p role="alert" class="text-error mt-2 text-sm">{{ failure | apiError: 'requestDetail.commentFailed' }}</p>
   }
 
   <fh-button type="submit" class="mt-2" [loading]="saving()" [disabled]="draft().trim().length === 0">

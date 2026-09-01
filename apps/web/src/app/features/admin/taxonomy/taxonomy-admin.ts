@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { AdminStore, type AdminCategory, type AdminStatus } from '../admin.store';
 import { I18nStore } from '../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { ApiErrorPipe } from '../../../core/error/api-error.pipe';
 import { ErrorPanel } from '../../../shared/ui/state/error-panel/error-panel';
 import { SkeletonCard } from '../../../shared/ui/state/skeleton-card/skeleton-card';
 import { SectionCard } from '../../../shared/ui/section-card/section-card';
@@ -17,6 +18,7 @@ export type TaxonomyKind = 'categories' | 'statuses';
   selector: 'fh-taxonomy-admin',
   imports: [
     TranslatePipe,
+    ApiErrorPipe,
     ErrorPanel,
     SkeletonCard,
     SectionCard,

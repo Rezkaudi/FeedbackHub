@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, inject, output } from '@angular/cor
 import { SettingsStore } from '../../settings.store';
 import { I18nStore } from '../../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { ApiErrorPipe } from '../../../../core/error/api-error.pipe';
 import { Button } from '../../../../shared/ui/button/button';
 import { SectionCard } from '../../../../shared/ui/section-card/section-card';
 import { ConfirmService } from '../../../../shared/ui/dialog/confirm.service';
 
 @Component({
   selector: 'fh-danger-zone',
-  imports: [TranslatePipe, Button, SectionCard],
+  imports: [TranslatePipe, ApiErrorPipe, Button, SectionCard],
   templateUrl: './danger-zone.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

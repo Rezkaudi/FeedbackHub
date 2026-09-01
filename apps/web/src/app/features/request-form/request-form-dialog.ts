@@ -5,7 +5,8 @@ import { RequestFormStore, type RequestDraft } from './request-form.store';
 import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
 import { I18nStore } from '../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
-import { LocalizedDatePipe } from '../../core/i18n/localized-date.pipe';
+import { ApiErrorPipe } from '../../core/error/api-error.pipe';
+import { ErrorText } from '../../core/error/error-text';
 import { Dialog } from '../../shared/ui/dialog/dialog';
 import { Button } from '../../shared/ui/button/button';
 import { Field } from '../../shared/ui/field/field';
@@ -18,7 +19,7 @@ type RequestResponse = components['schemas']['RequestResponse'];
 @Component({
   selector: 'fh-request-form-dialog',
   providers: [RequestFormStore],
-  imports: [FormField, Dialog, Button, Field, Icon, EmptyPanel, ErrorPanel, TranslatePipe, LocalizedDatePipe],
+  imports: [FormField, Dialog, Button, Field, Icon, EmptyPanel, ErrorPanel, TranslatePipe, ApiErrorPipe],
   templateUrl: './request-form-dialog.html',
   styleUrl: './request-form-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,9 +60,14 @@ export class RequestFormDialog {
     return this.bootstrap.categoryById(chosen)?.isActive === false;
   });
 
-  protected readonly titleError = this.messageFor(() => this.f.title());
-  protected readonly descriptionError = this.messageFor(() => this.f.description());
-  protected readonly categoryError = this.messageFor(() => this.f.categoryId());
+  private readonly errorText = inject(ErrorText);
+
+  // The local rule (too short, missing) and the server's answer about that same
+  // field (R-88), whichever is present. The server one wins: it is the newer
+  // fact, and it is the one the person has not seen yet.
+  protected readonly titleError = this.messageFor('title', () => this.f.title());
+  protected readonly descriptionError = this.messageFor('description', () => this.f.description());
+  protected readonly categoryError = this.messageFor('categoryId', () => this.f.categoryId());
 
   public constructor() {
     effect(() => {
@@ -102,6 +108,19 @@ export class RequestFormDialog {
 
     if (saved !== null) {
       this.saved.emit(saved);
+      return;
+    }
+
+    // The server refused the category: someone retired or deleted it while this
+    // form was open (another tab, another person). Pull the current taxonomy so
+    // the dead option leaves the picker, and drop the selection so the person
+    // has to choose one that still exists.
+    const failure = this.store.error();
+    if (failure?.fields?.['categoryId'] !== undefined) {
+      void this.bootstrap.refreshTaxonomy();
+      const field = this.f.categoryId();
+      field.value.set('');
+      field.markAsTouched();
     }
   }
 
@@ -118,8 +137,15 @@ export class RequestFormDialog {
     }
   }
 
-  private messageFor(field: () => { touched(): boolean; errors(): readonly { message?: string }[] }) {
+  private messageFor(
+    name: string,
+    field: () => { touched(): boolean; errors(): readonly { message?: string }[] },
+  ) {
     return computed(() => {
+      const fromServer = this.errorText.field(this.store.error(), name);
+      if (fromServer !== '') {
+        return fromServer;
+      }
       const state = field();
       if (!state.touched() && !this.submitted()) {
         return '';

@@ -13,9 +13,9 @@
   }
   @case ('ready') {
     @if (admin.settings(); as settings) {
-      @if (admin.actionError()) {
+      @if (admin.actionError(); as failure) {
         <p role="alert" class="bg-error-container text-on-error-container mb-6 rounded-lg px-4 py-3">
-          {{ 'admin.actionFailed' | t }}
+          {{ failure | apiError: 'admin.actionFailed' }}
         </p>
       }
 

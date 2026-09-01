@@ -305,6 +305,23 @@ export const en = {
     startupFailedTitle: 'We could not start FeedbackHub',
     startingUp: 'Starting FeedbackHub…',
   },
+  errors: {
+    generic: 'Something went wrong. Please try again.',
+    network: 'We could not reach the server. Check your connection, then try again.',
+    notFound: 'This is not there any more. It may have just been removed — refresh to see how things stand now.',
+    forbidden: 'You are not allowed to do this. Your account or this board may have changed — refresh the page and try again.',
+    unauthorized: 'You have been signed out. Sign in again to continue.',
+    conflict: 'That clashes with something that already exists.',
+    featureDisabled: 'This is turned off right now.',
+    serviceUnavailable: 'The server is busy. Please try again in a moment.',
+    internal: 'Something went wrong on our side. Please try again.',
+    validation: 'Some of what you entered was not accepted. Check the highlighted fields.',
+    tooManyRequests: 'You have done this too many times. Wait a little, then try again.',
+    rateLimitedUntil: 'You have done this too many times. You can try again at {time}.',
+    fieldCodes: {
+      categoryInactive: 'That category is no longer available. Pick another one.',
+    },
+  },
 } as const;
 
 export type Dictionary = typeof en;

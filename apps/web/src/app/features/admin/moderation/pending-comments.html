@@ -12,6 +12,12 @@
     />
   }
   @case ('ready') {
+    @if (admin.actionError(); as failure) {
+      <p role="alert" class="bg-error-container text-on-error-container mb-6 rounded-lg px-4 py-3">
+        {{ failure | apiError: 'admin.actionFailed' }}
+      </p>
+    }
+
     @if (admin.pending().length === 0) {
       <fh-empty-panel [heading]="'admin.pendingEmpty' | t" />
     } @else {

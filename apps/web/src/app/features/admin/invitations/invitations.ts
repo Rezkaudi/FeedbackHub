@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AdminStore, type Invitation } from '../admin.store';
 import { I18nStore } from '../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { ApiErrorPipe } from '../../../core/error/api-error.pipe';
 import { ConfirmService } from '../../../shared/ui/dialog/confirm.service';
 import { ErrorPanel } from '../../../shared/ui/state/error-panel/error-panel';
 import { SkeletonCard } from '../../../shared/ui/state/skeleton-card/skeleton-card';
@@ -14,6 +15,7 @@ import { InvitationTable } from './components/invitation-table/invitation-table'
   selector: 'fh-invitations',
   imports: [
     TranslatePipe,
+    ApiErrorPipe,
     ErrorPanel,
     SkeletonCard,
     EmptyPanel,

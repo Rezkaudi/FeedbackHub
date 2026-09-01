@@ -48,10 +48,10 @@
       </div>
     </fieldset>
 
-    @if (store.settingsError()) {
+    @if (store.settingsError(); as failure) {
       <p role="alert" class="text-error inline-flex items-center gap-1.5 text-sm">
         <fh-icon name="alert-circle" [size]="16" />
-        {{ 'settings.accountFailed' | t }}
+        {{ failure | apiError: 'settings.accountFailed' }}
       </p>
     }
   </div>

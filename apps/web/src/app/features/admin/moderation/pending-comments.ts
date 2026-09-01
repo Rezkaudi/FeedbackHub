@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AdminStore, type PendingComment } from '../admin.store';
 import { I18nStore } from '../../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { ApiErrorPipe } from '../../../core/error/api-error.pipe';
 import { ConfirmService } from '../../../shared/ui/dialog/confirm.service';
 import { ErrorPanel } from '../../../shared/ui/state/error-panel/error-panel';
 import { SkeletonCard } from '../../../shared/ui/state/skeleton-card/skeleton-card';
@@ -10,7 +11,7 @@ import { PendingCommentCard } from './components/pending-comment-card/pending-co
 
 @Component({
   selector: 'fh-pending-comments',
-  imports: [TranslatePipe, ErrorPanel, SkeletonCard, EmptyPanel, PendingCommentCard],
+  imports: [TranslatePipe, ApiErrorPipe, ErrorPanel, SkeletonCard, EmptyPanel, PendingCommentCard],
   templateUrl: './pending-comments.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

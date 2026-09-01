@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AdminStore } from '../admin.store';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { ApiErrorPipe } from '../../../core/error/api-error.pipe';
 import { ErrorPanel } from '../../../shared/ui/state/error-panel/error-panel';
 import { SkeletonCard } from '../../../shared/ui/state/skeleton-card/skeleton-card';
 import {
@@ -18,7 +19,7 @@ import { RateLimitsCard } from './components/rate-limits-card/rate-limits-card';
  */
 @Component({
   selector: 'fh-app-settings',
-  imports: [TranslatePipe, ErrorPanel, SkeletonCard, RegistrationCard, CommentsCard, RateLimitsCard],
+  imports: [TranslatePipe, ApiErrorPipe, ErrorPanel, SkeletonCard, RegistrationCard, CommentsCard, RateLimitsCard],
   templateUrl: './app-settings.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

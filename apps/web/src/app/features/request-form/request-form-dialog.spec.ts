@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/angular';
+import { render, screen, waitFor } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -21,10 +21,14 @@ describe('the request form dialog', () => {
   const active = { id: 'c1', name: 'Bug', slug: 'bug', color: '#DC2626', isActive: true };
   const retired = { id: 'c9', name: 'Legacy', slug: 'legacy', color: '#78716C', isActive: false };
 
+  const refreshTaxonomy = vi.fn().mockResolvedValue(undefined);
   const bootstrap = {
     activeCategories: signal([active]),
     categoryById: (id: string) => (id === 'c1' ? active : id === 'c9' ? retired : undefined),
+    refreshTaxonomy,
   };
+
+  beforeEach(() => refreshTaxonomy.mockClear());
 
   async function renderCreate() {
     const utils = await render(TEMPLATE, {
@@ -145,6 +149,33 @@ describe('the request form dialog', () => {
     expect(alert).toHaveTextContent(/you can send another at/i);
     expect(alert).toHaveTextContent(/nothing you wrote has been lost/i);
     expect(screen.getByLabelText('Title')).toHaveValue('Dark mode');
+  });
+
+  it('puts the category refusal on the category field and re-reads the taxonomy', async () => {
+    const { backend, fixture } = await renderCreate();
+
+    await userEvent.type(screen.getByLabelText('Title'), 'Dark mode');
+    await userEvent.type(screen.getByLabelText('Description'), 'It is painful at night.');
+    await userEvent.click(screen.getByRole('radio', { name: 'Bug' }));
+    await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+    backend.expectOne('/v1/requests').flush(
+      {
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: 'The submitted values are not valid.',
+          requestId: 'r',
+          fields: { categoryId: 'CATEGORY_MUST_EXIST_AND_BE_ACTIVE' },
+        },
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(screen.getByText(/no longer available/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Title')).toHaveValue('Dark mode');
+    await waitFor(() => expect(refreshTaxonomy).toHaveBeenCalled());
   });
 
   it('shows no form at all for a request that is not mine', async () => {

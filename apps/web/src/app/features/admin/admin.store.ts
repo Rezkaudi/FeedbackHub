@@ -244,6 +244,16 @@ export class AdminStore {
     }
     this.failure.set(null);
 
+    // One AdminStore is shared by every admin page (admin.routes.ts), so an
+    // action error or a "Saved." notice from one screen would otherwise still
+    // be on display when the next screen opens. Opening a screen is a fresh
+    // start: clear both. (The quiet re-read after an action keeps them — that
+    // is the action reporting its own result.)
+    if (!quiet) {
+      this.actionFailure.set(null);
+      this.saved.set(false);
+    }
+
     try {
       await load();
       this.current.set('ready');

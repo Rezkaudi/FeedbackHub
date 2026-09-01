@@ -183,6 +183,18 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   to sign in, with the page they were on remembered, and never sees the raw 401
   or a "could not be saved" message. A first, never-signed-in visit is different
   and stays on the public board.
+- **Every failed call says what actually went wrong.** One place
+  (`core/error/error-text.ts`) turns the error code into words, so "that category
+  was just removed", "that address is already invited", "you have been signed
+  out — refresh the page" and a dropped connection each read differently, on
+  every screen. A field the server names (a category retired in another tab
+  while the form was open) shows its message next to that field, not only in the
+  banner, and the request form re-reads the taxonomy so the dead option leaves
+  the picker. An admin error or "Saved" notice no longer follows you from one
+  admin screen to the next. Covered by `error-text.spec.ts`,
+  `request-form-dialog.spec.ts` and `admin.store.spec.ts`. Not yet done: the few
+  admin-only "conflict" messages (last category, status in use, …) come straight
+  from the server and are English even in Arabic mode — see D-91.
 - **Theme works with no flash.** Read from `localStorage` before the first paint
   by an inline script, and light/dark/system all apply (R-55, R-56).
 - **Sign-in failures are told apart.** "You may not join" and "you were unlucky

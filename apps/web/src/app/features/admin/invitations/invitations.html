@@ -19,8 +19,8 @@
         icon="mail"
       >
         <fh-invite-form (invited)="invite($event)" />
-        @if (admin.actionError()) {
-          <p role="alert" class="text-error text-sm">{{ 'admin.actionFailed' | t }}</p>
+        @if (admin.actionError(); as failure) {
+          <p role="alert" class="text-error text-sm">{{ failure | apiError: 'admin.actionFailed' }}</p>
         }
       </fh-section-card>
 

@@ -5,7 +5,7 @@ import { CommentsStore } from './comments.store';
 import { BootstrapStore } from '../../core/bootstrap/bootstrap.store';
 import { I18nStore } from '../../core/i18n/i18n.store';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
-import { LocalizedDatePipe } from '../../core/i18n/localized-date.pipe';
+import { ApiErrorPipe } from '../../core/error/api-error.pipe';
 import { ConfirmService } from '../../shared/ui/dialog/confirm.service';
 import { SnackbarService } from '../../shared/ui/snackbar/snackbar.service';
 import { EmptyPanel } from '../../shared/ui/state/empty-panel/empty-panel';
@@ -23,7 +23,7 @@ import { CommentList } from './components/comment-list/comment-list';
   imports: [
     RouterLink,
     TranslatePipe,
-    LocalizedDatePipe,
+    ApiErrorPipe,
     Breadcrumbs,
     EmptyPanel,
     ErrorPanel,
