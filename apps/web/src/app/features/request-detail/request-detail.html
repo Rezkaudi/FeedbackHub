@@ -40,12 +40,12 @@
           (pinToggled)="detail.setPinned($event)"
         />
 
-        <p data-user-text class="mt-5 leading-relaxed">
+        <p data-user-text data-testid="request-description" class="mt-5 leading-relaxed">
           {{ request.description }}
         </p>
 
         @if (detail.adminError(); as failure) {
-          <p role="alert" class="text-error mt-4 text-sm">
+          <p role="alert" data-testid="request-admin-error" class="text-error mt-4 text-sm">
             {{ failure | apiError: 'requestDetail.adminChangeFailed' }}
           </p>
         }
@@ -59,7 +59,11 @@
         />
 
         @if (detail.voteError(); as failure) {
-          <p role="alert" class="bg-error-container text-on-error-container mt-3 rounded-xl px-4 py-3">
+          <p
+            role="alert"
+            data-testid="request-vote-error"
+            class="bg-error-container text-on-error-container mt-3 rounded-xl px-4 py-3"
+          >
             {{ failure | apiError: 'requestDetail.voteFailed' : 'requestDetail.voteRateLimited' }}
           </p>
         }
@@ -70,7 +74,10 @@
           <h2 id="comments-heading" class="flex items-center gap-2 text-xl font-semibold">
             {{ 'requestDetail.commentsHeading' | t }}
             @if (comments.total() > 0) {
-              <span class="text-on-surface-variant bg-surface-container rounded-full px-2 py-0.5 text-sm font-normal">
+              <span
+                data-testid="comments-count"
+                class="text-on-surface-variant bg-surface-container rounded-full px-2 py-0.5 text-sm font-normal"
+              >
                 {{ comments.total() }}
               </span>
             }
@@ -93,6 +100,7 @@
                 <fh-empty-panel
                   [heading]="'requestDetail.commentsEmptyTitle' | t"
                   [detail]="'requestDetail.commentsEmptyDetail' | t"
+                  [testId]="'comments-empty'"
                 />
               }
               @case ('failed') {

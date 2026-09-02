@@ -5,6 +5,7 @@
   [class.size-sm]="size() === 'sm'"
   [disabled]="disabled() || loading()"
   [attr.aria-busy]="loading() ? 'true' : null"
+  [attr.data-testid]="testId() ?? null"
 >
   @if (loading()) {
     <fh-spinner [size]="16" />

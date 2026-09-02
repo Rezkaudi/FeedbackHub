@@ -23,6 +23,7 @@ export class TaxonomyDialog {
   public readonly nameId = input.required<string>();
   public readonly colorId = input.required<string>();
   public readonly saving = input<boolean>(false);
+  public readonly testId = input<string | undefined>(undefined);
 
   public readonly created = output<{ name: string; color: string }>();
   public readonly closed = output<void>();

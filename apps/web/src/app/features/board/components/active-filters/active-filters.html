@@ -1,13 +1,13 @@
 @if (tags().length > 0) {
   <div class="active-filters">
     @for (tag of tags(); track tag.label) {
-      <button type="button" class="active-filter-chip" (click)="tag.remove()">
+      <button type="button" class="active-filter-chip" data-testid="board-active-filter" (click)="tag.remove()">
         <span>{{ tag.label }}</span>
         <fh-icon name="close" [size]="14" />
       </button>
     }
 
-    <button type="button" class="active-filters-clear" (click)="clearedAll.emit()">
+    <button type="button" class="active-filters-clear" data-testid="board-clear-all" (click)="clearedAll.emit()">
       {{ 'board.clearAll' | t }}
     </button>
   </div>

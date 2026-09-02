@@ -14,5 +14,10 @@ export class Pagination {
   public readonly previousLabel = input<string>('Previous');
   public readonly nextLabel = input<string>('Next');
   public readonly summary = input<string>('');
+  public readonly testId = input<string | undefined>(undefined);
   public readonly pageChange = output<number>();
+
+  protected readonly prevTestId = () => (this.testId() ? `${this.testId()}-prev` : undefined);
+  protected readonly nextTestId = () => (this.testId() ? `${this.testId()}-next` : undefined);
+  protected readonly summaryTestId = () => (this.testId() ? `${this.testId()}-summary` : null);
 }

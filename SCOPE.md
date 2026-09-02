@@ -121,29 +121,88 @@ Test first, then code. Four layers, plus an end-to-end suite for the whole
 system with a real Keycloak sign-in (D-22). The end-to-end suite is Cypress, not
 Playwright (D-48) — the `e2e/` package was only ever scaffolded for Playwright.
 
-The end-to-end suite covers all eleven journeys of SRS part 6 — U-1 to U-6 and
-A-1 to A-5 — plus the two hard parts, H-4 (one call at start-up) and H-5 (the
-comments switch that also stops the server). It lives in `e2e/`, in a package
-of its own (D-42), signs in through the real form (D-43, now once per persona
-per spec via `cy.session()`), and each spec that changes an application setting
-restores the value it read.
+**The end-to-end suite was rewritten from scratch** (D-100 to D-103) to close
+the gap the front-end redesign opened (it had zero `data-testid` attributes and
+the old suite selected on English text and CSS classes that had moved) and to
+cover what the brief asks for that the old suite never touched: sign-up,
+re-sign-up after account deletion, password reset, email verification, session
+and refresh-token behaviour, and admin-vs-admin cases. It lives in `e2e/`, in a
+package of its own (D-42), organised by journey under `cypress/e2e/`
+(`00-smoke` through `09-experience`, D-100), and — as of this write-up —
+**353 tests, all passing**, run against a real Postgres, Redis, Keycloak,
+Mailpit, API and web build, nothing mocked. Every selector is a `data-testid`
+or a keyed `data-*-id` attribute; no assertion depends on English wording, so
+the same suite proves both the English and the Arabic UI.
 
-Accessibility is no longer covered by the end-to-end suite: the axe pass that
-lived here has been dropped along with Playwright. R-163 is still met by the
+What it covers, by domain: stack health; the whole auth surface (sign in, sign
+out, sign up under an open policy, every sign-up refusal reason, invitation-
+gated sign-up, password reset including a single-use link, session refresh and
+refresh-token rotation, the Google IdP button's documented limits, re-sign-up
+after account deletion, route guards); the board (listing, search, filters,
+sort, paging, empty and error states); requests (create, edit, delete, pin,
+status, votes, and a pure API contract spec); comments (write/read, edit/
+delete, moderation, the comments-off switch); profile (display name, avatar,
+preferences, account deletion including the last-admin invariant); every admin
+screen (categories, statuses, app settings, registration policy, invitations,
+access control); cross-role scenarios (an admin's change observed from a
+member's session, the full author/admin/stranger permission matrix, an admin
+acting on their own content, one admin acting on another admin's content,
+notification email content and opt-outs); a hardening pass (a full permission
+matrix, the Origin guard on every write, validation and id handling, all three
+rate limits, the error envelope shape); and an experience pass (no leaked
+translation keys and `dir="rtl"` in Arabic, navigation on every route).
+
+A second seeded admin, Bo Boss, exists specifically so admin-vs-admin and the
+last-admin case are provable without ever risking Ada, the admin every other
+spec's fixtures assume exists and stays an admin (D-101).
+
+Accessibility is not covered by the end-to-end suite. R-163 is still met by the
 front-end unit tests, which query by role and visible text.
+
+**What the rewrite found and fixed, in the product itself, not just the
+tests:** a dead `takeReturnUrl()` call meant a deep link never actually got
+you back to the page you were headed for after signing in — now wired up in
+`app.ts`, with unit tests. Several templates had a stable `id` but no
+`data-testid` (`board-search`, `board-sort`, the profile form's display-name
+and avatar fields, the registration policy's fields, the invite form's email
+field) — these were real gaps, not just missing test hooks, since they meant
+those controls were addressable only by guessing at internal structure.
+
+**What it found and left as a documented, deliberate gap, not a fix:** the
+vote rate limit counts vote rows that currently exist in the window
+(`countVotesBy` in `prisma-vote.repository.ts`), and withdrawing a vote
+deletes its row — so a vote immediately followed by an un-vote on the *same*
+request never grows the count and can toggle indefinitely without ever being
+limited. Voting on different requests still hits the real limit exactly as
+R-130 means it to; only the toggle-in-place case is open, the same shape of
+gap R-131 already has for the submission limit (see the note above). The
+suite proves the real limit and separately proves this exact gap, rather than
+asserting it away — `08-hardening/08-04-rate-limits.cy.ts`.
+
+**What is out of scope, and why:**
+
+| Gap | Nearest proxy actually tested |
+|---|---|
+| A real Google sign-in | The `google` IdP is enabled in the realm with an empty client id/secret, so no real flow exists locally. The button is asserted to render and to point at the right broker URL, and that it fails safely — password sign-in for every persona is unaffected. |
+| Comment editing has no UI | `PATCH /v1/comments/:id` is covered at the API level, including the rule that only the author (never an admin) may use it. |
+| A route to promote a user to admin | Does not exist; only the seed script sets `role: 'admin'`. The one test that needs a second admin gone-and-back (`05-03-delete-account.cy.ts`'s last-admin case) restores the role with a direct database write from the test harness (D-101), not through the product. |
+| A browser matrix | Chrome/Electron only, no Firefox or WebKit. |
+| Real SMTP delivery, SPF, bounces | The full envelope, subject, body, recipient and action link are asserted through Mailpit, the local catcher. |
+| Keycloak brute-force lockout | Not enabled in the realm; a wrong password is proven to just re-render the form. |
 
 Two things it decided for itself, and both are worth naming because they cost
 something:
 
-- **Some tests go straight to a request's address rather than clicking it on the
-  board.** Every run files requests of its own, so on a database that has been
-  used a few times the seeded ones are no longer on the first page. A test about
-  voting that fails on pagination proves nothing. One test in U-3 still opens a
-  request by clicking it, so the journey itself is not lost.
-- **Two tests assert on `fh-taxonomy-chip` by element name.** Everywhere else
-  the suite queries by role, label or visible text. These two cannot: the status
-  name they are checking is also sitting in the admin picker's own options, so a
-  plain text match would pass whether the status changed or not.
+- **Selectors never depend on English wording, only structure and `data-*`
+  attributes** (D-100) — the one deliberate exception is `09-01-i18n-and-rtl.cy.ts`,
+  whose whole job is checking rendered text for leaked translation keys, so it
+  necessarily reads page text, just never asserts on a *specific* English or
+  Arabic string.
+- **`retries: { runMode: 2, openMode: 0 }`, not zero** (D-103) — a considered
+  choice, not a way to avoid fixing flaky specs; see D-103 for why a suite
+  whose sign-in path crosses four real origins earns this and how the suite's
+  design (idempotent, stamped, self-cleaning) keeps it from turning into
+  flake-hiding.
 
 ---
 
@@ -270,9 +329,16 @@ markup — see D-50.
 7. Add a CSRF token, if the site and the API ever move to different domains (D-02).
 8. Look at the app in Arabic, in a real browser, at every width, and fix what
    the unit tests cannot catch (D-54; SCOPE §6).
-9. Update the Cypress suite for the redesigned UI and run it — the header, the
-   new-request popup and the confirm dialogs are all new shapes the old specs
-   were never written against (D-51).
+9. ~~Update the Cypress suite for the redesigned UI and run it~~ — done: the
+   whole suite was rewritten on `data-testid` selectors and organised by
+   journey (D-100 to D-103); see the Tests section below for what it covers
+   and what it does not.
+10. Close the vote-limit gap the rewritten suite found and proved: a vote and
+    an un-vote on the same request in a loop never counts against the vote
+    rate limit (see the Tests section below).
+11. Add a real product route to promote a user to admin — today only the seed
+    script can, which the rewritten suite's last-admin test has to work around
+    with a direct database write (D-101).
 
 ---
 
@@ -378,6 +444,16 @@ request — a tombstone, or an attempts table — which is a new table, and the
 instruction for this step was to build the SRS tables and no others. The gap is
 also written in the repository code that implements the limit, so it cannot be
 found only here.
+
+**The vote limit has the same shape of gap: a vote/un-vote pair on one request
+is never counted.** The count comes from vote rows that currently exist in the
+window (`countVotesBy` in `prisma-vote.repository.ts`), and withdrawing a vote
+deletes its row — so voting and un-voting the same request in a loop never
+grows past one row and can never trip the limit, no matter how many times it
+happens. Casting votes on *different* requests still works exactly as R-130
+means it to; only the toggle-in-place case is open. `08-04-rate-limits.cy.ts`
+proves the real limit on distinct requests and separately proves this gap,
+rather than asserting the gap away.
 
 **The end-to-end suite found four real defects, and they are fixed.** They are
 worth naming because none of the other four test layers could have found them,

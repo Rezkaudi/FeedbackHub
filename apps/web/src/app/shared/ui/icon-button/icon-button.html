@@ -8,6 +8,7 @@
   [attr.aria-pressed]="pressed() === undefined ? null : pressed()"
   [attr.aria-haspopup]="hasPopup() ?? null"
   [attr.aria-expanded]="expanded() === undefined ? null : expanded()"
+  [attr.data-testid]="testId() ?? null"
 >
   @if (loading()) {
     <fh-spinner [size]="18" />

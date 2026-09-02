@@ -5,6 +5,7 @@
     aria-haspopup="menu"
     [attr.aria-expanded]="menu.open()"
     [attr.aria-label]="label()"
+    data-testid="status-menu-trigger"
     (click)="menu.toggle()"
     class="border-outline text-on-surface hover:bg-surface-container-high inline-flex h-8 items-center gap-2 rounded-full border pr-2 pl-3 text-sm font-medium transition-colors"
   >
@@ -17,7 +18,12 @@
 
   <div menuPanel>
     @for (status of statuses(); track status.id) {
-      <fh-menu-item [selected]="status.id === currentId()" (click)="pick(menu, status.id)">
+      <fh-menu-item
+        [selected]="status.id === currentId()"
+        [testId]="'status-menu-option'"
+        [statusId]="status.id"
+        (click)="pick(menu, status.id)"
+      >
         {{ status.name }}
       </fh-menu-item>
     }

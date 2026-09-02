@@ -1,19 +1,33 @@
 {
   "name": "@feedbackhub/e2e",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Complete FeedbackHub end-to-end test suite using Cypress.",
   "scripts": {
     "test": "cypress run",
+    "test:local": "env -u ELECTRON_RUN_AS_NODE xvfb-run -a cypress run",
     "test:headed": "cypress run --headed --browser chrome",
-    "test:open": "cypress open",
+    "test:open": "env -u ELECTRON_RUN_AS_NODE cypress open",
     "test:chrome": "cypress run --browser chrome",
     "test:electron": "cypress run --browser electron",
-    "typecheck": "tsc --noEmit"
+    "test:smoke": "cypress run --spec \"cypress/e2e/00-smoke/**/*.cy.ts\"",
+    "test:auth": "cypress run --spec \"cypress/e2e/01-auth/**/*.cy.ts\"",
+    "test:board": "cypress run --spec \"cypress/e2e/02-board/**/*.cy.ts\"",
+    "test:requests": "cypress run --spec \"cypress/e2e/03-requests/**/*.cy.ts\"",
+    "test:comments": "cypress run --spec \"cypress/e2e/04-comments/**/*.cy.ts\"",
+    "test:profile": "cypress run --spec \"cypress/e2e/05-profile/**/*.cy.ts\"",
+    "test:admin": "cypress run --spec \"cypress/e2e/06-admin/**/*.cy.ts\"",
+    "test:cross-role": "cypress run --spec \"cypress/e2e/07-cross-role/**/*.cy.ts\"",
+    "test:hardening": "cypress run --spec \"cypress/e2e/08-hardening/**/*.cy.ts\"",
+    "test:experience": "cypress run --spec \"cypress/e2e/09-experience/**/*.cy.ts\"",
+    "typecheck": "tsc --noEmit",
+    "mail:purge": "curl -s -X DELETE -H 'Content-Type: application/json' -d '{}' http://localhost:8025/api/v1/messages"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "@types/pg": "^8.23.1",
     "cypress": "^15.21.1",
+    "pg": "^8.23.0",
     "typescript": "^5.8.3"
   }
 }

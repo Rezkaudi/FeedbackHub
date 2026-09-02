@@ -13,7 +13,7 @@
   }
   @case ('ready') {
     @if (admin.actionError(); as failure) {
-      <p role="alert" class="bg-error-container text-on-error-container mb-6 rounded-lg px-4 py-3">
+      <p role="alert" data-testid="taxonomy-action-error" class="bg-error-container text-on-error-container mb-6 rounded-lg px-4 py-3">
         {{ failure | apiError: 'admin.actionFailed' }}
       </p>
     }
@@ -23,7 +23,7 @@
       [detail]="text().detail | t"
       [icon]="text().icon"
     >
-      <fh-button card-action icon="plus" size="sm" (click)="adding.set(true)">
+      <fh-button card-action icon="plus" size="sm" [testId]="'taxonomy-add'" (click)="adding.set(true)">
         {{ text().addButton | t }}
       </fh-button>
 
@@ -59,6 +59,7 @@
       [submitLabel]="text().addButton | t"
       [nameId]="text().nameId"
       [colorId]="text().colorId"
+      [testId]="'taxonomy-dialog'"
       (created)="create($event)"
       (closed)="adding.set(false)"
     />

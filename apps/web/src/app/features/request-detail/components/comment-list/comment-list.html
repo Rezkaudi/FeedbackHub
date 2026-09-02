@@ -5,7 +5,12 @@
 </ul>
 
 @if (hasMore()) {
-  <fh-button variant="outlined" class="mt-4 w-full" (click)="loadedMore.emit()">
+  <fh-button
+    variant="outlined"
+    class="mt-4 w-full"
+    [testId]="'comments-show-more'"
+    (click)="loadedMore.emit()"
+  >
     {{ 'requestDetail.showMoreComments' | t }}
   </fh-button>
 }

@@ -19,13 +19,19 @@
         icon="mail"
       >
         @if (domainRestricted()) {
-          <p role="alert" class="text-warning border-warning/40 bg-warning/10 rounded-md border p-3 text-sm">
+          <p
+            role="alert"
+            data-testid="invite-domain-warning"
+            class="text-warning border-warning/40 bg-warning/10 rounded-md border p-3 text-sm"
+          >
             {{ 'admin.inviteDomainLockWarning' | t }}
           </p>
         }
         <fh-invite-form (invited)="invite($event)" />
         @if (admin.actionError(); as failure) {
-          <p role="alert" class="text-error text-sm">{{ failure | apiError: 'admin.actionFailed' }}</p>
+          <p role="alert" data-testid="invite-action-error" class="text-error text-sm">
+            {{ failure | apiError: 'admin.actionFailed' }}
+          </p>
         }
       </fh-section-card>
 

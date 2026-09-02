@@ -10,6 +10,7 @@
         [options]="languageOptions"
         [value]="language()"
         [ariaLabel]="'header.language' | t"
+        [testId]="'account-language'"
         (valueChange)="onLanguage($event)"
       />
     </fh-field>
@@ -29,6 +30,7 @@
         <fh-switch
           inputId="notify-comment"
           [checked]="notifyOnComment()"
+          [testId]="'account-notify-comment'"
           (toggled)="toggleComment()"
         />
       </div>
@@ -43,13 +45,14 @@
         <fh-switch
           inputId="notify-status"
           [checked]="notifyOnStatusChange()"
+          [testId]="'account-notify-status'"
           (toggled)="toggleStatusChange()"
         />
       </div>
     </fieldset>
 
     @if (store.settingsError(); as failure) {
-      <p role="alert" class="text-error inline-flex items-center gap-1.5 text-sm">
+      <p role="alert" data-testid="account-error" class="text-error inline-flex items-center gap-1.5 text-sm">
         <fh-icon name="alert-circle" [size]="16" />
         {{ failure | apiError: 'settings.accountFailed' }}
       </p>

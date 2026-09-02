@@ -2,6 +2,7 @@
   <fh-field [label]="'admin.inviteEmailLabel' | t" fieldId="invite-email" class="min-w-60 flex-1">
     <input
       id="invite-email"
+      data-testid="invite-email"
       type="email"
       autocomplete="email"
       [placeholder]="'admin.invitePlaceholder' | t"
@@ -10,7 +11,12 @@
       class="fh-input"
     />
   </fh-field>
-  <fh-button type="submit" icon="mail" [disabled]="email().trim().length === 0">
+  <fh-button
+    type="submit"
+    icon="mail"
+    [disabled]="email().trim().length === 0"
+    [testId]="'invite-submit'"
+  >
     {{ 'admin.invite' | t }}
   </fh-button>
 </form>

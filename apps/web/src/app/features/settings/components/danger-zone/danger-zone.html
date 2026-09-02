@@ -6,7 +6,11 @@
   tone="danger"
 >
   @if (store.deleteError(); as failure) {
-    <p role="alert" class="bg-error-container text-on-error-container rounded-lg px-4 py-3 text-sm">
+    <p
+      role="alert"
+      data-testid="danger-zone-error"
+      class="bg-error-container text-on-error-container rounded-lg px-4 py-3 text-sm"
+    >
       @if (failure.status === 409) {
         {{ 'settings.deleteLastAdmin' | t }}
       } @else {
@@ -16,7 +20,12 @@
   }
 
   <div>
-    <fh-button variant="danger" [loading]="store.isSaving()" (click)="askToDelete()">
+    <fh-button
+      variant="danger"
+      [loading]="store.isSaving()"
+      [testId]="'danger-zone-delete'"
+      (click)="askToDelete()"
+    >
       {{ 'settings.dangerButton' | t }}
     </fh-button>
   </div>

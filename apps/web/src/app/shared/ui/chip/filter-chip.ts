@@ -11,5 +11,6 @@ import { Icon } from '../icon/icon';
 export class FilterChip {
   public readonly checked = input.required<boolean>();
   public readonly inputId = input.required<string>();
+  public readonly testId = input<string | undefined>(undefined);
   public readonly toggled = output<void>();
 }

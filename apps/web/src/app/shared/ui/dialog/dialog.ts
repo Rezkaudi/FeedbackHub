@@ -29,8 +29,11 @@ export class Dialog {
   public readonly size = input<'sm' | 'md' | 'lg'>('md');
   public readonly role = input<'dialog' | 'alertdialog'>('dialog');
   public readonly hideCloseButton = input<boolean>(false);
+  public readonly testId = input<string | undefined>(undefined);
 
   public readonly closed = output<void>();
+
+  protected readonly closeTestId = computed(() => (this.testId() ? `${this.testId()}-close` : undefined));
 
   /** Points aria-labelledby at the visible heading when no explicit labelledBy is given. */
   protected readonly titleId = `fh-dialog-title-${(dialogTitleSeq += 1)}`;

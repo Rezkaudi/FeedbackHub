@@ -1,6 +1,11 @@
 <div class="min-w-0 flex-1">
   <div class="flex items-start justify-between gap-4">
-    <h1 class="min-w-0 text-2xl font-semibold tracking-tight text-balance wrap-anywhere">{{ request().title }}</h1>
+    <h1
+      class="min-w-0 text-2xl font-semibold tracking-tight text-balance wrap-anywhere"
+      data-testid="request-title"
+    >
+      {{ request().title }}
+    </h1>
 
     <div class="-mt-1.5 -mr-2 flex flex-none items-center">
       @if (isAdmin()) {
@@ -8,12 +13,18 @@
           icon="pin"
           [pressed]="isPinned()"
           [label]="(isPinned() ? 'requestDetail.unpinFromTop' : 'requestDetail.pinToTop') | t"
+          [testId]="'request-pin'"
           (click)="pinToggled.emit(!isPinned())"
         />
       }
 
       @if (request().isMine) {
-        <fh-icon-button icon="pencil" [label]="'common.edit' | t" (click)="editRequested.emit()" />
+        <fh-icon-button
+          icon="pencil"
+          [label]="'common.edit' | t"
+          [testId]="'request-edit'"
+          (click)="editRequested.emit()"
+        />
       }
 
       @if (canDelete()) {
@@ -22,6 +33,7 @@
           variant="danger"
           [label]="'requestCard.deleteLabel' | t"
           [loading]="deleting()"
+          [testId]="'request-delete'"
           (click)="deleteRequested.emit()"
         />
       }
@@ -36,11 +48,11 @@
         (changed)="statusChanged.emit($event)"
       />
     } @else if (status(); as row) {
-      <fh-taxonomy-chip [name]="row.name" [color]="row.color" />
+      <fh-taxonomy-chip [name]="row.name" [color]="row.color" data-testid="request-status" />
     }
 
     @if (category(); as row) {
-      <fh-taxonomy-chip [name]="row.name" [color]="row.color" />
+      <fh-taxonomy-chip [name]="row.name" [color]="row.color" data-testid="request-category" />
     }
   </div>
 

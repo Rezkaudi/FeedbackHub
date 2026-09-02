@@ -1,32 +1,29 @@
-import './commands';
-import { ADMIN } from './accounts';
-import { writeAppSettings } from './helpers';
+import './commands/index';
+import { ADMIN } from './fixtures/accounts';
+import { api } from './clients/api.client';
+import { drainCreated } from './fixtures/entities.fixture';
 
 Cypress.on('uncaught:exception', (error) => {
   const expectedBrowserErrors = [
     'ResizeObserver loop limit exceeded',
     'ResizeObserver loop completed with undelivered notifications',
   ];
-
   if (expectedBrowserErrors.some((message) => error.message.includes(message))) {
     return false;
   }
-
   return undefined;
 });
 
 /**
- * D-44: the rate-limit windows count every request left behind by every earlier
- * run. R-130 ships 10 submissions / 100 votes / 20 sign-ups per hour, and this
- * suite files more than that across a few runs — so on a machine where it has
- * run before, tests that are not about limits start being refused with a 429.
- *
- * Lift the limits at the start of every spec (idempotent) and put the shipped
- * defaults back at the end. The three specs that are about limits set a small
- * limit of their own over a one-minute window, so the rules stay proven.
+ * D-44 lives on: the sliding-window rate limits count every request left
+ * behind by every earlier run against this stack. Lift them at the start of
+ * the whole run (idempotent — written unconditionally, not read-then-compared,
+ * so a previously-crashed run that left small limits behind is still fixed)
+ * and put the shipped defaults back at the end. The rate-limit spec
+ * (`08-04-rate-limits.cy.ts`) sets its own tiny limits inside
+ * `withAppSettings` and restores these LIFTED values, not the shipped ones,
+ * so the rest of the run stays unaffected.
  */
-// 100000 is the DTO's ceiling (@Max) on every count; over a one-minute window
-// that is effectively no limit for the length of a run.
 const LIFTED = {
   submissionLimitCount: 100_000,
   submissionLimitMinutes: 1,
@@ -47,10 +44,18 @@ const SHIPPED = {
 
 before(() => {
   cy.signIn(ADMIN);
-  writeAppSettings(LIFTED);
+  api.settings.app.update(LIFTED);
 });
 
 after(() => {
   cy.signIn(ADMIN);
-  writeAppSettings(SHIPPED);
+  api.settings.app.update(SHIPPED);
+});
+
+// Every spec that created a request/comment/category/status/invitation via
+// `fixtures/entities.fixture.ts` gets it cleaned up here, even if the test
+// that created it failed — so one broken test cannot leave data behind for
+// the next one to trip over.
+afterEach(() => {
+  drainCreated();
 });

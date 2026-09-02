@@ -1,4 +1,8 @@
-<li class="border-outline-variant bg-surface rounded-2xl border p-4">
+<li
+  class="border-outline-variant bg-surface rounded-2xl border p-4"
+  data-testid="comment-item"
+  [attr.data-comment-id]="comment().id"
+>
   <div class="flex items-start gap-3">
     <fh-avatar [name]="comment().authorName" [src]="comment().authorAvatarUrl" [size]="32" class="flex-none" />
 
@@ -13,11 +17,15 @@
           {{ comment().createdAt | relativeTime }}
         </time>
         @if (comment().state === 'pending') {
-          <span class="text-warning text-xs font-medium">· {{ 'requestDetail.commentWaiting' | t }}</span>
+          <span class="text-warning text-xs font-medium" data-testid="comment-pending">
+            · {{ 'requestDetail.commentWaiting' | t }}
+          </span>
         }
       </div>
 
-      <p data-user-text class="mt-2 whitespace-pre-wrap wrap-anywhere">{{ comment().body }}</p>
+      <p data-user-text data-testid="comment-body-text" class="mt-2 whitespace-pre-wrap wrap-anywhere">
+        {{ comment().body }}
+      </p>
     </div>
 
     @if (comment().isMine || canDelete()) {
@@ -26,6 +34,7 @@
         variant="standard"
         class="flex-none"
         [label]="deleteLabel()"
+        [testId]="'comment-delete'"
         (click)="removed.emit()"
       />
     }

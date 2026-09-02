@@ -16,7 +16,11 @@
 </div>
 
 @if (board.state() === 'ready') {
-  <p aria-live="polite" class="text-on-surface-variant mt-4 text-sm font-medium tabular-nums">
+  <p
+    aria-live="polite"
+    class="text-on-surface-variant mt-4 text-sm font-medium tabular-nums"
+    data-testid="board-result-count"
+  >
     {{ (board.total() === 1 ? 'board.resultFound' : 'board.resultsFound') | t: { count: board.total() } }}
   </p>
 }
@@ -36,18 +40,28 @@
           [previousLabel]="'board.previousPage' | t"
           [nextLabel]="'board.nextPage' | t"
           [summary]="'board.pageOf' | t: { page: board.page(), total: board.pageCount() }"
+          [testId]="'board-page'"
           (pageChange)="goToPage($event)"
         />
       }
     }
     @case ('empty') {
-      <fh-empty-panel [heading]="'board.emptyTitle' | t" [detail]="'board.emptyDetail' | t">
+      <fh-empty-panel [heading]="'board.emptyTitle' | t" [detail]="'board.emptyDetail' | t" [testId]="'board-empty'">
         <a routerLink="/requests/new" class="text-primary underline">{{ 'board.emptyAction' | t }}</a>
       </fh-empty-panel>
     }
     @case ('emptyForFilters') {
-      <fh-empty-panel [heading]="'board.emptyFilteredTitle' | t" [detail]="'board.emptyFilteredDetail' | t">
-        <button type="button" class="text-primary underline" (click)="clearFilters()">
+      <fh-empty-panel
+        [heading]="'board.emptyFilteredTitle' | t"
+        [detail]="'board.emptyFilteredDetail' | t"
+        [testId]="'board-empty-filtered'"
+      >
+        <button
+          type="button"
+          class="text-primary underline"
+          data-testid="board-empty-clear-filters"
+          (click)="clearFilters()"
+        >
           {{ 'board.clearFilters' | t }}
         </button>
       </fh-empty-panel>
@@ -59,6 +73,7 @@
         [requestId]="board.error()?.requestId ?? ''"
         [canRetry]="board.error()?.isRetryable ?? false"
         [retryLabel]="'common.tryAgain' | t"
+        [testId]="'board-error'"
         (retry)="board.load(query())"
       />
     }

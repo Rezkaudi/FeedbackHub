@@ -33,30 +33,37 @@ server to send it through. Nothing here reaches the internet: read the mail at
 http://localhost:8025.
 
 **Social sign-in.** R-2 asks for email/password *and* at least one social
-account. Two identity providers are defined, **GitHub** and **Google**, both
-`enabled: false`, because real credentials cannot be committed (R-102). To turn
-one on: Keycloak admin console → Identity providers → pick it → set the client
-id and secret → enable. The email and password flow works out of the box with
-no setup.
+account. One identity provider is defined, **Google**, `enabled: true`, but its
+`clientId`/`clientSecret` are left **empty** because real credentials cannot be
+committed (R-102). The Google button therefore renders on the Keycloak login
+page but does not work: clicking it fails on Keycloak's side (an empty client
+id), and the e2e suite's `01-08-google-idp.cy.ts` documents this as a known gap
+rather than pretending to test a real social login. To make it real: Keycloak
+admin console → Identity providers → Google → set the client id and secret. The
+email and password flow works out of the box with no setup.
 
 The redirect URI to register with the provider is
-`http://localhost:8080/realms/feedbackhub/broker/<alias>/endpoint` — so
-`.../broker/google/endpoint` or `.../broker/github/endpoint`. It points at
+`http://localhost:8080/realms/feedbackhub/broker/google/endpoint`. It points at
 Keycloak, never at our API: the API only ever sees the end of the handshake.
 
-Google has `trustEmail: true` and GitHub does not. Google verifies the address
-it hands over, GitHub can hand over an unverified one. This matters because the
+Google has `trustEmail: true`, so once real credentials are set, a Google
+sign-in is treated as having a verified email — relevant because the
 `domain_restricted` sign-up rule refuses an unchecked email even on an allowed
-domain (R-67), so a GitHub sign-in would be turned away with
-`reason=email_not_verified` while a Google one is let in.
+domain (R-67).
 
 ## The test accounts
 
 | Email | Password | Role in FeedbackHub |
 |---|---|---|
 | `admin@feedbackhub.local` | `password` | Admin |
+| `bo@feedbackhub.local` | `password` | Admin |
 | `sam@feedbackhub.local` | `password` | User |
 | `rae@feedbackhub.local` | `password` | User |
+
+Bo is a second admin, added so e2e can prove admin-vs-admin cases (one admin
+undoing another admin's change) and the "last admin cannot leave" invariant
+without ever touching Ada, who every other spec assumes is present and an
+admin.
 
 Their Keycloak ids are **pinned** in this file, and
 `apps/api/prisma/seed/seed.ts` uses those same ids as `external_id`. That is

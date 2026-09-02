@@ -4,6 +4,7 @@
     [id]="inputId()"
     class="sr-only"
     [checked]="checked()"
+    [attr.data-testid]="testId() ?? null"
     (change)="toggled.emit()"
   />
   @if (checked()) {

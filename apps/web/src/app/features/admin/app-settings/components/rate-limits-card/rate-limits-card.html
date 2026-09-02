@@ -15,6 +15,7 @@
               min="1"
               inputmode="numeric"
               [value]="value(limit.countId)"
+              [attr.data-testid]="'settings-limit-' + limit.countId"
               (change)="onChange(limit.countId, $event)"
               class="fh-input"
             />
@@ -26,6 +27,7 @@
               min="1"
               inputmode="numeric"
               [value]="value(limit.minutesId)"
+              [attr.data-testid]="'settings-limit-' + limit.minutesId"
               (change)="onChange(limit.minutesId, $event)"
               class="fh-input"
             />
@@ -36,6 +38,6 @@
   </div>
 
   @if (tooSmall()) {
-    <p role="alert" class="text-error text-sm">{{ 'admin.limitTooSmall' | t }}</p>
+    <p role="alert" data-testid="settings-limit-error" class="text-error text-sm">{{ 'admin.limitTooSmall' | t }}</p>
   }
 </fh-section-card>

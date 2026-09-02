@@ -11,6 +11,7 @@
     >
       <select
         id="policy"
+        data-testid="policy"
         [value]="pendingPolicy()"
         (change)="onPolicy($event)"
         class="fh-select"
@@ -30,6 +31,7 @@
         >
           <input
             id="domains"
+            data-testid="domains"
             type="text"
             placeholder="example.com, team.co"
             [value]="domains()"
@@ -39,15 +41,15 @@
         </fh-field>
 
         @if (needsDomain()) {
-          <p role="alert" class="text-error text-sm">
+          <p role="alert" data-testid="settings-domains-error" class="text-error text-sm">
             {{ 'admin.registrationNeedsDomain' | t }}
           </p>
         } @else if (badDomains().length > 0) {
-          <p role="alert" class="text-error text-sm">
+          <p role="alert" data-testid="settings-domains-error" class="text-error text-sm">
             {{ 'admin.registrationBadDomain' | t: { domains: badDomains().join(', ') } }}
           </p>
         } @else if (tooManyDomains()) {
-          <p role="alert" class="text-error text-sm">
+          <p role="alert" data-testid="settings-domains-error" class="text-error text-sm">
             {{ 'admin.registrationTooManyDomains' | t: { max: 50 } }}
           </p>
         }
@@ -58,7 +60,13 @@
           } @else {
             <span></span>
           }
-          <fh-button type="submit" size="sm" icon="check" [disabled]="!canSaveDomains()">
+          <fh-button
+            type="submit"
+            size="sm"
+            icon="check"
+            [disabled]="!canSaveDomains()"
+            [testId]="'settings-domains-save'"
+          >
             {{ 'common.save' | t }}
           </fh-button>
         </div>

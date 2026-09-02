@@ -22,6 +22,7 @@
     >
       <input
         id="displayName"
+        data-testid="displayName"
         type="text"
         maxlength="80"
         autocomplete="name"
@@ -39,6 +40,7 @@
     >
       <input
         id="avatarUrl"
+        data-testid="avatarUrl"
         type="url"
         inputmode="url"
         [value]="avatarUrl()"
@@ -50,15 +52,17 @@
     <div
       class="border-outline-variant -mx-6 mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 border-t px-6 pt-5"
     >
-      <fh-button type="submit" [disabled]="isEmpty()">{{ 'settings.saveProfile' | t }}</fh-button>
+      <fh-button type="submit" [disabled]="isEmpty()" [testId]="'profile-save'">{{
+        'settings.saveProfile' | t
+      }}</fh-button>
       @if (store.profileSaved()) {
-        <p role="status" class="text-success inline-flex items-center gap-1.5 text-sm">
+        <p role="status" data-testid="profile-saved" class="text-success inline-flex items-center gap-1.5 text-sm">
           <fh-icon name="check-circle" [size]="16" />
           {{ 'common.saved' | t }}
         </p>
       }
       @if (store.profileError(); as failure) {
-        <p role="alert" class="text-error inline-flex items-center gap-1.5 text-sm">
+        <p role="alert" data-testid="profile-error" class="text-error inline-flex items-center gap-1.5 text-sm">
           <fh-icon name="alert-circle" [size]="16" />
           {{ failure | apiError: 'settings.profileFailed' }}
         </p>

@@ -4,14 +4,16 @@
     class="rtl-flip"
     [label]="previousLabel()"
     [disabled]="page() <= 1"
+    [testId]="prevTestId()"
     (click)="pageChange.emit(page() - 1)"
   />
-  <span class="pagination-summary">{{ summary() }}</span>
+  <span class="pagination-summary" [attr.data-testid]="summaryTestId()">{{ summary() }}</span>
   <fh-icon-button
     icon="chevron-right"
     class="rtl-flip"
     [label]="nextLabel()"
     [disabled]="page() >= pageCount()"
+    [testId]="nextTestId()"
     (click)="pageChange.emit(page() + 1)"
   />
 </nav>

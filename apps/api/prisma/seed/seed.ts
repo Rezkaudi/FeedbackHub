@@ -63,6 +63,15 @@ const PEOPLE = [
     displayName: 'Rae Reader',
     role: 'user' as const,
   },
+  // A second admin, so e2e can prove admin-vs-admin cases (one admin undoing
+  // another's change) and the last-admin invariant without touching Ada.
+  {
+    id: '00000000-0000-4000-8000-00000000ad02',
+    externalId: '44444444-4444-4444-8444-444444444444',
+    email: 'bo@feedbackhub.local',
+    displayName: 'Bo Boss',
+    role: 'admin' as const,
+  },
 ];
 
 async function main(): Promise<void> {

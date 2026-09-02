@@ -1,4 +1,4 @@
-<div role="alert" class="error-panel">
+<div role="alert" class="error-panel" [attr.data-testid]="testId()">
   <fh-icon name="alert-circle" [size]="24" />
   <div class="error-body">
     <p class="error-heading">{{ heading() }}</p>
@@ -11,7 +11,9 @@
       </p>
     }
     @if (canRetry()) {
-      <fh-button variant="outlined" size="sm" (click)="retry.emit()">{{ retryLabel() }}</fh-button>
+      <fh-button variant="outlined" size="sm" [testId]="testId() + '-retry'" (click)="retry.emit()">{{
+        retryLabel()
+      }}</fh-button>
     }
   </div>
 </div>

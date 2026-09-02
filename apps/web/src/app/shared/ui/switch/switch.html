@@ -5,6 +5,7 @@
     class="sr-only"
     [checked]="checked()"
     [disabled]="disabled()"
+    [attr.data-testid]="testId() ?? null"
     (change)="toggled.emit()"
   />
   <span class="track">

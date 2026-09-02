@@ -1,6 +1,7 @@
 <button
   type="button"
   class="request-vote-button"
+  data-testid="request-vote"
   [class.voted]="hasVoted()"
   [attr.aria-pressed]="hasVoted()"
   [attr.aria-label]="label()"
@@ -15,5 +16,5 @@
   }
   <span aria-hidden="true" class="vote-verb">{{ verb() }}</span>
   <span aria-hidden="true">·</span>
-  <span aria-hidden="true" class="vote-count">{{ voteCount() }}</span>
+  <span aria-hidden="true" class="vote-count" data-testid="request-vote-count">{{ voteCount() }}</span>
 </button>

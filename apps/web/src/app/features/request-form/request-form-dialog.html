@@ -3,6 +3,7 @@
   size="lg"
   [heading]="(isEditing() ? 'requestForm.editTitle' : 'requestForm.newTitle') | t"
   [closeLabel]="'common.close' | t"
+  [testId]="'request-form'"
   (closed)="closed.emit()"
 >
   @switch (store.state()) {
@@ -38,6 +39,7 @@
             [attr.aria-describedby]="titleError() ? 'title-error' : null"
             [attr.aria-invalid]="titleError() ? 'true' : null"
             class="fh-input"
+            data-testid="request-title-input"
           />
         </fh-field>
 
@@ -54,6 +56,7 @@
             [attr.aria-describedby]="descriptionError() ? 'description-error' : null"
             [attr.aria-invalid]="descriptionError() ? 'true' : null"
             class="fh-textarea"
+            data-testid="request-description-input"
           ></textarea>
         </fh-field>
 
@@ -75,6 +78,8 @@
                   class="sr-only"
                   [value]="category.id"
                   [checked]="f.categoryId().value() === category.id"
+                  data-testid="request-category-option"
+                  [attr.data-category-id]="category.id"
                   (change)="pickCategory(category.id)"
                 />
                 <span class="category-dot" aria-hidden="true" [style.--dot]="category.color"></span>
@@ -94,7 +99,7 @@
         </fieldset>
 
         @if (store.error(); as failure) {
-          <p role="alert" class="request-form-alert">
+          <p role="alert" class="request-form-alert" data-testid="request-form-error">
             @if (failure.status === 403) {
               {{ 'requestForm.forbidden' | t }}
             } @else {
@@ -104,8 +109,10 @@
         }
 
         <div class="request-form-footer">
-          <fh-button variant="text" type="button" (click)="closed.emit()">{{ 'common.cancel' | t }}</fh-button>
-          <fh-button type="submit" [loading]="store.isSaving()">
+          <fh-button variant="text" type="button" [testId]="'request-cancel'" (click)="closed.emit()">{{
+            'common.cancel' | t
+          }}</fh-button>
+          <fh-button type="submit" [loading]="store.isSaving()" [testId]="'request-submit'">
             {{ (store.isSaving() ? 'common.saving' : 'common.save') | t }}
           </fh-button>
         </div>

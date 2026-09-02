@@ -17,4 +17,5 @@ export class ErrorPanel {
   public readonly canRetry = input<boolean>(true);
   public readonly retryLabel = input<string>('Try again');
   public readonly retry = output<void>();
+  public readonly testId = input<string>('error-panel');
 }

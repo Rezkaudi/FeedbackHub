@@ -2,6 +2,7 @@
   [class]="'size-' + size()"
   [attr.role]="role()"
   [attr.aria-labelledby]="labelId()"
+  [attr.data-testid]="testId() ?? null"
   (cancel)="onCancel($event)"
   (click)="closed.emit()"
 >
@@ -11,7 +12,7 @@
         <h2 class="dialog-title" [id]="titleId">{{ heading() }}</h2>
       }
       @if (!hideCloseButton()) {
-        <fh-icon-button icon="close" [label]="closeLabel()" (click)="closed.emit()" />
+        <fh-icon-button icon="close" [label]="closeLabel()" [testId]="closeTestId()" (click)="closed.emit()" />
       }
     </header>
     <div class="dialog-body">

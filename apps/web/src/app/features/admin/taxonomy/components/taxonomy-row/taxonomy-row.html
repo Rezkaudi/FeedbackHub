@@ -6,14 +6,14 @@
     [retiredLabel]="'board.retired' | t"
   />
   @if (isDefaultStatus()) {
-    <span class="default-mark">
+    <span class="default-mark" data-testid="taxonomy-default-mark">
       <fh-icon name="check-circle" [size]="13" />
       {{ 'admin.default' | t }}
     </span>
   }
 </div>
 
-<div class="cell cell-usage">
+<div class="cell cell-usage" data-testid="taxonomy-usage">
   @switch (item().usageCount) {
     @case (0) {
       {{ 'admin.usedByNone' | t }}
@@ -31,7 +31,7 @@
   @if (hasDefault()) {
     <span class="slot">
       @if (canMakeDefault()) {
-        <fh-button variant="text" size="sm" (click)="madeDefault.emit()">
+        <fh-button variant="text" size="sm" [testId]="'taxonomy-make-default'" (click)="madeDefault.emit()">
           {{ 'admin.makeDefault' | t }}
         </fh-button>
       }
@@ -42,11 +42,11 @@
     @if (isDefaultStatus()) {
       <!-- R-48: the default status can never be retired. -->
     } @else if (item().isActive) {
-      <fh-button variant="text" size="sm" (click)="retired.emit()">
+      <fh-button variant="text" size="sm" [testId]="'taxonomy-retire'" (click)="retired.emit()">
         {{ 'admin.retire' | t }}
       </fh-button>
     } @else {
-      <fh-button variant="text" size="sm" (click)="restored.emit()">
+      <fh-button variant="text" size="sm" [testId]="'taxonomy-restore'" (click)="restored.emit()">
         {{ 'admin.makeActive' | t }}
       </fh-button>
     }
@@ -54,7 +54,7 @@
 
   <span class="slot">
     @if (item().usageCount === 0) {
-      <fh-button variant="danger-text" size="sm" (click)="deleted.emit()">
+      <fh-button variant="danger-text" size="sm" [testId]="'taxonomy-delete'" (click)="deleted.emit()">
         {{ 'common.delete' | t }}
       </fh-button>
     }

@@ -1,4 +1,4 @@
-<div class="empty-panel">
+<div class="empty-panel" [attr.data-testid]="testId()">
   <p class="empty-heading">{{ heading() }}</p>
   @if (detail(); as text) {
     <p class="empty-detail">{{ text }}</p>

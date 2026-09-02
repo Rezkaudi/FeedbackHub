@@ -12,5 +12,6 @@ export class Switch {
   public readonly checked = input.required<boolean>();
   public readonly inputId = input<string>('');
   public readonly disabled = input<boolean>(false);
+  public readonly testId = input<string | undefined>(undefined);
   public readonly toggled = output<void>();
 }

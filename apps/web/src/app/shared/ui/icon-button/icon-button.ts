@@ -21,4 +21,5 @@ export class IconButton {
   public readonly type = input<'button' | 'submit'>('button');
   public readonly hasPopup = input<'menu' | 'dialog' | undefined>(undefined);
   public readonly expanded = input<boolean | undefined>(undefined);
+  public readonly testId = input<string | undefined>(undefined);
 }

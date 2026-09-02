@@ -11,6 +11,7 @@
           [variant]="query().mine ? 'tonal' : 'outlined'"
           [icon]="query().mine ? 'check' : 'user'"
           [attr.aria-pressed]="query().mine"
+          [testId]="'board-mine'"
           (click)="mineToggled.emit()"
         >
           {{ 'board.filterMine' | t }}
@@ -21,6 +22,7 @@
             [variant]="activeCount() > 0 ? 'tonal' : 'outlined'"
             icon="filter"
             [attr.aria-expanded]="filtersOpen()"
+            [testId]="'board-filters-open'"
             (click)="toggleFilters()"
           >
             {{ 'board.filters' | t }}
@@ -33,12 +35,18 @@
             [open]="filtersOpen()"
             [heading]="'board.filters' | t"
             [closeLabel]="'common.close' | t"
+            [testId]="'board-filters-dialog'"
             (closed)="closeFilters()"
           >
             @if (activeCount() > 0) {
               <div class="filters-dialog-meta">
                 <span class="filters-dialog-count">{{ 'board.filtersActive' | t: { count: activeCount() } }}</span>
-                <button type="button" class="filters-panel-clear" (click)="clearedAll.emit()">
+                <button
+                  type="button"
+                  class="filters-panel-clear"
+                  data-testid="board-filters-clear"
+                  (click)="clearedAll.emit()"
+                >
                   {{ 'board.clearFilters' | t }}
                 </button>
               </div>
@@ -57,7 +65,12 @@
       </div>
     </div>
 
-    <fh-button class="board-toolbar-cta" icon="plus" (click)="newRequest.emit()">
+    <fh-button
+      class="board-toolbar-cta"
+      icon="plus"
+      [testId]="'board-new-request'"
+      (click)="newRequest.emit()"
+    >
       {{ 'board.newRequest' | t }}
     </fh-button>
   </div>

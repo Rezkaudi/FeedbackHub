@@ -6,6 +6,7 @@
         <fh-filter-chip
           [inputId]="'status-' + status.id"
           [checked]="statusIds().includes(status.id)"
+          [testId]="'board-status-chip'"
           (toggled)="statusToggled.emit(status.id)"
         >
           {{ status.name }}
@@ -21,6 +22,7 @@
         <fh-filter-chip
           [inputId]="'category-' + category.id"
           [checked]="categoryIds().includes(category.id)"
+          [testId]="'board-category-chip'"
           (toggled)="categoryToggled.emit(category.id)"
         >
           {{ category.name }}

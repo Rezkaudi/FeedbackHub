@@ -115,6 +115,7 @@ jobs:
   e2e:
     name: End to end (R-159)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     # The whole stack has to build first, and there is no point starting the
     # browsers if the unit tests are already red.
     needs: [backend, web]
@@ -130,36 +131,56 @@ jobs:
 
       - name: The whole stack, the way a reviewer starts it (R-80)
         # --wait holds until every healthcheck passes, so the tests never race
-        # the migration or Keycloak's first boot. The suite checks again and
-        # says so plainly if something is missing, but by then it is too late to
-        # be useful.
+        # the migration or Keycloak's first boot — except Mailpit, which
+        # declares no healthcheck, hence the explicit poll below.
         run: docker compose up --build -d --wait
 
       - name: Install the test runner
         working-directory: e2e
         run: npm ci
 
-      - name: Types (Playwright does not check across files)
+      - name: Cache the Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
+
+      - name: Install the Cypress binary
+        working-directory: e2e
+        run: npx cypress install && npx cypress verify
+
+      - name: Types (Cypress does not check across files)
         working-directory: e2e
         run: npm run typecheck
 
-      - name: Install the browser
-        working-directory: e2e
-        run: npx playwright install --with-deps chromium
+      - name: Wait for Keycloak, the API, the web app and Mailpit
+        run: |
+          for url in http://localhost:3000/health/ready \
+                     http://localhost:4200/ \
+                     http://localhost:8025/api/v1/info \
+                     http://localhost:8080/realms/feedbackhub/.well-known/openid-configuration; do
+            for i in $(seq 1 60); do
+              curl -fsS "$url" >/dev/null 2>&1 && break
+              [ "$i" = "60" ] && { echo "Never came up: $url"; exit 1; }
+              sleep 2
+            done
+            echo "up: $url"
+          done
 
-      - name: The eleven journeys, the two hard parts and the axe pass
+      - name: The full suite — every user and admin journey (R-159)
         working-directory: e2e
-        run: npm test
+        run: npx cypress run --browser electron
 
-      # The report is the only way to see why a browser test failed on a
-      # machine nobody can open, so it is kept whether the run passed or not.
-      - name: Keep the report
+      - name: Keep the screenshots and videos
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: e2e/.playwright/report
+          name: cypress-artifacts
+          path: |
+            e2e/cypress/screenshots
+            e2e/cypress/videos
           retention-days: 7
+          if-no-files-found: ignore
 
       - name: What the stack said, if anything went wrong
         if: failure()

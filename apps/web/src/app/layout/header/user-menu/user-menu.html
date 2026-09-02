@@ -3,6 +3,7 @@
     menuTrigger
     type="button"
     class="user-menu-trigger"
+    data-testid="user-menu-trigger"
     [class.open]="menu.open()"
     aria-haspopup="menu"
     [attr.aria-expanded]="menu.open()"
@@ -23,7 +24,7 @@
         <div class="user-menu-header-row">
           <p class="user-menu-header-name">{{ bootstrap.user()?.displayName }}</p>
           @if (bootstrap.isAdmin()) {
-            <span class="user-menu-header-badge">{{ 'header.admin' | t }}</span>
+            <span class="user-menu-header-badge" data-testid="user-menu-admin-badge">{{ 'header.admin' | t }}</span>
           }
         </div>
       </div>
@@ -36,6 +37,7 @@
           [options]="themeOptions()"
           [value]="preferences.theme()"
           [ariaLabel]="i18n.translate('header.theme')"
+          [testId]="'user-menu-theme'"
           (valueChange)="chooseTheme($event)"
         />
       </div>
@@ -46,6 +48,7 @@
           [options]="languageOptions()"
           [value]="i18n.language()"
           [ariaLabel]="i18n.translate('header.language')"
+          [testId]="'user-menu-language'"
           (valueChange)="chooseLanguage($event)"
         />
       </div>
@@ -54,12 +57,12 @@
     <hr class="user-menu-divider" />
 
     <div class="user-menu-section">
-      <fh-menu-item icon="user" routerLink="/profile" (click)="menu.close()">
+      <fh-menu-item icon="user" routerLink="/profile" [testId]="'user-menu-settings'" (click)="menu.close()">
         {{ 'header.settings' | t }}
       </fh-menu-item>
 
       @if (bootstrap.isAdmin()) {
-        <fh-menu-item icon="grid" routerLink="/admin" (click)="menu.close()">
+        <fh-menu-item icon="grid" routerLink="/admin" [testId]="'user-menu-admin'" (click)="menu.close()">
           {{ 'header.admin' | t }}
         </fh-menu-item>
       }
@@ -68,7 +71,12 @@
     <hr class="user-menu-divider" />
 
     <div class="user-menu-section">
-      <fh-menu-item icon="log-out" [danger]="true" (click)="signOut(); menu.close()">
+      <fh-menu-item
+        icon="log-out"
+        [danger]="true"
+        [testId]="'user-menu-sign-out'"
+        (click)="signOut(); menu.close()"
+      >
         {{ 'header.signOut' | t }}
       </fh-menu-item>
     </div>

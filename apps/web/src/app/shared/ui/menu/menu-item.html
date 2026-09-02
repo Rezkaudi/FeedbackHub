@@ -9,7 +9,14 @@
 </ng-template>
 
 @if (routerLink(); as link) {
-  <a [routerLink]="link" role="menuitem" class="fh-menu-item" [class.danger]="danger()">
+  <a
+    [routerLink]="link"
+    role="menuitem"
+    class="fh-menu-item"
+    [class.danger]="danger()"
+    [attr.data-testid]="testId() ?? null"
+    [attr.data-status-id]="statusId() ?? null"
+  >
     <ng-container [ngTemplateOutlet]="inner" />
   </a>
 } @else {
@@ -20,6 +27,8 @@
     [class.danger]="danger()"
     [disabled]="disabled()"
     [attr.aria-pressed]="selected() ? 'true' : null"
+    [attr.data-testid]="testId() ?? null"
+    [attr.data-status-id]="statusId() ?? null"
   >
     <ng-container [ngTemplateOutlet]="inner" />
   </button>

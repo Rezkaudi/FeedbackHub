@@ -1,4 +1,9 @@
-<article class="request-card" [class.pinned]="request().isPinned">
+<article
+  class="request-card"
+  [class.pinned]="request().isPinned"
+  data-testid="request-card"
+  [attr.data-request-id]="request().id"
+>
   @if (request().isPinned) {
     <span class="pin-marker" [attr.aria-label]="'board.pinned' | t">
       <fh-icon name="pin" [size]="16" />
@@ -7,7 +12,12 @@
 
   <div class="request-card-head">
     <h3 class="request-card-title">
-      <a [routerLink]="['/requests', request().id]" class="stretched-link">{{ request().title }}</a>
+      <a
+        [routerLink]="['/requests', request().id]"
+        class="stretched-link"
+        data-testid="request-card-title"
+        >{{ request().title }}</a
+      >
     </h3>
 
     @if (canPin() || canDelete()) {
@@ -19,6 +29,7 @@
             [pressed]="request().isPinned"
             [label]="pinLabel()"
             [loading]="pinning()"
+            [testId]="'request-card-pin'"
             (click)="onPinToggle($event)"
           />
         }
@@ -29,6 +40,7 @@
             variant="danger"
             [label]="'requestCard.deleteLabel' | t"
             [loading]="deleting()"
+            [testId]="'request-card-delete'"
             (click)="onDelete($event)"
           />
         }
@@ -38,13 +50,13 @@
 
   <div class="request-card-meta">
     @if (status(); as row) {
-      <span class="meta-group">
+      <span class="meta-group" data-testid="request-card-status" [attr.data-status-id]="request().statusId">
         <span class="meta-label">{{ 'board.statusLabel' | t }}</span>
         <fh-taxonomy-chip [name]="row.name" [color]="row.color" />
       </span>
     }
     @if (category(); as row) {
-      <span class="meta-group">
+      <span class="meta-group" data-testid="request-card-category" [attr.data-category-id]="request().categoryId">
         <span class="meta-label">{{ 'board.categoryLabel' | t }}</span>
         <fh-taxonomy-chip [name]="row.name" [color]="row.color" />
       </span>
@@ -65,7 +77,12 @@
     </time>
 
     @if (commentsEnabled()) {
-      <span class="request-card-comments" [attr.aria-label]="commentsLabel()" [title]="commentsLabel()">
+      <span
+        class="request-card-comments"
+        data-testid="request-card-comments"
+        [attr.aria-label]="commentsLabel()"
+        [title]="commentsLabel()"
+      >
         <fh-icon name="message-circle" [size]="16" />
         <span>{{ request().commentCount }}</span>
       </span>
@@ -74,6 +91,7 @@
     <button
       type="button"
       class="vote-pill"
+      data-testid="request-card-vote"
       [class.active]="display().viewerHasVoted"
       [attr.aria-pressed]="display().viewerHasVoted"
       [attr.aria-label]="voteLabel()"
@@ -86,7 +104,7 @@
       } @else {
         <fh-icon name="arrow-up" [size]="16" />
       }
-      <span>{{ display().voteCount }}</span>
+      <span data-testid="request-card-vote-count">{{ display().voteCount }}</span>
     </button>
   </div>
 </article>

@@ -13,7 +13,7 @@
   }
   @case ('ready') {
     @if (admin.actionError(); as failure) {
-      <p role="alert" class="bg-error-container text-on-error-container mb-6 rounded-lg px-4 py-3">
+      <p role="alert" data-testid="pending-action-error" class="bg-error-container text-on-error-container mb-6 rounded-lg px-4 py-3">
         {{ failure | apiError: 'admin.actionFailed' }}
       </p>
     }

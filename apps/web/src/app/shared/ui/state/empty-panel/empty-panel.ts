@@ -9,4 +9,5 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 export class EmptyPanel {
   public readonly heading = input.required<string>();
   public readonly detail = input<string>('');
+  public readonly testId = input<string>('empty-panel');
 }

@@ -11,6 +11,10 @@ import type { AdminCategory, AdminStatus } from '../../../admin.store';
   templateUrl: './taxonomy-row.html',
   styleUrl: './taxonomy-row.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    'data-testid': 'taxonomy-row',
+    '[attr.data-taxonomy-id]': 'item().id',
+  },
 })
 export class TaxonomyRow {
   public readonly item = input.required<AdminCategory | AdminStatus>();

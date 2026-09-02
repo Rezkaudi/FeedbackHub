@@ -1,4 +1,4 @@
-<form class="mt-4" (submit)="onSubmit($event)">
+<form class="mt-4" data-testid="comment-form" (submit)="onSubmit($event)">
   <label for="comment-body" class="mb-1 block text-sm font-medium">{{ 'requestDetail.commentFormLabel' | t }}</label>
   <textarea
     id="comment-body"
@@ -7,13 +7,22 @@
     [value]="draft()"
     (input)="onInput($event)"
     class="fh-textarea"
+    data-testid="comment-body"
   ></textarea>
 
   @if (error(); as failure) {
-    <p role="alert" class="text-error mt-2 text-sm">{{ failure | apiError: 'requestDetail.commentFailed' }}</p>
+    <p role="alert" data-testid="comment-form-error" class="text-error mt-2 text-sm">
+      {{ failure | apiError: 'requestDetail.commentFailed' }}
+    </p>
   }
 
-  <fh-button type="submit" class="mt-2" [loading]="saving()" [disabled]="draft().trim().length === 0">
+  <fh-button
+    type="submit"
+    class="mt-2"
+    [loading]="saving()"
+    [disabled]="draft().trim().length === 0"
+    [testId]="'comment-submit'"
+  >
     {{ 'requestDetail.commentSubmit' | t }}
   </fh-button>
 </form>

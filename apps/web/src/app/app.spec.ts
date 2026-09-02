@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { signal } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { App } from './app';
 import { BootstrapStore } from './core/bootstrap/bootstrap.store';
+import { Session } from './core/auth/session';
 import type { ApiError } from './core/error/api-error';
 
 /**
@@ -100,5 +101,60 @@ describe('what the app shows while it is starting', () => {
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /could not start/i })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * SRS 15.8: "back to sign-in, and we remember which page they wanted." The
+ * page they wanted is stashed by `Session.signIn` before the redirect to
+ * Keycloak and must be resumed once the app comes back up signed in — this
+ * closes the loop that `Session.takeReturnUrl` existed to serve.
+ */
+describe('resuming the page a signed-out visit was headed for', () => {
+  it('navigates to the stored return URL once the app is ready', async () => {
+    const navigateByUrl = vi.fn();
+
+    await render(App, {
+      providers: [
+        provideRouter([]),
+        { provide: BootstrapStore, useValue: { status: signal('ready'), error: signal(null), load: vi.fn() } },
+        { provide: Session, useValue: { takeReturnUrl: vi.fn().mockReturnValue('/requests/abc') } },
+        { provide: Router, useValue: { navigateByUrl } },
+      ],
+    });
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/requests/abc');
+  });
+
+  it('does nothing when there is no stored return URL', async () => {
+    const navigateByUrl = vi.fn();
+
+    await render(App, {
+      providers: [
+        provideRouter([]),
+        { provide: BootstrapStore, useValue: { status: signal('ready'), error: signal(null), load: vi.fn() } },
+        { provide: Session, useValue: { takeReturnUrl: vi.fn().mockReturnValue(null) } },
+        { provide: Router, useValue: { navigateByUrl } },
+      ],
+    });
+
+    expect(navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('does not try to navigate while still loading or signed out', async () => {
+    const navigateByUrl = vi.fn();
+    const takeReturnUrl = vi.fn().mockReturnValue('/requests/abc');
+
+    await render(App, {
+      providers: [
+        provideRouter([]),
+        { provide: BootstrapStore, useValue: { status: signal('loading'), error: signal(null), load: vi.fn() } },
+        { provide: Session, useValue: { takeReturnUrl } },
+        { provide: Router, useValue: { navigateByUrl } },
+      ],
+    });
+
+    expect(takeReturnUrl).not.toHaveBeenCalled();
+    expect(navigateByUrl).not.toHaveBeenCalled();
   });
 });
