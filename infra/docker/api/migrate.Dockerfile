@@ -2,7 +2,10 @@
 # starts. Never while the app is starting, because two copies would fight.
 #
 # Same base as the API image so the Prisma versions cannot drift.
-FROM node:22-alpine
+# The registry is written in full for the same reason as the other two images:
+# podman will not guess `docker.io/` for a short name unless the machine has an
+# unqualified-search registry configured, and the build stops.
+FROM docker.io/node:22-alpine
 WORKDIR /app
 
 RUN apk add --no-cache dumb-init
