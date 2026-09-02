@@ -2,25 +2,12 @@
 
 An internal product feedback board.
 
-Employees post feature requests and feedback. Everyone can read them, upvote
-them, and comment. An admin sets the status, curates categories, moderates
-comments, and configures the app.
+People post feature requests and feedback. Everyone can read them, upvote them,
+and comment. An admin sets the status, curates categories and statuses,
+moderates comments, and configures the app.
 
 The goal: stop the same idea arriving five times by email, and make it visible
-what is actually being worked on.
-
-> **Status: the backend and the front end are built, and the eleven journeys
-> from the brief run end to end.** `npm run verify` passes 329 backend tests
-> against a real PostgreSQL and a real Redis; the front end has 285. The front
-> end's whole presentation layer was rebuilt on Material Design 3 (blue) with
-> full English and Arabic text and RTL. The Cypress suite (`e2e/`) was rewritten
-> from scratch for that redesign and for the coverage the brief asks for —
-> **359 tests across 47 files, all passing**, twice back to back on a freshly
-> seeded stack — see [`e2e/README.md`](e2e/README.md) for what it covers and
-> the known gaps table below for what it does not. Outgoing mail now works into
-> the local catcher: comment, status-change and invitation emails have all been
-> watched landing in Mailpit. What is still *not* proven is a real external
-> SMTP server. The two lists below say exactly which is which.
+what is being worked on.
 
 ---
 
@@ -28,580 +15,229 @@ what is actually being worked on.
 
 | Layer | Choice | Why |
 |---|---|---|
-| Front end | Angular 22, standalone components, signals, Tailwind, Material Design 3 tokens | D-16, D-36 |
+| Front end | Angular 22, standalone components, signals, Tailwind, Material Design 3 | D-16, D-36, D-38 |
 | Back end | Node.js 22, NestJS 11, TypeScript strict | D-17 |
-| Architecture | Modular monolith, 9 modules, + 1 email worker | D-18 |
-| Database | PostgreSQL 16, Prisma 6 (raw SQL for the board query) | D-19 |
-| Shared state | Redis 7 | D-20 |
-| Sign-in | Keycloak, self-hosted | D-21 |
-| Mail | SMTP + local mail catcher | D-21 |
-| Tests | Jest, Testcontainers, Supertest, ATL, Cypress | D-22, D-48 |
-| Packaging | Docker, Docker Compose, Kubernetes manifests | D-18 |
+| Architecture | Modular monolith (9 modules) + 1 email worker | D-18 |
+| Database | PostgreSQL 16 + Prisma 6 (raw SQL for the board query) | D-19 |
+| Shared state | Redis 7 (rate limits, email queue) | D-20 |
+| Sign-in | Keycloak (OIDC), self-hosted | D-21 |
+| Mail | SMTP, Mailpit locally | D-21 |
+| Tests | Jest, Testcontainers, Supertest, Angular Testing Library, Cypress | D-22, D-48 |
+| Packaging | Docker, Docker Compose, Kubernetes (kustomize) | D-18 |
 
-## What works
+Reasons for each choice are in [DECISIONS.md](DECISIONS.md).
 
-Everything in this section is covered by a test that runs today, unless the
-line says otherwise.
+---
 
-**The shared parts**
+## Architecture
 
-- **Configuration from the environment.** Checked at boot, and the app refuses
-  to start if something is missing or wrong. `AUTH_ALLOWED_ORIGINS` has no
-  default: empty or `*` stops the boot rather than quietly allowing everything.
-  Every problem is reported at once, not one at a time.
-- **One error shape everywhere.** A machine code, an English message, the field
-  names when a form is wrong, and a request id the person can quote. An
-  unexpected error becomes a plain 500 that carries no stack, no database text
-  and no library name. The status is always kept, so a readiness probe can
-  answer 503 and mean it.
-- **A request id on every call**, echoed in every error and in every log line.
-  An id supplied by the caller is only kept if it is a plain uuid, so nothing can
-  be smuggled into a log. Cookies, tokens and email addresses are redacted.
-- **The guard chain**: signed in (401) → Origin check on writes (403) → admin
-  role (403). Registered in one place, applied to every route.
-- **Validation at the boundary.** Unknown fields are refused, not ignored, so a
-  body carrying `id`, `authorId` or `status` is rejected rather than silently
-  dropped.
-- **Swagger at `/api/docs`**, generated from the same decorators the routes use.
-- **Health checks.** `/health/live` never touches a dependency;
-  `/health/ready` reports the database, Redis and the identity provider, and
-  answers 503 when one of them is down.
-- **The architecture rules are enforced, not requested.** A module that reaches
-  into another module's internals, or a domain file that imports Prisma or Nest,
-  fails `npm run depcruise`. Both failures were confirmed by deliberately
-  writing the violation and watching the build go red.
+One deployable API, split inside into modules with real walls. A second process
+runs the same image with a different command and only sends email.
 
-**The database**
+```mermaid
+flowchart TB
+    B["Browser — Angular SPA"]
+    N["nginx :4200<br/>serves the build, proxies /v1"]
+    KC["Keycloak :8080<br/>OIDC, the only place a password is seen"]
 
-All nine tables from the SRS, with the invariants as real constraints — proved
-against a real PostgreSQL 16, not mocks:
+    subgraph API["API — NestJS :3000"]
+        direction TB
+        G["Guards: signed in 401 → Origin 403 → admin 403"]
+        M["Modules: identity · requests · votes · comments<br/>taxonomy · settings · invitations<br/>notifications · bootstrap"]
+        G --> M
+    end
 
-- ten simultaneous votes from one person leave exactly one row;
-- a second default status is impossible;
-- two categories cannot share a name, even in different capitals;
-- a category or status in use cannot be deleted, only retired;
-- a deleted comment is removed completely — row and all (this overrides the
-  original R-38 "grey line"; see `DECISIONS.md`);
-- a rate limit of `0` is refused, since it would mean nobody can write.
+    W["Worker — same image<br/>node dist/worker.js"]
+    PG[("PostgreSQL 16")]
+    RD[("Redis 7<br/>rate limits + job queue")]
+    SMTP["SMTP / Mailpit :8025"]
 
-**Rate limiting**
+    B -->|same origin| N
+    N -->|/v1| API
+    B -->|sign-in redirect| KC
+    API -->|token check| KC
+    API --> PG
+    API --> RD
+    RD -->|job| W
+    W --> PG
+    W --> SMTP
+```
 
-A sliding window that counts the real rows, refuses inside the same database
-step as the write, and names the time to try again — one window after the
-person's *oldest* attempt, not one window from now. Proved against a real
-Postgres: ten sign-ups fired at the same instant with a limit of three leave
-exactly three rows. Not reset on the hour. It is wired to sign-up, to new
-requests and to votes, and an admin changes the numbers with no restart.
+Rules that hold the shape:
 
-One part of R-131 is **not** built: a deleted request stops counting towards the
-limit. See [SCOPE.md](SCOPE.md) §8 for why.
+- Each module is `domain / application / infrastructure / http`. The domain has
+  no framework imports. Use cases talk to **ports**; Prisma sits behind them.
+- A module never imports another module's inside. It goes through a published
+  `contract.ts` / service. `npm run depcruise` fails the build if this breaks.
+- Authorization is always on the server, in guards and use cases. The UI only
+  hides what the server already refuses.
+- Vote count and comment count are **not** stored columns. They are counted, so
+  they cannot drift.
+- One error shape everywhere: machine code, message, field errors, request id.
+- The browser never holds a token. Two httpOnly cookies do (D-01).
+- The front end starts with **one** call, `/v1/bootstrap`: the user, the
+  taxonomy, and the settings in a single response — no chain of blocking calls.
 
-**The modules**
+Why a monolith and not services: D-18.
 
-- **`taxonomy`** — categories and statuses as data. Add, rename, recolour,
-  retire, delete, move the "first status" mark. Admin only, refused by the
-  server and not merely hidden. The last active category and the default status
-  cannot be retired.
-- **`settings`** — the app settings an admin changes with no restart (the
-  sign-up rule, the approval switch, the comments feature switch, the six
-  rate-limit numbers), and the settings a person owns. A person changing a
-  theme, a sort or an admin setting through the user API is refused with a
-  message, never quietly ignored. A change with one bad field leaves every
-  setting as it was.
-- **`identity`** — the Keycloak handshake on the server: code + PKCE,
-  confidential client, tokens only in HttpOnly cookies, never in a response
-  body. Token signature, issuer, audience and expiry checked on every call, read
-  from the cookie and never from a header. Admin-ness re-read from the saved row
-  before every admin action. Profile edit and account deletion, which wipes name,
-  picture, email and votes, keeps requests and comments as "Deleted user", and
-  refuses for the last admin. A sign-in whose Keycloak subject is unknown but
-  whose *verified* email already has an account is re-linked to that account,
-  not made into a second one — a Keycloak user deleted and remade (or a password
-  reset that lands with a new subject) no longer dead-ends on "Signing in failed"
-  (D-89). The tests drive this through a stub provider — see "what does not work"
-  for what that leaves unproven.
-- **`requests`** — create, read, edit, delete, plus admin status change and
-  pinning. Status, author and timestamps are set by the server. The board is
-  **one SQL statement**: search over title and description, status and category
-  filters (or inside, and between), a `mine` filter that narrows the board to
-  the caller's own requests (D-93), four sorts from a fixed list, pinned first
-  within the chosen filter, paging, and both derived counts — no N+1, one round
-  trip whatever the page size. `?sort=; DROP TABLE users` is refused as a bad
-  value, and every other value is a bound parameter.
-- **`votes`** — idempotent. Voting twice or un-voting nothing returns the
-  current state instead of an error. Ten concurrent votes from one person leave
-  exactly one row.
-- **`comments`** — flat, newest first, cursor paging that does not skip or
-  repeat when something arrives mid-page. The total is computed per viewer: a
-  comment waiting for approval counts only for its author and for admins.
-  Deleting leaves a tombstone with the body gone for good. An admin can delete
-  someone else's comment but never edit it. With the comments switch off, the
-  server refuses reads, writes, edits and deletes — for admins too.
-- **`invitations`** — admin only, and refused by the server: a normal person
-  calling the endpoint by hand gets 403 and no row is written. An address is
-  stored in one shape, so capitals cannot make a second invitation. An address
-  that already belongs to a member is refused (409) — it would have nothing to
-  accept. When the registration policy is "domain restricted", inviting an
-  address whose domain is not on the allowed list is refused (409) too: the
-  invitation link would dead-end at sign-in, so the admin is told to switch the
-  policy to invite only or open, or add the domain, and no row is written. An
-  invitation flips from "Waiting" to "Accepted" the next time that address signs
-  in, whichever sign-in path it takes.
-- **`notifications`** — three events and no more. Nobody is emailed about their
-  own action, the person's own switch is respected per event, and an invitation
-  needs no preference because there is no account yet. A job carries ids only —
-  no address sits in the queue. The recipient is looked up at send time, so an
-  account deleted meanwhile is sent nothing. A failed send is logged without the
-  address and dropped: **there is no retry**. Losing Redis loses queued emails
-  and nothing else — proved against a real Redis, including that a job which
-  cannot be read is dropped rather than blocking the queue behind it. All three
-  emails have been watched arriving in Mailpit over SMTP; the invitation email
-  is sent from the invite use case with a sign-in link.
-- **`bootstrap`** — one start-up call returning who I am, my settings, the
-  switches, the categories and the statuses, composed from the other modules'
-  published services.
+## The data model (ERD)
 
-**Packaging**
+Nine tables. No more, no fewer.
 
-- Multi-stage Dockerfiles for the API and for the migration step. The API image
-  runs as a non-root user — checked by running the built image.
-- Migration and seed are their own image and their own step. Run twice against a
-  real Postgres, it left identical row counts, so the seed is re-runnable.
-- `docker-compose.yml` starts Postgres, Redis, Keycloak, Mailpit, the migration
-  step, the API and the email worker, with the API gated on the migration
-  finishing.
-- Kubernetes manifests under `infra/k8s/`, with the migration as a Job the API
-  Deployment waits for. App tier only, and not yet run against a real cluster —
-  see "On Kubernetes" under "How to run it".
-- CI runs lint, the dependency rules, the type check, all three test layers, a
-  secret scan, and both image builds.
+```mermaid
+erDiagram
+    users ||--o| user_settings : "has one"
+    users ||--o{ feedback_requests : "writes"
+    users ||--o{ comments : "writes"
+    users ||--o{ votes : "casts"
+    categories ||--o{ feedback_requests : "classifies"
+    statuses ||--o{ feedback_requests : "tracks"
+    feedback_requests ||--o{ votes : "receives"
+    feedback_requests ||--o{ comments : "receives"
 
-### The front end — the shell
+    users {
+        uuid id PK
+        string external_id UK "the id Keycloak gave"
+        string email UK
+        bool email_verified
+        string display_name
+        string avatar_url "empty = draw initials"
+        enum role "user | admin"
+        enum status "active | deleted"
+        timestamptz created_at
+    }
+    user_settings {
+        uuid user_id PK,FK "cascade with the person"
+        enum language "null = code default"
+        bool notify_on_comment
+        bool notify_on_status_change
+    }
+    app_settings {
+        int id PK "CHECK (id = 1) — one row only"
+        enum registration_policy "open | invite_only | domain_restricted"
+        string_array allowed_email_domains
+        bool comments_require_approval
+        bool feature_comments_enabled "the feature flag"
+        int signup_limit_count "+ 5 more limit columns"
+    }
+    categories {
+        uuid id PK
+        string name UK "unique on lower(name)"
+        string slug UK
+        string color "never colour alone"
+        bool is_active "false = retired, not deleted"
+    }
+    statuses {
+        uuid id PK
+        string name UK
+        string slug UK
+        bool is_default "partial unique index: exactly one"
+        bool is_active "the default can never be retired"
+    }
+    feedback_requests {
+        uuid id PK
+        string title "5..120"
+        string description "plain text"
+        uuid category_id FK "RESTRICT"
+        uuid status_id FK "RESTRICT"
+        uuid author_id FK "RESTRICT"
+        bool is_pinned
+        timestamptz pinned_at
+        timestamptz created_at
+    }
+    votes {
+        uuid id PK
+        uuid request_id FK "cascade"
+        uuid user_id FK "cascade"
+        timestamptz created_at
+    }
+    comments {
+        uuid id PK
+        uuid request_id FK "cascade"
+        uuid author_id FK "RESTRICT"
+        string body "empty when deleted"
+        enum state "published | pending | deleted"
+        timestamptz created_at
+    }
+    invitations {
+        uuid id PK
+        string email UK "no FK: matches users.email"
+        timestamptz accepted_at
+    }
+```
 
-- **The app boots with one call.** `GET /v1/bootstrap` and nothing else before
-  the app appears (R-52, H-4). A test asserts no other request is made.
-- **All three start-up outcomes are handled.** Ready shows the app; a failure
-  shows what happened with a Try again button and the request id to quote; 401
-  is treated as signed out, not as an error, and sends the person to Keycloak
-  remembering the page they wanted. Try again now reloads the page once the
-  start-up call succeeds — recovering the store alone left the router's
-  cancelled first navigation stuck, so the error cleared to a blank page (D-49).
-- **The session renews itself.** The access token lives one day; a 401 mid-use
-  triggers one call to `/v1/auth/refresh` and the original request goes again.
-  Requests that fail together share one renewal, because the provider rotates the
-  refresh token and three parallel renewals would end the session they were
-  trying to save. `11-errors-and-resilience` proves the one-attempt, no-loop
-  behaviour; a real token expiry is still only in the "not proven" list below.
-- **A spent session goes back to sign-in, not to an error.** When the refresh
-  token has also run out (one week), the renewal fails; the person is redirected
-  to sign in, with the page they were on remembered, and never sees the raw 401
-  or a "could not be saved" message. A first, never-signed-in visit is different
-  and stays on the public board.
-- **Every failed call says what actually went wrong.** One place
-  (`core/error/error-text.ts`) turns the error code into words, so "that category
-  was just removed", "that address is already invited", "you have been signed
-  out — refresh the page" and a dropped connection each read differently, on
-  every screen. A field the server names (a category retired in another tab
-  while the form was open) shows its message next to that field, not only in the
-  banner, and the request form re-reads the taxonomy so the dead option leaves
-  the picker. An admin error or "Saved" notice no longer follows you from one
-  admin screen to the next. **Deleting something that is already gone is not an
-  error** — a 404 on a delete or a row-scoped change (someone else removed the
-  comment, the request, the category first) quietly drops the row instead of
-  showing a message, and on the request page it shows a one-line notice and
-  goes to the board rather than stopping on a "does not exist any more" screen.
-  Covered by `error-text.spec.ts`, `request-form-dialog.spec.ts`, the store
-  specs, and `admin.store.spec.ts`. Not yet done: the few
-  admin-only "conflict" messages (last category, status in use, …) come straight
-  from the server and are English even in Arabic mode — see D-91.
-- **Theme works with no flash.** Read from `localStorage` before the first paint
-  by an inline script, and light/dark/system all apply (R-55, R-56).
-- **Sign-in failures are told apart.** "You may not join" and "you were unlucky
-  with the timing" are different pages, because the second person *is* allowed.
-  When a sign-in is refused after the provider already authenticated the person,
-  the server ends the provider's session too, so the next attempt is a real
-  login screen and not a silent re-refusal. On the "you may not join" page the
-  one button then reads "Sign in with a different account" instead of "Try
-  signing in again" — retrying that exact identity only loops (D-90).
-- Skip link, visible focus, lazy routes, and a design-token file whose every
-  colour pair was measured against WCAG AA in both themes.
-- **The whole presentation layer was rebuilt on Material Design 3.** One blue
-  seed (`#0B57D0`), full light/dark tonal palettes, the M3 shape, elevation,
-  motion and state-layer scales, all as design tokens — a hand-tuned tonal
-  scale built to the M3 structure, not the exact output of Google's own Theme
-  Builder (see [DECISIONS.md](DECISIONS.md)). Every screen is now assembled
-  from a shared component kit (button, icon-button, spinner, menu, dialog,
-  chip, field, switch, avatar, pagination, snackbar) under `shared/ui/`, and
-  every component is three files — `.ts`, `.html`, `.css` — never an inline
-  template. No code comments anywhere in this layer, by request.
-- **A user menu in the header**, opened from the avatar and name, closes on
-  Escape, on a click outside it, and on every route change, and returns focus
-  to the trigger when it does. It carries My settings, Admin (when the viewer
-  is one), a language switch, a theme switch, and Sign out, separated and in
-  red. The theme and language switches are their own small menus off the same
-  component, and language is instant — no reload.
-- **English and Arabic, with real right-to-left layout.** Every string in the
-  app comes from two typed dictionaries (`core/i18n/translations/{en,ar}.ts`);
-  Arabic is typed against English's exact key shape, so a missing Arabic string
-  fails the build, and a test (`dictionaries.spec.ts`) checks the same thing
-  at run time plus that neither dictionary has an empty string anywhere.
-  Switching language flips `<html lang>` and `<html dir>`, is remembered for
-  the next load, and the layout uses logical CSS properties throughout so RTL
-  is a real mirror, not a patch. **This is unit-tested and has never been
-  looked at in a real browser** — see "what does not work" below.
-- **Every button that can be slow shows it.** A shared `fh-button` /
-  `fh-icon-button` takes a `loading` input: the icon becomes a spinner, the
-  label's width holds still, `aria-busy` is set, and a second click while it is
-  busy is blocked at the DOM level (`disabled`), not just by a flag in a
-  handler.
-- **Deleting, retiring, approving, rejecting and withdrawing all ask first.**
-  One `ConfirmService` and one `fh-confirm-dialog`, mounted once in the shell,
-  used everywhere something cannot be undone: delete a request, delete a
-  comment, retire or delete a category or status, approve or reject a waiting
-  comment, withdraw an invitation, delete an account. The destructive ones are
-  red; none of them default focus to the destructive button.
+Four things the diagram cannot show, and they matter:
 
-## What does not work
+- **No vote-count or comment-count column.** Both are counted from the rows on
+  every read, so they cannot drift.
+- **`votes` has a unique index on `(request_id, user_id)`.** That one line is
+  what makes "one vote per person" true with ten clicks in the same second — the
+  database refuses the second, not the code.
+- **`statuses` has a partial unique index `WHERE is_default`.** Exactly one
+  default status, enforced by the database, so marking a new one must un-mark
+  the old one in the same transaction.
+- **RESTRICT vs cascade is a decision, not a default.** A category or status in
+  use can never be deleted, only retired. Deleting an account wipes the person
+  but keeps their content; their votes go with them, because a vote is a
+  personal signal, not content.
 
-Nothing in this list is hidden.
+## How signing in works
 
-- **No *real* SMTP server has been contacted.** Comment, status-change and
-  invitation emails have all been watched landing in Mailpit over SMTP, so the
-  queue, the worker, the wording and the last local hop are proven. What is
-  untested is a real mail provider with TLS and a login — `SMTP_USER` /
-  `SMTP_PASSWORD` and `secure` are wired but have never run against one.
-- **The email worker must actually be running.** `docker compose up` starts it,
-  but if the stack is brought up service-by-service without `worker`, jobs pile
-  up unsent in the Redis list `feedbackhub:notifications` and no email leaves.
-  There is no alert for this.
-- ~~**No sign-in has ever completed.**~~ It does now, and it is proven on every
-  run. The end-to-end suite signs in through the real Keycloak login form with a
-  seeded account (R-160), lands on the board, and then checks the parts that
-  only a real sign-in can show: no token anywhere a script can read, the two
-  cookies by name with their flags and paths, and exactly one call to
-  `/bootstrap` afterwards. The cause of the old failure was D-35.
-- **The `/v1/auth/*` routes are only lightly covered by *API* tests.** Every API
-  test replaces the identity provider with a stub. That is how D-32 went
-  unnoticed — the refresh cookie was scoped to a path that did not exist, so
-  refresh and sign-out were both broken while every test passed. The callback
-  route now has two API tests (a refused sign-in redirects to the right problem
-  page *and* ends the provider session, D-90); `sign-in`, `refresh` and
-  `sign-out` still have none. Sign-in and sign-out are covered end to end in a
-  real browser; **refresh is only covered indirectly** — `11-errors-and-resilience`
-  proves a 401 triggers exactly one refresh attempt and does not loop, but no
-  test watches a real expired access cookie be renewed, because it outlives a
-  nine-minute run.
-- **No social sign-in has been seen to work.** Google has been switched on once
-  with real credentials and got as far as returning a code to our callback,
-  which then failed on D-35 — so the provider side is proven and ours is not.
-  GitHub is still `enabled: false` and has never been tried. Neither set of
-  credentials is committed (D-34), so a fresh clone has neither.
-- **Password reset has never been seen to work.** Keycloak had no mail server at
-  all until D-33 pointed it at Mailpit, so "Forgot password?" failed every time.
-  The realm now carries the setting, but nobody has clicked the link in Mailpit
-  and set a new password. Signing out was equally broken until D-32 and is
-  equally untried. A reset done by *deleting and remaking* the Keycloak user
-  (new subject, same verified email) was seen to loop on "Signing in failed"
-  until D-89; a normal in-place reset keeps the same subject and was never the
-  cause.
-- **`docker compose up` needs Compose v2** and has not been run start to finish.
-  The file uses `depends_on: condition: service_completed_successfully`, which
-  Compose v1.29 cannot parse. The same wiring was checked by starting the
-  containers by hand. See [SCOPE.md](SCOPE.md) §8.
-- **The Kubernetes manifests have not been run.** This machine has no `kind` or
-  `kubectl`. `kustomize build` renders and every object passes `kubeconform
-  -strict` for k8s 1.31, but no cluster was brought up. The manifests also cover
-  the app tier only — no Postgres, Redis, Keycloak, Mailpit, web app or Ingress.
-  See "On Kubernetes" below and [SCOPE.md](SCOPE.md) §8.
-- **A deleted request frees its rate-limit slot**, which R-131 says it should
-  not. Everything else about the three limits is built and tested.
-- **The "no refresh needed" write-back is same-session only.** A save in this
-  tab updates this tab (D-85). A change another person makes — an admin retiring
-  a category while I have the board open — still needs a reload to reach me;
-  there is no realtime channel, and the start-up snapshot is only re-fetched on
-  a full page load.
-- **Session refresh is still unproven at the round-trip level.** The access
-  cookie outlives every test run, so nothing has ever made the browser renew a
-  real session; `11-errors-and-resilience` only proves the interceptor tries
-  once and does not loop. Sign-out was in this list too and is now proven —
-  `01-authentication` signs out for real and confirms the API refuses the old
-  session.
+No password ever reaches our API, and the browser never holds a token.
 
-Known limits that are choices, not omissions, are in
-[SCOPE.md](SCOPE.md) §2 — no audit log (D-12), no maximum page size (D-04), no
-comment threading (D-05), and search without ranking (D-11).
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as Person
+    participant W as Angular app
+    participant A as API
+    participant K as Keycloak
+    participant D as PostgreSQL
 
-### The front end — the board
+    U->>W: opens the app
+    W->>A: GET /v1/bootstrap
+    A-->>W: 401 — not signed in
+    W->>A: GET /v1/auth/sign-in
+    A-->>U: redirect to Keycloak (PKCE S256)
+    U->>K: types email + password
+    K-->>A: redirect to /v1/auth/callback?code=...
+    A->>K: exchange code for tokens (client secret, server side only)
+    K-->>A: access + refresh token
+    A->>D: match on external_id, apply the sign-up policy
+    D-->>A: the user row
+    A-->>U: two httpOnly cookies, redirect to the app
+    W->>A: GET /v1/bootstrap
+    A-->>W: user + taxonomy + settings, in one response
+```
 
-- **Search, filter by status and category, filter down to my own requests, sort,
-  and pages**, all of it in the web address (R-22). Copy the address and you get
-  the same board back; the back button walks the searches.
-- **A "My requests" toggle button** sits between the sort control and the
-  Filters button (D-93), styled the same as `Filters` and `New request` (an
-  `fh-button`, not a filter chip) so the toolbar reads as one family of
-  controls. It follows the same address rule as the other filters — the URL
-  wins, and an explicitly-cleared one stays cleared — and toggling it also
-  sets what this browser opens the board with next time.
-- **The status and category filters list retired rows too** — both on the board
-  and in the Profile page's "Default categories / statuses" chips — so an old
-  request tagged with one stays findable and can be a saved default. The "New
-  request" category picker and the admin status menu still offer only active
-  rows — a retired one can be filtered by, not newly chosen or set (R-45).
-- **Retired status and category chips read as plain chips** on the board cards
-  and the request page — just the name, no "(retired)" note. The note is kept
-  only on the admin taxonomy screen, where retiring is managed.
-- **The saved sort and filters seed the board, and the address overrides them**
-  (R-24). An explicitly-cleared filter stays cleared, so a shared link cannot
-  quietly revert to the recipient's own saved filters.
-- **All four states, and the two empty ones read differently.** "No requests
-  yet. Be the first." for a new board; "Nothing matches these filters" with a
-  Clear button when a filter is what hid everything.
-- **A page past the end goes back to the last real page** rather than showing an
-  empty page with working pagination underneath (SRS 15.1). At most once, so a
-  disagreeing server cannot loop it.
-- **A slow answer that arrives after a newer one is dropped**, so typing in the
-  search box cannot leave results for words already replaced.
-- **A retired category still names the requests that use it** (R-45), because
-  the start-up call carries the retired rows too. An id we cannot name shows as
-  "Unknown", never as a blank chip.
-- **Comment counts disappear from the board when comments are switched off**
-  (R-42).
-- **The board is a responsive card grid, not a list of rows.** One, two or
-  three columns depending on width. Each card is a single clickable target —
-  the whole card is the link to the request, via a stretched title link — and
-  carries its own vote button, so voting no longer requires opening the
-  request first. Voting from a card is optimistic and independently tested
-  (`request-card.spec.ts`), sharing its rollback logic with the request page
-  through one `VoteService` (`core/requests/vote.service.ts`,
-  `vote.service.spec.ts`).
-- **A pinned request carries a small pin marker in its top corner** — a filled
-  circular badge on the card, plus a tinted card background — replacing the
-  old flat "Pinned" text pill.
-- **The board splits pinned requests off from the rest with a labelled
-  divider.** When a page holds both pinned and unpinned requests, the grid
-  breaks into a "Pinned" group and a "More requests" group, each with a small
-  heading and a count, and a horizontal line between them. A page with only one
-  kind (later pages, or a board with nothing pinned) shows the plain grid with
-  no heading. The server already returns pinned rows first; this only makes the
-  break visible.
-- **Search and filters live in one toolbar.** The search box and sort control
-  are always visible; status and category are Material filter chips behind a
-  Filters button that shows how many are active, and every applied filter also
-  appears as a small removable chip with a Clear all next to it. The filter
-  `<input type="checkbox">` elements are still real checkboxes inside real
-  `<fieldset>`s, just visually rebuilt as chips, so the accessibility tree
-  (and most of the old Cypress selectors) did not have to change.
-- **The toolbar reads as one narrow-things cluster plus one action.** Search,
-  sort, "My requests" and "Filters" sit together on the left, split from the
-  filled "New request" button which is pushed to the far end — so the primary
-  action never reads as a peer of the filters. Search and sort now share one
-  quiet surface (`surface-container` with a hairline border, not the old loud
-  grey), the same height, and the same focus treatment (a ring plus a primary
-  border); a thin divider separates the two inputs from the toggle buttons. On
-  a phone the toolbar stacks: full-width search, full-width sort, then "My
-  requests" and "Filters" splitting one line, then a full-width "New request"
-  at the foot (the desktop "push the button to the end" would otherwise
-  strand it mid-row). The result count sits directly under the toolbar in
-  medium weight with
-  tabular figures so it does not jump as the number changes.
-- **"New request" and "Edit request" are popups, not pages.** Both open in
-  place as a modal dialog (a native `<dialog>`): "New request" over the board,
-  so its scroll position and filters are never disturbed; "Edit" over the
-  request page, so you stay on the request you are editing. On a new request a
-  snackbar offers "View" to jump straight to it; on an edit the page reloads in
-  place and a snackbar confirms the save. The route `/requests/new` still
-  exists and opens the same dialog, forced open, so a bookmarked link still
-  works. The old `/requests/:id/edit` route is gone — edit is only reachable
-  from the request page now. The form dialog has no Delete button: deleting a
-  request is done from the trash icon in the request header, which asks first
-  the same way it always did.
-- **The form dialog shows its title, and picks a category with chips, not a
-  dropdown.** The heading ("New request" / "Edit request") is now visible at the
-  top of the popup instead of hidden for screen readers only. Category is a row
-  of pill buttons — one real `<input type="radio">` per active category inside a
-  `<fieldset>`, each with the category's colour dot — so every choice is visible
-  at once, arrow keys move between them, and there is no hidden menu. The old
-  native `<select id="categoryId">` is gone; Cypress and unit tests now pick a
-  category by its radio. The popup size did not change.
+Later, when the access cookie has expired, the app's interceptor calls
+`POST /v1/auth/refresh` **once**. If that fails too, the person is sent back to
+sign in — they never see a raw 401.
 
-### The front end — a request page
+## Folder structure
 
-- **Voting is optimistic and rolls back.** The number moves on click (R-30); the
-  server's answer replaces the prediction rather than confirming it, because the
-  count belongs to the server (R-28). A refusal puts the number back and says
-  why, and a rate limit says when they may vote again (R-131).
-- **A double click is one vote.** The database guarantees that (R-26); the
-  screen adds not sending a second call, which would be an un-vote.
-- **The vote button's name says the count and whether you voted** (R-31), so a
-  screen reader hears what pressing it did. It works from the keyboard.
-- **Comments are cursor-paged, newest first** (R-33b), so a comment arriving
-  while somebody reads cannot push a row they have already seen into the next
-  block. A repeated id is dropped as well, belt and braces.
-- **A new comment appears at the top with no reload and no second call**
-  (R-33d), and the box keeps what was typed if saving fails (SRS 15.5).
-- **Deleting a comment removes it completely** — from the thread and from the
-  database, with no tombstone row (this overrides R-38/R-39; see `DECISIONS.md`).
-  Admin "reject" of a waiting comment deletes it the same way. A comment waiting
-  for approval is shown to its writer, marked, and not counted (R-40). An
-  admin's own comment never waits, even with approval on — see
-  `DECISIONS.md` D-94.
-- **Every page carries a breadcrumb** from the board down to where you are, so
-  the deeper screens (a request, a settings tab, an admin section) show their
-  place. Not asked for in the brief — a usability addition.
-- **The request and the thread fail independently** (SRS 15.2) — a thread that
-  will not load never takes down a page that otherwise works.
-- **With comments switched off the thread and box are not rendered at all**, and
-  the thread is not even requested (R-42). The server refuses too; the E2E suite
-  will prove that half.
-- **Descriptions and comments are plain text** (R-98) — markup in a description
-  is shown, never executed.
+```
+apps/
+  api/                     NestJS API + email worker
+    prisma/                schema, migrations, seed
+    src/modules/<name>/    domain | application | infrastructure | http | tests
+    src/shared/            config, auth guards, errors, logging, redis, rate limit
+    test/support/          integration + API test helpers
+  web/                     Angular SPA
+    src/app/core/          api types, auth, bootstrap store, i18n, config, errors
+    src/app/features/      board, request-detail, request-form, settings, admin, ...
+    src/app/shared/ui/     design-system components
+    src/styles/tokens/     Material 3 design tokens
+e2e/                       Cypress suite (own package), 00-smoke .. 09-experience
+infra/
+  docker/                  API, migration and web images + nginx config
+  k8s/                     base + local overlay (API, worker, migration Job)
+  keycloak/realm/          realm export: client, roles, seeded accounts
+scripts/                   create-local-database.sql
+.github/workflows/ci.yml   lint, seams, types, all test layers, images, e2e
+```
 
-### The front end — writing a request
-
-- **Create, edit and delete your own** (R-10 to R-14), on Angular 22's Signal
-  Forms, so every validation rule lives in a schema and is testable without
-  rendering a component.
-- **Inline messages that say how to fix it**, next to the field, on blur or on
-  save — never on every key press (R-88). The cursor goes to the first bad
-  field (R-112), and each message is tied to its input with `aria-describedby`.
-- **Over the submission limit** names the time they may try again and says
-  plainly that nothing they wrote was lost (SRS 15.3, R-131).
-- **Deleting asks first**, names the request, and says its votes and comments go
-  with it (R-91). One click can never delete.
-- **Editing a request that is not yours shows a message and no form at all**
-  (SRS 15.2), rather than a form that will fail on save.
-- **A category retired while the form was open** asks for another one.
-
-### The front end — profile and admin
-
-- **Profile, language, email choices and account deletion** (R-54 to R-62),
-  split into their own small components (`profile-form`, `account-form`,
-  `device-preferences-form`, `danger-zone`) under `features/settings/`. The page,
-  the user-menu link and the browser tab are titled **Profile**; it lives at
-  `/profile` (the old `/settings` path is gone, with no redirect — D-79).
-  It opens with an identity header (avatar, name, admin badge) over a sticky
-  in-page nav and a stack of section cards. **Name and picture** has a Save
-  button (free text). **Language and email** saves on change with no Save
-  button and no "Saved" line (D-83). A failure in one part shows its own
-  message and never makes another part look unsaved.
-  Deleting an account says what will happen *before* anything is pressed, in a
-  red-toned card, and goes through the same confirm dialog as every other
-  destructive action in the app, rather than the old "type DELETE" box — one
-  fewer pattern for a person to learn. The last admin is refused with the
-  reason (R-62).
-- **A saved change shows everywhere at once, with no page refresh.** The
-  start-up call (`GET /v1/bootstrap`) is the app-wide copy of who I am, my
-  settings, the two comment switches and the taxonomy, and the header, the user
-  menu, the board filters, the category picker and the status labels all read
-  from it. When the profile form saves a new name or picture, when Language and
-  email saves, and when an admin adds, edits or retires a category or status or
-  turns comments on or off, the store that made the call writes the server's
-  answer straight back into that copy — so the change is visible immediately,
-  not on the next reload (D-85). Before this, a renamed person still saw the old
-  name in the header until they refreshed the browser.
-- **The choices that live in this browser** — theme, default sort and default
-  filters (D-06) — sit under an **Appearance and defaults** card, kept apart
-  from the account-level choices above it. The card has a chip group for the
-  default categories **and** one for the default statuses, an "Only my requests"
-  toggle, and the default sort; all of them are also written from the board
-  toolbar itself: pick a sort or toggle a filter chip there and that becomes
-  what this browser opens the board with next time (D-86, D-93). A shared link still wins over it while it is
-  on screen (R-24).
-- **The admin area** uses the same shell as the profile page: an identity-style
-  header over a sticky section rail on the left and the current screen in a
-  card column on the right, collapsing to a scroll strip on a phone (D-80). The
-  rail lists Categories · Statuses · Application settings · Invitations, each a
-  real route with its own URL, title and breadcrumb. `/admin` and the old
-  `/admin/taxonomy` redirect to `/admin/categories` (D-81).
-- **Categories** and **Statuses** (R-43 to R-49) are now two separate screens,
-  each a card whose header carries a `+ Add category` / `+ Add status` button
-  in the top-right corner that opens a small popup (name + colour). The list
-  below is a real aligned table — **Name · In use by · Actions** columns, a
-  CSS grid with fixed column widths so the two screens line up with each other
-  and every row's buttons line up, collapsing to a stacked card per row on a
-  narrow screen. Actions are plain text buttons: **Make default**, **Retire** /
-  **Make active**, **Delete** (D-81, D-83). The default status is marked with a
-  small primary-coloured "DEFAULT" label (not a grey pill) and has no Retire
-  button (R-48, D-82).
-  The old markup nested a `<tr>` inside `<fh-taxonomy-row>` inside `<tbody>`,
-  which the browser could not lay out, so the columns collapsed; there is no
-  table now (D-80). Delete only shows for a row nothing uses; Retire asks
-  first. Actions no longer flash the loading skeleton — the row just updates
-  (D-82).
-- **Application settings** — sign-up rule, allowed domains, comment approval,
-  all six rate limits, and the comments feature switch (R-67 to R-70), in
-  three section cards (`registration-card`, `comments-card`,
-  `rate-limits-card`), each with an icon and a one-line "what this does". The
-  comment switches and rate limits save the moment they change — no "Saved"
-  banner; a change that failed shows the old value with a message (D-83). A
-  rate limit below 1 is not sent, with the reason shown (R-130). The comment
-  switches are title-plus-explanation rows like the profile page (D-80). The
-  registration policy picker also saves on change — except "Domain restricted",
-  which reveals a domains field with its own Save button (D-96). The policy and
-  the domains are then saved together in one call. The domain list is checked
-  in the browser the same way the server checks it — at least one domain, each
-  one shaped like `example.com`, 50 at most — so a typo shows an inline message
-  and Save stays disabled instead of hitting the server (R-67). Starting to fix
-  the value also clears the red "could not be saved" banner.
-  Every admin screen's first-load state is an `fh-skeleton-card` shaped like
-  the section cards it precedes, not the board's card grid (D-81); actions
-  don't re-flash it (D-82).
-- **Waiting comments**: approve or reject (R-41), each behind its own confirm
-  dialog now. There is deliberately no edit — an admin never rewrites what
-  somebody said (R-36).
-- **Invitations**: invite, see whether it was used, withdraw (R-66) — withdraw
-  now asks first too. Two section cards: one for the invite form, one listing
-  what was sent as rows (address, "Waiting" or a green "Accepted <date>" line,
-  and a **Withdraw** text button) instead of the old bare table (D-80). The
-  "Accepted" line appears once that address signs in; inviting an address that
-  is already a member — or, under the "domain restricted" policy, one whose
-  domain is not allowed — is refused with the server's sentence (D-95, D-97).
-  While the policy is "domain restricted" the invite form also shows a standing
-  warning that an invitation will dead-end at sign-in unless the domain is
-  allowed (D-97).
-- **Status and pin on a request** (R-64, R-65), shown to admins only as a
-  courtesy — the server refuses both to anybody else (R-70).
-
-### The front end — everything else
-
-What is left, now that the request form, the admin screens and the moderation
-queue are built and driven end to end:
-
-- **Editing your own comment has no UI** (R-35). The `PATCH /v1/comments/:id`
-  endpoint works and refuses everyone but the author — `04-comments` proves it —
-  but the request page offers only Delete, never an inline edit. Deleting is
-  built (R-37), and an admin can delete any (R-37) — a delete is a real row
-  delete now, not a grey line.
-- **The board has no admin status control.** R-64 asks for the status to be
-  changeable from the board as well as the request page; only the request page
-  has it. The end-to-end suite covers A-2 through the request page, so the
-  journey is proven and this half of the rule is not.
-- **Arabic has never been looked at in a real browser.** Every string is
-  translated, the dictionaries are typed against each other and tested for
-  parity, and `I18nStore` flips `<html lang>`/`<html dir>` and is unit-tested
-  doing it — but nobody has switched the running app to Arabic in a browser and
-  looked at it, so a control that overflows, a chip that does not mirror, or an
-  icon that should flip and does not could still be there. `[dir='rtl']
-  .rtl-flip svg { transform: scaleX(-1) }` mirrors the pagination chevrons on
-  purpose; nothing else was checked by eye.
-- **The Cypress suite (`e2e/`) was not touched *by* this redesign** — it was
-  rewritten afterward, on `data-testid` selectors instead of the old text/CSS
-  ones this redesign would otherwise have broken. See the end-to-end tests
-  section above; it now runs 359 tests, all green, against exactly this UI.
-- **The old design system (`tokens.css`, the old `state-panels.ts`, the raw
-  Tailwind utility classes on hand-written `<button>`/`<select>` elements) is
-  gone.** Every screen was rebuilt; nothing was reskinned in place. Anything not
-  mentioned as changed above (the guards, the stores, the interceptor, the
-  bootstrap sequence, the API contract) was left exactly as it was — this was a
-  presentation-layer rebuild, not a rewrite of the app's logic.
-
-Two smaller things that are true and easy to miss:
-
-- `docker compose up --build` may fail to *rebuild* on a snap-installed
-  `docker-compose`, which cannot read files under `/media` (permission denied).
-  `podman-compose` is the workaround. Containers already built run fine.
-- The API image currently running may serve an older OpenAPI document than the
-  source produces. Rebuild it before regenerating the front-end types.
+---
 
 ## How to run it
 
@@ -611,510 +247,362 @@ Needs **Docker Compose v2** (`docker compose`, not `docker-compose`).
 docker compose up --build -d --wait
 ```
 
-That is the whole command. There is no `.env` to prepare first: every value the
-compose file needs is written inside it, because they are all development
-values. It starts Postgres, Redis, Keycloak and Mailpit, runs the migration and
-the seed as their own step, and only then starts the API and the email worker.
-`-d` leaves the stack running in the background, and `--wait` returns only after
-the health checks pass.
+That is the whole thing. No `.env` to prepare: every value in the compose file
+is a development value. It starts Postgres, Redis, Keycloak and Mailpit, runs
+the migration and the seed as their own step, then starts the API, the worker
+and the web app.
 
 | What | Where |
 |---|---|
 | Web app | http://localhost:4200 |
 | API | http://localhost:3000/v1 |
-| API docs | http://localhost:3000/api/docs |
+| API docs (OpenAPI) | http://localhost:3000/api/docs |
 | Keycloak | http://localhost:8080 (admin / admin) |
-| Mailpit | http://localhost:8025 |
+| Mailpit (email inbox) | http://localhost:8025 |
 
-On this machine, `docker` is a Podman wrapper that delegates compose to a
-snap-packaged `docker-compose`, and that wrapper cannot read projects under
-`/media`. Use this equivalent one-command start instead:
+Seeded accounts, password `password` for all:
+
+| Email | Role |
+|---|---|
+| `admin@feedbackhub.local` | admin |
+| `bo@feedbackhub.local` | admin |
+| `sam@feedbackhub.local` | user |
+| `rae@feedbackhub.local` | user |
+
+Their Keycloak ids are pinned so the seeded requests, votes and comments belong
+to them on the first run (D-26).
+
+### Turning on Google sign-in
+
+The realm defines one social provider, **Google**, and it is `enabled`. Its
+credentials are **empty on purpose** — a real client id and secret must never be
+committed:
+
+```jsonc
+// infra/keycloak/realm/feedbackhub-realm.json
+"identityProviders": [
+  {
+    "alias": "google",
+    "providerId": "google",
+    "enabled": true,
+    "trustEmail": true,
+    "config": {
+      "clientId": "",        // <- put yours here
+      "clientSecret": "",    // <- and here
+      "defaultScope": "openid email profile"
+    }
+  }
+]
+```
+
+Until those two are filled in, the Google button appears on the Keycloak login
+page and fails when clicked. To make it work:
+
+1. In the Google Cloud console, create an OAuth client (type: **Web
+   application**) and register this redirect URI — it points at **Keycloak**,
+   not at our API, which only ever sees the end of the handshake:
+
+   ```
+   http://localhost:8080/realms/feedbackhub/broker/google/endpoint
+   ```
+
+2. Put the client id and secret into the two empty fields above, then recreate
+   the stack so the realm is imported again:
+
+   ```bash
+   docker compose down -v && docker compose up --build -d --wait
+   ```
+
+   Or, without touching the file: Keycloak admin console (http://localhost:8080,
+   admin / admin) → Identity providers → Google → set the id and secret. That
+   way nothing lands in Git, but the change is lost when the volume is dropped.
+
+Google is set to `trustEmail: true`, so a Google account counts as a verified
+email — which matters under the `domain_restricted` sign-up policy, since it
+refuses an unverified email even on an allowed domain.
+
+**Never commit real credentials.** CI fails the build if anything that looks
+like a secret is committed.
+
+With podman, call `podman-compose` by name:
 
 ```bash
 podman-compose up --build -d
 ```
 
-Seeded accounts, all with the password `Passw0rd!`:
-
-| Email | Role |
-|---|---|
-| `admin@feedbackhub.local` | admin |
-| `sam@feedbackhub.local` | normal |
-| `rae@feedbackhub.local` | normal |
-
-Their Keycloak ids are pinned so the seeded requests, votes and comments belong
-to them on the first run (D-26).
-
-### If `docker compose` is version 1
-
-Compose v1 cannot parse this file (see [SCOPE.md](SCOPE.md) §8). You can still
-run everything by hand — this is the exact sequence that was used to check it:
+Stop and wipe:
 
 ```bash
-podman network create fh-net
-
-# 5433, not 5432: many machines already have a Postgres on 5432. Use whatever
-# is free — only the DATABASE_URL you give the API has to agree with it.
-podman run -d --name fh-pg --network fh-net -p 5433:5432 \
-  -e POSTGRES_USER=feedbackhub -e POSTGRES_PASSWORD=feedbackhub \
-  -e POSTGRES_DB=feedbackhub postgres:16-alpine
-
-podman run -d --name fh-redis --network fh-net -p 6379:6379 redis:7-alpine
-podman run -d --name fh-mail  --network fh-net -p 8025:8025 -p 1025:1025 axllent/mailpit
-
-podman run -d --name fh-kc --network fh-net -p 8080:8080 \
-  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
-  -e KC_HEALTH_ENABLED=true \
-  -e KC_HOSTNAME=http://localhost:8080 -e KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true \
-  -v "$PWD/infra/keycloak/realm:/opt/keycloak/data/import:ro,Z" \
-  quay.io/keycloak/keycloak:26.0 start-dev --import-realm
-
-# the migration and the seed, as their own step (R-82)
-podman build -f infra/docker/api/migrate.Dockerfile -t feedbackhub-migrate:local .
-podman run --rm --network fh-net \
-  -e DATABASE_URL=postgresql://feedbackhub:feedbackhub@fh-pg:5432/feedbackhub \
-  feedbackhub-migrate:local
-
-podman build -f infra/docker/api/Dockerfile -t feedbackhub-api:local .
-podman run -d --name fh-api --network fh-net -p 3000:3000 \
-  -e NODE_ENV=production -e PORT=3000 \
-  -e DATABASE_URL=postgresql://feedbackhub:feedbackhub@fh-pg:5432/feedbackhub \
-  -e REDIS_URL=redis://fh-redis:6379 \
-  -e APP_BASE_URL=http://localhost:4200 \
-  -e AUTH_ALLOWED_ORIGINS=http://localhost:4200 -e AUTH_COOKIE_SECURE=false \
-  -e OIDC_ISSUER_URL=http://fh-kc:8080/realms/feedbackhub \
-  -e OIDC_CLIENT_ID=feedbackhub-api \
-  -e OIDC_CLIENT_SECRET=local-development-only-secret \
-  -e OIDC_REDIRECT_URI=http://localhost:3000/v1/auth/callback \
-  -e SMTP_HOST=fh-mail -e SMTP_PORT=1025 -e SMTP_TIMEOUT=10 -e MAIL_ENABLED=true \
-  -e "SMTP_FROM=FeedbackHub <no-reply@feedbackhub.local>" \
-  feedbackhub-api:local
+docker compose down -v      # -v also drops the database volume
 ```
 
-Swap `podman` for `docker` if you have Docker. Note `OIDC_ISSUER_URL` uses the
-container name while `KC_HOSTNAME` is `localhost` — that is deliberate, and D-28
-explains why.
+### Running from source (for development)
 
-### Running the API from source, against those containers
-
-Useful while developing: the API restarts on every save, and you can put a
-breakpoint in it. Everything else still runs as a container.
-
-**Step 1 — the database.** Two ways, and the second is nicer if you already run
-PostgreSQL and use a client like pgAdmin.
-
-*Either* use the container from the block above (it publishes 5433),
-
-*or* create the database inside the PostgreSQL you already have, so it sits on
-the normal port beside your others and shows up in your existing client. One
-statement, as a superuser — in pgAdmin: right-click the `postgres` database →
-Query Tool → paste → F5, or from a terminal:
+**1 — start the services only:**
 
 ```bash
-psql -h localhost -U postgres -c "CREATE DATABASE feedbackhub;"
+docker compose up -d postgres redis keycloak mailpit
 ```
 
-Nothing else to set up: the app connects as that server's superuser, and Prisma
-creates the tables. On a real server it would get a role that owns its own
-database and nothing more — [`scripts/create-local-database.sql`](scripts/create-local-database.sql)
-says why that matters and why it does not here.
-
-**Step 2 — start Redis, Keycloak and Mailpit** from the block above. Those have
-no equivalent already on your machine, so they stay containers. Skip the
-Postgres container if you took the second path.
-
-**Step 3 — make your `.env`:**
+**2 — create the database and the env file.** The compose Postgres already has
+the `feedbackhub` database. For your own Postgres:
 
 ```bash
-cd apps/api
-cp .env.example .env
+psql -U postgres -f scripts/create-local-database.sql
 ```
-
-**Step 4 — fill in the values that depend on your machine.** Everything else in
-the example file already works as it stands.
-
-| Variable | Set it to | Why |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://postgres:root@localhost:5432/feedbackhub` for your own PostgreSQL — user, password and port as that server has them — or `postgresql://feedbackhub:feedbackhub@localhost:5433/feedbackhub` for the container | Whichever you chose in step 1. Getting this wrong is the one mistake that looks like the app is broken when it is only pointed elsewhere. |
-| `REDIS_URL` | `redis://localhost:6379` | Already correct if 6379 was free. |
-| `OIDC_ISSUER_URL` | `http://localhost:8080/realms/feedbackhub` | `localhost`, because the API is on your machine now. The container version uses `fh-kc` instead — that difference is the whole of D-28. |
-
-Leave `OIDC_CLIENT_SECRET` as it is: the realm file ships with that exact value,
-so the two already agree. `AUTH_COOKIE_SECURE=false` is right for localhost and
-wrong everywhere else. `MAIL_ENABLED=true` sends into Mailpit, where nothing
-leaves your machine.
-
-The file is read twice — by the API and worker (through `import 'dotenv/config'`
-at the top of `main.ts`), and by the Prisma CLI, which finds it by itself. A
-variable already set in your shell always beats the file, so a container ignores
-it completely.
-
-**Step 5 — install, generate, migrate, seed, run:**
 
 ```bash
-npm install
-npx prisma generate           # builds the typed client from schema.prisma
-npx prisma migrate deploy     # creates the nine tables, indexes and constraints
-npx ts-node prisma/seed/seed.ts   # 3 users, 4 requests, 4 votes, 3 comments…
-npm run start:dev             # http://localhost:3000
+cp apps/api/.env.example apps/api/.env
 ```
 
-`migrate deploy` and the seed are safe to re-run; the seed is upserts only, so
-running it twice leaves the same rows.
+Then edit `apps/api/.env` — the addresses assume the API runs on your machine
+and the rest in containers:
 
-If the environment is wrong the API refuses to start and prints **every**
-problem at once, naming each variable — that is deliberate (R-102), so you fix
-them in one pass instead of one boot at a time.
-
-### Checking it works
-
-```bash
-curl -s localhost:3000/health/live      # {"status":"ok"}
-curl -s localhost:3000/health/ready     # database, redis and identityProvider all "up"
-curl -s localhost:3000/v1/bootstrap     # 401 — you are not signed in yet
-curl -sI localhost:3000/api/docs        # 200 — Swagger, generated from the routes
+```
+DATABASE_URL=postgresql://feedbackhub:feedbackhub@localhost:5433/feedbackhub
+REDIS_URL=redis://localhost:6379
+OIDC_ISSUER_URL=http://localhost:8080/realms/feedbackhub
+OIDC_CLIENT_SECRET=local-development-only-secret
 ```
 
-Then open http://localhost:3000/v1/auth/sign-in in a browser: it should land on
-Keycloak's own login page, where `sam@feedbackhub.local` / `Passw0rd!` signs you
-in and returns you with the session cookies set.
+(Compose publishes Postgres on **5433**, not 5432, so it does not clash with a
+Postgres you already run.)
 
-Everything above was run and checked, up to and including the login page
-rendering. Typing the password and coming back through the callback is the one
-step nobody has done yet.
-
-### The front end
-
-The web app needs a newer Node than the API does: Angular 22 requires
-`^22.22.3 || ^24.15.0 || >=26.0.0`, and 22.18 is **not** enough — the CLI
-refuses to start. `nvm install 22` gets a version that works.
-
-```bash
-cd apps/web
-npm install
-npm start          # http://localhost:4200
-```
-
-`npm start` proxies `/v1` and `/health` to `http://localhost:3000`, so the
-browser sees one origin and the auth cookies behave the way they will in
-production (R-3h). The API must already be running.
-
-The typed API client is generated from the live API, not hand-written:
-
-```bash
-npm run api:types        # regenerate src/app/core/api/schema.d.ts
-npm run api:types:check  # regenerate and fail if it has drifted (CI)
-```
-
-### On Kubernetes
-
-`infra/k8s/` runs the **app tier only** — the API, the email worker, and the
-migration Job. It does **not** carry Postgres, Redis, Keycloak, Mailpit, the web
-app, or an Ingress. For a full stack you can click through, use Compose (above).
-Use this path to watch the app tier behave the Kubernetes way: two API replicas
-(R-118), split liveness and readiness probes (R-83), and an initContainer that
-holds every API pod until the migration Job reports complete (R-82).
-
-**Not run here.** This machine has no `kind` or `kubectl`, so the steps below
-have not been run start to finish. What was checked: `kustomize build
-infra/k8s/overlays/local` renders, and every rendered object passes
-`kubeconform -strict` for Kubernetes 1.31 (5 of 5 valid).
-
-You need `kind` and `kubectl` on your PATH. `kind` can drive Podman:
-
-```bash
-export KIND_EXPERIMENTAL_PROVIDER=podman
-kind create cluster --name feedbackhub
-```
-
-**1 — build the two images and load them into the cluster:**
-
-```bash
-podman build -t feedbackhub-api:local     -f infra/docker/api/Dockerfile .
-podman build -t feedbackhub-migrate:local -f infra/docker/api/migrate.Dockerfile .
-
-podman save feedbackhub-api:local     -o /tmp/fh-api.tar
-podman save feedbackhub-migrate:local -o /tmp/fh-migrate.tar
-kind load image-archive /tmp/fh-api.tar     --name feedbackhub
-kind load image-archive /tmp/fh-migrate.tar --name feedbackhub
-```
-
-With Docker instead: `docker build …`, then
-`kind load docker-image feedbackhub-api:local feedbackhub-migrate:local --name feedbackhub`.
-
-**2 — the backing services.** The manifests expect Postgres, Redis, Keycloak and
-Mailpit reachable under those names inside the cluster. Throwaway copies:
-
-```bash
-kubectl create deployment redis --image=redis:7-alpine
-kubectl expose deployment redis --port=6379
-
-kubectl create deployment mailpit --image=axllent/mailpit
-kubectl expose deployment mailpit --port=1025
-
-kubectl create deployment postgres --image=postgres:16-alpine
-kubectl set env deployment/postgres \
-  POSTGRES_USER=feedbackhub POSTGRES_PASSWORD=feedbackhub POSTGRES_DB=feedbackhub
-kubectl expose deployment postgres --port=5432
-
-kubectl create configmap keycloak-realm \
-  --from-file=infra/keycloak/realm/feedbackhub-realm.json
-kubectl apply -f - <<'EOF'
-apiVersion: apps/v1
-kind: Deployment
-metadata: { name: keycloak, labels: { app: keycloak } }
-spec:
-  replicas: 1
-  selector: { matchLabels: { app: keycloak } }
-  template:
-    metadata: { labels: { app: keycloak } }
-    spec:
-      containers:
-        - name: keycloak
-          image: quay.io/keycloak/keycloak:26.0
-          args: ['start-dev', '--import-realm']
-          env:
-            - { name: KC_BOOTSTRAP_ADMIN_USERNAME, value: admin }
-            - { name: KC_BOOTSTRAP_ADMIN_PASSWORD, value: admin }
-            - { name: KC_HEALTH_ENABLED, value: 'true' }
-          ports: [{ containerPort: 8080 }]
-          volumeMounts:
-            - { name: realm, mountPath: /opt/keycloak/data/import, readOnly: true }
-      volumes:
-        - { name: realm, configMap: { name: keycloak-realm } }
----
-apiVersion: v1
-kind: Service
-metadata: { name: keycloak }
-spec:
-  selector: { app: keycloak }
-  ports: [{ port: 8080, targetPort: 8080 }]
-EOF
-```
-
-**3 — the Secret.** It is not in the repo (R-102). The example values match the
-throwaway Postgres and Redis above:
-
-```bash
-kubectl apply -f infra/k8s/base/secret.example.yaml
-```
-
-**4 — deploy the app tier:**
-
-```bash
-kubectl apply -k infra/k8s/overlays/local
-```
-
-**5 — watch it come up:**
-
-```bash
-kubectl get job feedbackhub-migrate -w      # reaches Complete before the API starts
-kubectl get pods                            # feedbackhub-api and -worker go Running
-kubectl logs deploy/feedbackhub-api
-```
-
-**6 — reach the API:**
-
-```bash
-kubectl port-forward svc/feedbackhub-api 3000:80
-curl -s localhost:3000/health/ready        # database, redis, identityProvider all "up"
-```
-
-The health checks and the API work this way, but a real sign-in does not: the
-ConfigMap points at `http://keycloak:8080`, a name that resolves inside the
-cluster and not in your browser, and there is no Ingress here to make the two
-agree. Clicking through Keycloak is what Compose is for.
-
-**Tear down:**
-
-```bash
-kind delete cluster --name feedbackhub
-```
-
-## How to run the tests
-
-These all work now, from a fresh clone, on a machine with Node 22 and a
-container runtime.
+**3 — migrate, seed, run:**
 
 ```bash
 cd apps/api
 npm install
 npx prisma generate
-
-npm run verify            # everything below, in order
+npm run prisma:migrate     # apply migrations
+npm run prisma:seed        # taxonomy, accounts, example requests
+npm run start:dev          # API on :3000
+npm run start:worker       # email worker, in a second terminal (after `npm run build`)
 ```
 
-Or one layer at a time:
-
-```bash
-npm run lint              # ESLint; bans `any` at every edge
-npm run depcruise         # the module seams and the dependency rule
-npm test                  # unit: domain and use cases, no database
-npm run test:integration  # real PostgreSQL 16 + Redis 7 via Testcontainers
-npm run test:api          # the whole guard chain, via Supertest
-```
-
-Today that is **297 tests**: 130 unit, 36 integration, 131 API. The whole run
-takes about four minutes, most of it starting containers.
-
-### If you use podman rather than Docker
-
-Use `podman-compose` directly, not `podman compose`. The second one hands the
-job to whatever compose provider it finds on the PATH, and if that is the
-snap-packaged `docker-compose`, the snap is confined and cannot read a project
-stored under `/media` — it fails with `permission denied` on
-`docker-compose.yml`, a file you can read perfectly well yourself. Either call
-`podman-compose` by name, or pin it once:
-
-```bash
-mkdir -p ~/.config/containers
-printf '[engine]\ncompose_providers = ["/usr/bin/podman-compose"]\n' \
-  >> ~/.config/containers/containers.conf
-```
-
-The tests need no setup: the harness finds a rootless podman socket by
-itself (D-23). One cost you should know about — Testcontainers' cleanup
-container cannot run rootless, so it is switched off, and a test run killed
-part-way can leave a container behind:
-
-```bash
-npm run test:clean        # remove leftover test containers
-```
-
-### The front-end tests
+**4 — the front end** (needs Node 22.22.3+, Angular 22 refuses older):
 
 ```bash
 cd apps/web
-npm test           # Vitest, through Angular's own unit-test builder
+npm install
+npm start                  # http://localhost:4200
 ```
 
-240 tests. They go through what a person sees — role, label and visible text,
-never a CSS class — and cover the browser-side preferences, the error shape, the
-one start-up call, the session renewal, the guards, the i18n store and its two
-dictionaries, the shared design-system components (button, menu, dialog,
-confirm service, vote service), the board, the request card, the request form
-dialog, and the settings screen. The admin screens carry no component-level
-tests of their own — same as before the redesign — only `admin.store.spec.ts`
-does, and that store was not touched.
+`npm start` proxies `/v1` and `/health` to `http://localhost:3000`, so the
+browser sees one origin and the cookies behave as they will in production.
 
-Angular 22 needs Node 22.22.3 or newer. On an older one the CLI stops with a
-message about Node, not about the code.
-
-### The end-to-end tests (R-159)
-
-These run a real browser (Cypress) against the whole stack from
-`docker-compose.yml`: the real Angular build served by nginx, the real API, the
-real Postgres, the real Redis, the real Keycloak, and the real local mail
-catcher (Mailpit). Nothing is mocked, and sign-in goes through the real
-Keycloak login form with a seeded account (R-160) — a faked cookie would
-remove the one thing these tests exist to prove.
-
-**The suite was rewritten from scratch** (D-100 to D-103) for the Material 3
-redesign and for the coverage the brief asks for that the old suite never had:
-sign-up, re-sign-up after account deletion, password reset, email
-verification, session/refresh-token behaviour, and admin-vs-admin cases.
-Every selector is a `data-testid` or a keyed `data-*-id` attribute — never
-English text or a CSS class — so the same suite proves the English and the
-Arabic UI equally, and a future visual redesign that keeps the same
-interactions breaks nothing here.
+The typed API client is generated, not hand-written:
 
 ```bash
-docker compose up --build -d --wait   # from the root; --wait holds until healthy
-
-cd e2e
-npm ci
-npm run typecheck   # the specs are type-checked as one program
-npm test            # the whole suite, headless
-npm run test:open   # the Cypress runner, for writing or debugging one
+npm run api:types          # regenerate src/app/core/api/schema.d.ts
+npm run api:types:check    # fail if it has drifted (CI)
 ```
 
-**359 tests across 47 spec files, about 14 minutes, organised by journey
-rather than by screen.** Full details, the selector strategy, and the test
-data hygiene rules live in [`e2e/README.md`](e2e/README.md); the short version:
+### Check it is alive
 
-| Domain | What it proves |
-|---|---|
-| `00-smoke` | The stack is up, seeded, reachable, and an anonymous call is refused. |
-| `01-auth` | Sign in/out, sign up (open, refused for every reason, invitation-gated), password reset including a single-use link, email verification, session refresh and refresh-token rotation, the Google IdP button's documented limits, re-sign-up after account deletion, route guards. |
-| `02-board` | Listing, search, filters, sort, paging, URL round-trip, empty and error states. |
-| `03-requests` | Create, edit, delete, pin, status, votes, and a pure API contract spec. |
-| `04-comments` | Write/read, edit/delete, moderation, the comments-off switch. |
-| `05-profile` | Display name/avatar, personal preferences, account deletion, the last-admin invariant. |
-| `06-admin` | Categories, statuses, app settings, registration policy, invitations, admin access control. |
-| `07-cross-role` | An admin's change observed from a member's session, the full author/admin/stranger matrix, an admin acting on their own content, one admin acting on another admin's content, notification email content and opt-outs. |
-| `08-hardening` | A full permission matrix, the Origin guard on every write, validation and id handling, all three rate limits, the error envelope shape. |
-| `09-experience` | No leaked translation keys and `dir="rtl"` in Arabic, navigation on every route. |
+```bash
+curl -s localhost:3000/health/live      # {"status":"ok"}
+curl -s localhost:3000/health/ready     # database, redis, identityProvider
+curl -s localhost:3000/v1/bootstrap     # 401 until you sign in
+```
 
-**Real defects the rewrite found and fixed in the product, not just the
-tests:** a dead `takeReturnUrl()` call meant a deep link never actually
-returned you to the page you were headed for after signing in (now wired up
-in `app.ts`); several templates had a stable `id` but no `data-testid`
-(search, sort, the profile form's fields, registration policy's fields, the
-invite form's email field); a circular module dependency
-(`identity -> invitations -> notifications -> identity`) that NestJS's
-`forwardRef` papered over at the DI level but `depcruise` rightly still
-flagged in the static import graph.
+### On Kubernetes
 
-**Left as a documented, deliberate gap, not a fix:** the vote rate limit
-counts vote rows that currently exist in the window, and withdrawing a vote
-deletes its row — so a vote immediately followed by an un-vote on the *same*
-request never trips the limit, no matter how many times it happens. Voting on
-*different* requests still hits the real limit exactly as intended. See
-SCOPE.md for the full write-up and the other documented gaps (a real Google
-sign-in, comment-edit UI, a route to promote a user to admin).
+`infra/k8s/` covers the **app tier only** — API (2 replicas), worker, and a
+migration Job that every API pod waits for through an initContainer. It does
+**not** carry Postgres, Redis, Keycloak, Mailpit, the web app or an Ingress.
 
-Two things worth knowing before you read the code:
+```bash
+kind create cluster --name feedbackhub
+kubectl apply -k infra/k8s/overlays/local
+```
 
-- **`retries: { runMode: 2, openMode: 0 }`, not zero — see D-103** for why
-  that is not flake-hiding here: the sign-in chain alone crosses four real
-  origins, and every spec is written to be idempotent by design specifically
-  so a retry after a genuine transient timing gap re-runs cleanly.
-- **Some specs change an application setting, the taxonomy, or the realm, and
-  put it back.** Each restores the value it read at the start, in an `after`
-  that runs even on failure. A half-finished run can still leave state
-  changed — re-seeding does not always fix it; see the test data hygiene
-  section of `e2e/README.md`.
+Not run here — see [SCOPE.md](SCOPE.md) §5.
 
-If the stack is not up, sign-in fails on the first spec with a Keycloak
-connection error.
+---
 
-**Environment gotcha:** if your shell exports `ELECTRON_RUN_AS_NODE=1`, Cypress's
-bundled Electron refuses to start (`bad option: --no-sandbox`). Unset it for the
-run: `env -u ELECTRON_RUN_AS_NODE npm test`. On a headless machine, wrap the
-command in `xvfb-run -a`.
+## How to run the tests
+
+Backend (Node 22 + a container runtime; Testcontainers finds podman by itself):
+
+```bash
+cd apps/api
+npm install && npx prisma generate
+
+npm run verify             # everything below, in order
+```
+
+One layer at a time:
+
+```bash
+npm run lint               # ESLint, bans `any` at the edges
+npm run depcruise          # the module seams and the dependency rule
+npm test                   # unit: domain + use cases, no database
+npm run test:integration   # real PostgreSQL 16 + Redis 7 (Testcontainers)
+npm run test:api           # the whole guard chain, via Supertest
+npm run test:clean         # remove containers left by a killed run
+```
+
+Front end:
+
+```bash
+cd apps/web
+npm test                   # Vitest, through role/label/visible text only
+```
+
+End to end (real browser, whole stack, nothing mocked — sign-in goes through
+the real Keycloak form):
+
+```bash
+docker compose up --build -d --wait
+cd e2e && npm ci && npx cypress install
+
+npm test                   # headless, the whole suite
+npm run test:open          # open the Cypress app and watch the tests run
+npm run test:smoke         # one group; also :auth :board :requests :comments
+                           # :profile :admin :cross-role :hardening :experience
+```
+
+`npm run test:open` is the one to use while writing or debugging a spec: it
+opens the Cypress window, re-runs a spec on every save, and lets you step back
+through each command. It needs a desktop session. On a headless machine run
+`npm run test:local` instead, which wraps the headless run in `xvfb-run`.
+
+Both `test:open` and `test:local` clear `ELECTRON_RUN_AS_NODE` first. If that
+variable is set — some editors and terminals export it — Cypress starts as a
+plain Node process and exits without opening anything.
+
+See [`e2e/README.md`](e2e/README.md) for what the 47 spec files cover.
+
+CI (`.github/workflows/ci.yml`) runs all of it on every push, plus a check that
+no secret is committed and that the API image does not run as root.
+
+---
 
 ## Configuration
 
-Every variable, what it is for, and its default: [`apps/api/.env.example`](apps/api/.env.example).
+Every variable with a comment: [`apps/api/.env.example`](apps/api/.env.example).
+The main ones:
 
-Two rules that will not bend:
+| Variable | What |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | Redis connection string |
+| `APP_BASE_URL` | Where the browser reaches the app |
+| `AUTH_ALLOWED_ORIGINS` | Origin allowlist. No default; empty or `*` stops the boot |
+| `AUTH_COOKIE_*` | Cookie names, lifetimes, path, `secure` flag |
+| `OIDC_ISSUER_URL` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` / `OIDC_REDIRECT_URI` | Keycloak |
+| `SMTP_*`, `MAIL_ENABLED` | Outgoing mail |
+| `REQUEST_BODY_LIMIT`, `LOG_LEVEL`, `PORT`, `NODE_ENV` | Limits and runtime |
 
-- Product settings never come from the environment. The sign-up rule, the
-  feature switch and the six rate-limit numbers live in the database, so an
-  admin changes them with no restart.
-- No secret has a default. A missing one stops the boot, loudly, rather than
-  surfacing at the first request that needed it.
+Two rules that do not bend:
+
+- **Product settings never come from the environment.** The registration policy,
+  the feature flag and the six rate-limit numbers live in the database, so an
+  admin changes them with no restart. The environment holds addresses and
+  secrets only.
+- **No secret has a default.** A missing one stops the boot loudly, and every
+  problem is reported at once.
+
+---
+
+## What works
+
+**Auth and security**
+
+- Sign-in and sign-out through Keycloak (email + password), proven end to end.
+- **Google sign-in**, once real credentials are put in the realm — checked by
+  hand, not by a test. See "Turning on Google sign-in" above.
+- No token anywhere JavaScript can read: two httpOnly cookies, and the access
+  cookie is renewed by the API.
+- Guard chain on every write: signed in (401) → Origin check (403) → admin (403).
+- Registration policy: open, invite-only, or restricted to email domains.
+- Three sliding-window rate limits in Redis: sign-ups, submissions, votes.
+- Helmet, CSP, compression, a request id on every call and in every log line,
+  with cookies, tokens and emails redacted.
+
+**Board and requests**
+
+- List with sort, filter by status and category, text search, paging, and a
+  "my requests" filter. Pinned requests first, with a divider.
+- Create, edit and delete your own request; admins can act on any.
+- Admin: change status, pin, and moderate.
+- One vote per person per request, enforced by a unique index, not by code.
+
+**Comments**
+
+- Write, edit, delete; newest first, cursor paging.
+- Optional admin approval, plus a moderation queue. An admin's own comment
+  never waits.
+- A feature flag that turns comments off across the whole app.
+
+**Taxonomy and settings**
+
+- Admin adds, edits, retires and deletes categories and statuses. A row in use
+  cannot be deleted, only retired. Exactly one default status, enforced by a
+  partial unique index.
+- Admin settings: registration policy, comment approval, rate limits, feature flag.
+- User settings: display name, avatar or initials, theme, language, default
+  sort and filters, email preferences, account deletion.
+- Settings resolve as: code default → app setting → user override. The front end
+  gets all of it in one `/v1/bootstrap` call, and a save writes back into that
+  snapshot so the UI updates with no page refresh.
+
+**Email**
+
+- Comment, status-change and invitation emails, queued in Redis and sent by a
+  separate worker. Watched landing in Mailpit.
+
+**Experience**
+
+- English and Arabic, with real RTL. Missing translations are a build failure.
+- Loading, empty and error states everywhere; error messages a person can act on.
+- Keyboard accessible, responsive, light/dark/system theme, Material 3 tokens.
+
+**Ops**
+
+- Split liveness and readiness probes, non-root images, migration as its own
+  step (never at API start-up), OpenAPI generated from the routes.
+
+## What is not finished
+
+Nothing is hidden — it is all in one place, [SCOPE.md](SCOPE.md) §5: no real
+SMTP server has been contacted, the Kubernetes manifests have never been applied
+to a cluster, and Google sign-in needs credentials before it works. The limits
+that were choices rather than omissions — no audit log, no maximum page size, no
+comment threading, no similar-request suggestions, no in-app notifications,
+search without ranking — are in [SCOPE.md](SCOPE.md) §2, each with its reason.
+
+---
 
 ## Commit convention
 
-AI-heavy commits carry the trailer `Co-Authored-By: Claude Opus 5` in the commit
-message. Commits without it are hand-written. The convention starts from the
-first code commit; the initial docs commit predates it.
+AI-heavy commits carry this trailer in the commit message:
 
-This section used to say the trailer was `AI-Assisted: <tool>`. It never was —
-no commit has ever carried that trailer. The README was describing a convention
-the history did not follow, which is worse than having none, so the text now
-says what `git log --format='%(trailers)'` actually shows.
+```
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+```
 
----
+**The convention was not kept, and this section says so rather than claiming
+otherwise.** `git log --format='%(trailers:key=Co-Authored-By)'` shows the
+trailer on **7 of 47 commits**, all of them on 30 August 2026, from `0166a94`
+(the backend) to `13fd51f` (the app shell). Every commit after that carries no
+trailer — including work that was heavily AI-assisted, such as the Material
+Design 3 redesign and the Cypress rewrite.
+
+So, plainly: **a missing trailer does not mean a commit was hand-written.** It
+means the marking stopped. The seven that carry it are AI-heavy for certain; the
+rest are unlabelled, not human-verified. AI_COLLABORATION.md is the honest
+account of where AI was used.
 
 ## Documents
 
 | File | What is in it |
 |---|---|
 | [DECISIONS.md](DECISIONS.md) | The choices that mattered, and why. |
-| [SCOPE.md](SCOPE.md) | What we build, what we skip, what we assume. |
+| [SCOPE.md](SCOPE.md) | What was built, what was skipped, what is assumed. |
 | [AI_COLLABORATION.md](AI_COLLABORATION.md) | How I worked with AI. Written by hand. |
 | [CLAUDE.md](CLAUDE.md) | Rules for keeping these documents true. |
-| [references/SRS.pdf](references/SRS.pdf) | Full requirements, 38 pages, with numbered rules (R-nn). |
+| [e2e/README.md](e2e/README.md) | What the end-to-end suite covers. |
+| [references/SRS.pdf](references/SRS.pdf) | Full requirements, numbered R-nn. |
 | [references/FeedbackHub-Assignment.pdf](references/FeedbackHub-Assignment.pdf) | The original brief. |

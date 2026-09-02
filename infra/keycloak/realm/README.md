@@ -35,12 +35,31 @@ http://localhost:8025.
 **Social sign-in.** R-2 asks for email/password *and* at least one social
 account. One identity provider is defined, **Google**, `enabled: true`, but its
 `clientId`/`clientSecret` are left **empty** because real credentials cannot be
-committed (R-102). The Google button therefore renders on the Keycloak login
-page but does not work: clicking it fails on Keycloak's side (an empty client
-id), and the e2e suite's `01-08-google-idp.cy.ts` documents this as a known gap
-rather than pretending to test a real social login. To make it real: Keycloak
-admin console → Identity providers → Google → set the client id and secret. The
-email and password flow works out of the box with no setup.
+committed (R-102):
+
+```jsonc
+"config": {
+  "clientId": "",        // <- your Google OAuth client id
+  "clientSecret": "",    // <- your Google OAuth client secret
+  "defaultScope": "openid email profile"
+}
+```
+
+**Fill those two in and Google sign-in works** — it has been done by hand with
+real credentials and a person signed in end to end. Two ways: edit the fields
+above and recreate the stack (`docker compose down -v && docker compose up
+--build -d --wait`) so the realm imports again, or set them in the Keycloak
+admin console → Identity providers → Google, which keeps them out of Git but
+loses them when the volume is dropped.
+
+Left empty, the Google button still renders on the login page and then fails on
+Keycloak's side with an empty client id. `01-08-google-idp.cy.ts` tests exactly
+that — the button exists, points at the broker endpoint, fails safely, and does
+not wedge the password flow — rather than pretending to test a real social
+login. **No automated test covers a working Google sign-in**; it is a manual
+check only.
+
+The email and password flow works out of the box with no setup.
 
 The redirect URI to register with the provider is
 `http://localhost:8080/realms/feedbackhub/broker/google/endpoint`. It points at
