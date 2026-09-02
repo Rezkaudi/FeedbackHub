@@ -162,6 +162,7 @@ Rule numbers (R-nn) point into `references/SRS.pdf`.
 - **What we get** — Email/password and social login work out of the box. OIDC is standard, so R-3a to R-3c are ordinary rather than clever. The realm import is what makes the one-command start honest: the reviewer runs everything from this repository, with no account to create anywhere.
 
 ### D-22 — Test-driven development in four layers, with Playwright on top
+*(the end-to-end runner was later changed to Cypress — see D-48)*
 - **Problem** — The brief sets no coverage target, but part 4 of the SRS says every "no" needs a test proving the server says no.
 - **Options** — Write tests after the code and chase a coverage percentage. Write only end-to-end tests. Drive the work test-first in deliberate layers.
 - **We picked** — Red, green, refactor, for every numbered rule (R-156). Unit tests for the domain and use cases with fake ports. Integration tests for repositories and database constraints, against real Postgres and Redis via Testcontainers. API tests through the whole guard chain with Supertest. Front-end tests through what a person sees, with Angular Testing Library. Playwright end-to-end on the full compose stack, signing in for real through Keycloak (R-159, R-160).
@@ -300,6 +301,8 @@ Rule numbers (R-nn) point into `references/SRS.pdf`.
 - **What we get** — One superfamily drawn by one team means the same weights, proportions and rhythm in both scripts, so switching language changes the words and not the feel of the product. The costs: two font families to load rather than one, and Plex is a common choice, so the result reads as competent rather than distinctive. The design-system tool suggested Fira Code for headings; that was rejected — monospace headings make a feedback board read as a developer tool, and most of the people writing on this board are not developers. Fira also has no Arabic.
 
 ### D-42 — The end-to-end suite is its own package, with its own TypeScript
+*(the runner named below was later changed to Cypress — see D-48; the
+own-package decision still holds)*
 
 - **Problem** — Playwright has to live somewhere. The obvious home is `apps/web`, next to the front end it drives.
 - **Options** — Put it in `apps/web`. Put it in `apps/api`. Give it a package of its own at `e2e/`.

@@ -118,8 +118,9 @@ built — see section 8 for why, and what is open because of it.
 ### Tests
 
 Test first, then code. Four layers, plus an end-to-end suite for the whole
-system with a real Keycloak sign-in (D-22). The end-to-end suite is Cypress, not
-Playwright (D-48) — the `e2e/` package was only ever scaffolded for Playwright.
+system with a real Keycloak sign-in (D-22). The end-to-end suite is Cypress
+(D-48); the `e2e/` package was first scaffolded for a different runner and
+never filled in, so the suite was written fresh in Cypress.
 
 **The end-to-end suite was rewritten from scratch** (D-100 to D-103) to close
 the gap the front-end redesign opened (it had zero `data-testid` attributes and

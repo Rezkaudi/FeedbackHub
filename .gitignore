@@ -19,9 +19,9 @@ tmp/
 coverage/
 .nyc_output/
 test-results/
-playwright-report/
-blob-report/
-.playwright/
+/e2e/cypress/screenshots/
+/e2e/cypress/videos/
+/e2e/cypress/downloads/
 /e2e/screenshots/
 /e2e/videos/
 
