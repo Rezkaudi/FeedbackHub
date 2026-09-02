@@ -51,7 +51,9 @@ describe('error envelope and resilience', () => {
     // flight when the second click lands — otherwise on a fast run the form
     // navigates away and the second click has nothing to hit.
     cy.intercept('POST', '**/v1/requests', (req) => {
-      req.on('response', (res) => res.setDelay(1500));
+      req.on('response', (res) => {
+        res.setDelay(1500);
+      });
     }).as('createRequest');
 
     cy.visitAs(ADMIN, '/requests/new');
