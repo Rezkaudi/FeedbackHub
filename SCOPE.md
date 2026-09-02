@@ -528,6 +528,15 @@ has v1.29, so the same wiring was verified by starting the containers by hand
 instead: the migration image was run twice against a real Postgres and left
 identical row counts, and only then was the API started.
 
+**The Kubernetes manifests cover the app tier only, and were not run.** `infra/k8s/`
+holds the API, the worker and the migration Job — the parts that show R-82, R-83
+and R-118 in Kubernetes terms. Postgres, Redis, Keycloak, Mailpit, the web app
+and an Ingress are not in it; the README gives throwaway commands for the four
+backing services so the app tier can start. This machine has no `kind` or
+`kubectl`, so nothing was applied to a real cluster — `kustomize build` renders
+and every object passes `kubeconform -strict` for k8s 1.31, and that is as far as
+it was taken. Compose stays the supported way to run the whole stack.
+
 **Comment delete became a hard delete, against the SRS.** R-38/R-39/R-41 ask for
 a deleted or rejected comment to stay as an uncounted "grey line". Seen running,
 that blank card reads as a bug and still leaks who commented. The owner asked

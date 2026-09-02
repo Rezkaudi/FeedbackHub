@@ -171,7 +171,8 @@ limit. See [SCOPE.md](SCOPE.md) §8 for why.
   step, the API and the email worker, with the API gated on the migration
   finishing.
 - Kubernetes manifests under `infra/k8s/`, with the migration as a Job the API
-  Deployment waits for.
+  Deployment waits for. App tier only, and not yet run against a real cluster —
+  see "On Kubernetes" under "How to run it".
 - CI runs lint, the dependency rules, the type check, all three test layers, a
   secret scan, and both image builds.
 
@@ -307,6 +308,11 @@ Nothing in this list is hidden.
   The file uses `depends_on: condition: service_completed_successfully`, which
   Compose v1.29 cannot parse. The same wiring was checked by starting the
   containers by hand. See [SCOPE.md](SCOPE.md) §8.
+- **The Kubernetes manifests have not been run.** This machine has no `kind` or
+  `kubectl`. `kustomize build` renders and every object passes `kubeconform
+  -strict` for k8s 1.31, but no cluster was brought up. The manifests also cover
+  the app tier only — no Postgres, Redis, Keycloak, Mailpit, web app or Ingress.
+  See "On Kubernetes" below and [SCOPE.md](SCOPE.md) §8.
 - **A deleted request frees its rate-limit slot**, which R-131 says it should
   not. Everything else about the three limits is built and tested.
 - **The "no refresh needed" write-back is same-session only.** A save in this
@@ -798,6 +804,131 @@ The typed API client is generated from the live API, not hand-written:
 ```bash
 npm run api:types        # regenerate src/app/core/api/schema.d.ts
 npm run api:types:check  # regenerate and fail if it has drifted (CI)
+```
+
+### On Kubernetes
+
+`infra/k8s/` runs the **app tier only** — the API, the email worker, and the
+migration Job. It does **not** carry Postgres, Redis, Keycloak, Mailpit, the web
+app, or an Ingress. For a full stack you can click through, use Compose (above).
+Use this path to watch the app tier behave the Kubernetes way: two API replicas
+(R-118), split liveness and readiness probes (R-83), and an initContainer that
+holds every API pod until the migration Job reports complete (R-82).
+
+**Not run here.** This machine has no `kind` or `kubectl`, so the steps below
+have not been run start to finish. What was checked: `kustomize build
+infra/k8s/overlays/local` renders, and every rendered object passes
+`kubeconform -strict` for Kubernetes 1.31 (5 of 5 valid).
+
+You need `kind` and `kubectl` on your PATH. `kind` can drive Podman:
+
+```bash
+export KIND_EXPERIMENTAL_PROVIDER=podman
+kind create cluster --name feedbackhub
+```
+
+**1 — build the two images and load them into the cluster:**
+
+```bash
+podman build -t feedbackhub-api:local     -f infra/docker/api/Dockerfile .
+podman build -t feedbackhub-migrate:local -f infra/docker/api/migrate.Dockerfile .
+
+podman save feedbackhub-api:local     -o /tmp/fh-api.tar
+podman save feedbackhub-migrate:local -o /tmp/fh-migrate.tar
+kind load image-archive /tmp/fh-api.tar     --name feedbackhub
+kind load image-archive /tmp/fh-migrate.tar --name feedbackhub
+```
+
+With Docker instead: `docker build …`, then
+`kind load docker-image feedbackhub-api:local feedbackhub-migrate:local --name feedbackhub`.
+
+**2 — the backing services.** The manifests expect Postgres, Redis, Keycloak and
+Mailpit reachable under those names inside the cluster. Throwaway copies:
+
+```bash
+kubectl create deployment redis --image=redis:7-alpine
+kubectl expose deployment redis --port=6379
+
+kubectl create deployment mailpit --image=axllent/mailpit
+kubectl expose deployment mailpit --port=1025
+
+kubectl create deployment postgres --image=postgres:16-alpine
+kubectl set env deployment/postgres \
+  POSTGRES_USER=feedbackhub POSTGRES_PASSWORD=feedbackhub POSTGRES_DB=feedbackhub
+kubectl expose deployment postgres --port=5432
+
+kubectl create configmap keycloak-realm \
+  --from-file=infra/keycloak/realm/feedbackhub-realm.json
+kubectl apply -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: keycloak, labels: { app: keycloak } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: keycloak } }
+  template:
+    metadata: { labels: { app: keycloak } }
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.0
+          args: ['start-dev', '--import-realm']
+          env:
+            - { name: KC_BOOTSTRAP_ADMIN_USERNAME, value: admin }
+            - { name: KC_BOOTSTRAP_ADMIN_PASSWORD, value: admin }
+            - { name: KC_HEALTH_ENABLED, value: 'true' }
+          ports: [{ containerPort: 8080 }]
+          volumeMounts:
+            - { name: realm, mountPath: /opt/keycloak/data/import, readOnly: true }
+      volumes:
+        - { name: realm, configMap: { name: keycloak-realm } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: keycloak }
+spec:
+  selector: { app: keycloak }
+  ports: [{ port: 8080, targetPort: 8080 }]
+EOF
+```
+
+**3 — the Secret.** It is not in the repo (R-102). The example values match the
+throwaway Postgres and Redis above:
+
+```bash
+kubectl apply -f infra/k8s/base/secret.example.yaml
+```
+
+**4 — deploy the app tier:**
+
+```bash
+kubectl apply -k infra/k8s/overlays/local
+```
+
+**5 — watch it come up:**
+
+```bash
+kubectl get job feedbackhub-migrate -w      # reaches Complete before the API starts
+kubectl get pods                            # feedbackhub-api and -worker go Running
+kubectl logs deploy/feedbackhub-api
+```
+
+**6 — reach the API:**
+
+```bash
+kubectl port-forward svc/feedbackhub-api 3000:80
+curl -s localhost:3000/health/ready        # database, redis, identityProvider all "up"
+```
+
+The health checks and the API work this way, but a real sign-in does not: the
+ConfigMap points at `http://keycloak:8080`, a name that resolves inside the
+cluster and not in your browser, and there is no Ingress here to make the two
+agree. Clicking through Keycloak is what Compose is for.
+
+**Tear down:**
+
+```bash
+kind delete cluster --name feedbackhub
 ```
 
 ## How to run the tests

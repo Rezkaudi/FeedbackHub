@@ -1,9 +1,13 @@
-# A small local cluster (kind). R-81.
+# A small local cluster (kind). R-81. Full steps, including the backing services
+# this overlay does not carry, are in README.md → "How to run it" → "On
+# Kubernetes". Not yet run against a real cluster.
 #
+#   export KIND_EXPERIMENTAL_PROVIDER=podman
 #   kind create cluster --name feedbackhub
-#   docker build -t feedbackhub-api:local     -f infra/docker/api/Dockerfile .
-#   docker build -t feedbackhub-migrate:local -f infra/docker/api/migrate.Dockerfile .
-#   kind load docker-image feedbackhub-api:local feedbackhub-migrate:local --name feedbackhub
+#   podman build -t feedbackhub-api:local     -f infra/docker/api/Dockerfile .
+#   podman build -t feedbackhub-migrate:local -f infra/docker/api/migrate.Dockerfile .
+#   podman save feedbackhub-api:local -o /tmp/fh-api.tar && kind load image-archive /tmp/fh-api.tar --name feedbackhub
+#   podman save feedbackhub-migrate:local -o /tmp/fh-migrate.tar && kind load image-archive /tmp/fh-migrate.tar --name feedbackhub
 #   kubectl apply -f infra/k8s/base/secret.example.yaml   # local values only
 #   kubectl apply -k infra/k8s/overlays/local
 apiVersion: kustomize.config.k8s.io/v1beta1
