@@ -1,3 +1,4 @@
+import { EPHEMERAL_PASSWORD } from '../../support/fixtures/passwords';
 import { kc } from '../../support/clients/keycloak-admin.client';
 import { mailpit } from '../../support/clients/mailpit.client';
 import { api } from '../../support/clients/api.client';
@@ -16,7 +17,7 @@ describe('re-sign-up after deleting an account', () => {
   withAppSettings({ registrationPolicy: 'open' }, () => {
     it('leaves content attributed to "Deleted user", drops the vote, and a fresh sign-in is a NEW record', () => {
       const email = stampedEmail('re-signup');
-      const password = 'Sup3r-Secret-Passw0rd!';
+      const password = EPHEMERAL_PASSWORD;
 
       cy.signUp({ email, password, firstName: 'Once', lastName: 'Only' });
       cy.mailLinkFor(email, { subjectContains: 'Verify' }).then((link) => cy.consumeMailLink(link));
@@ -98,7 +99,7 @@ describe('re-sign-up after deleting an account', () => {
     // longer maps to anyone, so the second call never reaches a handler that
     // could say 404, it is turned away as unauthenticated instead.
     const email = stampedEmail('delete-twice');
-    const password = 'Sup3r-Secret-Passw0rd!';
+    const password = EPHEMERAL_PASSWORD;
 
     kc.createUser({ email, password }).then(() => {
       cy.signInFresh({ username: email, password });

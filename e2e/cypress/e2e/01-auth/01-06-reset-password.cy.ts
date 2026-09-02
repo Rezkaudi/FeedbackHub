@@ -1,3 +1,4 @@
+import { ORIGINAL_PASSWORD, RESET_PASSWORD, USED_ONCE_PASSWORD } from '../../support/fixtures/passwords';
 import { withEphemeralUser } from '../../support/fixtures/ephemeral-user.fixture';
 import { mailpit } from '../../support/clients/mailpit.client';
 import { kc } from '../../support/clients/keycloak-admin.client';
@@ -14,7 +15,7 @@ describe('reset password', () => {
         cy.get('#kc-info, .instruction, .pf-v5-c-alert', { timeout: 20_000 }).should('exist');
       });
 
-      const newPassword = 'Br4nd-New-Passw0rd!';
+      const newPassword = RESET_PASSWORD;
       cy.mailLinkFor(user.email, { subjectContains: 'assword' }).then((link) => {
         cy.consumeMailLink(link);
         cy.setNewPasswordFromResetLink(newPassword);
@@ -64,9 +65,9 @@ describe('reset password', () => {
 
   it('a used reset link cannot be replayed', () => {
     const email = stampedEmail('single-use-reset');
-    kc.createUser({ email, password: 'Original-Passw0rd!' }).then((created) => {
+    kc.createUser({ email, password: ORIGINAL_PASSWORD }).then((created) => {
       cy.requestPasswordReset(email);
-      const finalPassword = 'Used-Once-Passw0rd!';
+      const finalPassword = USED_ONCE_PASSWORD;
       cy.mailLinkFor(email, { subjectContains: 'assword' }).then((link) => {
         cy.consumeMailLink(link);
         cy.setNewPasswordFromResetLink(finalPassword);

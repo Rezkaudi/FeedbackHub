@@ -1,3 +1,4 @@
+import { EPHEMERAL_PASSWORD } from '../../support/fixtures/passwords';
 import { withAppSettings } from '../../support/fixtures/app-settings.fixture';
 import { makeInvitation } from '../../support/fixtures/entities.fixture';
 import { kc } from '../../support/clients/keycloak-admin.client';
@@ -24,7 +25,7 @@ describe('invitations let a person past invite_only', () => {
         expect(link).to.include('/v1/auth/sign-in');
       });
 
-      cy.signUp({ email, password: 'Sup3r-Secret-Passw0rd!', firstName: 'Invi', lastName: 'Ted' });
+      cy.signUp({ email, password: EPHEMERAL_PASSWORD, firstName: 'Invi', lastName: 'Ted' });
       cy.mailLinkFor(email, { subjectContains: 'Verify' }).then((link) => cy.consumeMailLink(link));
       cy.location('origin', { timeout: 30_000 }).should('eq', Cypress.config('baseUrl'));
       cy.byTestId(TID.header.userMenuTrigger).should('be.visible');
@@ -52,7 +53,7 @@ describe('invitations let a person past invite_only', () => {
       // ever loads (the same interference `cy.signUp` guards against).
       Cypress.session.clearAllSavedSessions();
       cy.clearCookies();
-      cy.signInFresh({ username: email, password: 'Sup3r-Secret-Passw0rd!' });
+      cy.signInFresh({ username: email, password: EPHEMERAL_PASSWORD });
       api.me.remove();
       kc.deleteUserByEmail(email);
       mailpit.purgeFor(email);
@@ -75,7 +76,7 @@ describe('invitations let a person past invite_only', () => {
         api.invitations.remove(invitation.id).its('status').should('eq', 204);
       });
 
-      cy.signUp({ email, password: 'Sup3r-Secret-Passw0rd!', firstName: 'With', lastName: 'Drawn' });
+      cy.signUp({ email, password: EPHEMERAL_PASSWORD, firstName: 'With', lastName: 'Drawn' });
       cy.mailLinkFor(email, { subjectContains: 'Verify' }).then((link) => cy.consumeMailLink(link));
       cy.expectSignInProblem('cannot_join', 'policy_invite_only');
 

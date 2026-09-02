@@ -1,3 +1,4 @@
+import { EPHEMERAL_PASSWORD } from '../../support/fixtures/passwords';
 import { withAppSettings } from '../../support/fixtures/app-settings.fixture';
 import { withRealmSettings } from '../../support/fixtures/realm.fixture';
 import { kc } from '../../support/clients/keycloak-admin.client';
@@ -20,7 +21,7 @@ describe('sign-up refused: invite_only, no invitation', () => {
   withAppSettings({ registrationPolicy: 'invite_only', allowedEmailDomains: [] }, () => {
     it('refuses with reason=policy_invite_only', () => {
       const email = stampedEmail('refused-invite-only');
-      cy.signUp({ email, password: 'Sup3r-Secret-Passw0rd!', firstName: 'No', lastName: 'Invite' });
+      cy.signUp({ email, password: EPHEMERAL_PASSWORD, firstName: 'No', lastName: 'Invite' });
       cy.mailLinkFor(email, { subjectContains: 'Verify' }).then((link) => cy.consumeMailLink(link));
       cy.expectSignInProblem('cannot_join', 'policy_invite_only');
 
@@ -47,7 +48,7 @@ describe('sign-up refused: domain_restricted, disallowed domain', () => {
   withAppSettings({ registrationPolicy: 'domain_restricted', allowedEmailDomains: ['allowed-domain.test'] }, () => {
     it('a disallowed (but verified) domain refuses with reason=policy_domain', () => {
       const email = stampedEmail('refused-domain');
-      cy.signUp({ email, password: 'Sup3r-Secret-Passw0rd!', firstName: 'Wrong', lastName: 'Domain' });
+      cy.signUp({ email, password: EPHEMERAL_PASSWORD, firstName: 'Wrong', lastName: 'Domain' });
       cy.mailLinkFor(email, { subjectContains: 'Verify' }).then((link) => cy.consumeMailLink(link));
       cy.expectSignInProblem('cannot_join', 'policy_domain');
 
@@ -63,8 +64,8 @@ describe('sign-up refused: domain_restricted, unverified email', () => {
     withAppSettings({ registrationPolicy: 'domain_restricted', allowedEmailDomains: ['allowed-domain.test'] }, () => {
       it('refuses with reason=email_not_verified, even on an allowed domain', () => {
         const email = stampedEmail('refused-unverified').replace('@feedbackhub.test', '@allowed-domain.test');
-        kc.createUser({ email, password: 'Sup3r-Secret-Passw0rd!', emailVerified: false }).then((user) => {
-          cy.signInFresh({ username: email, password: 'Sup3r-Secret-Passw0rd!' });
+        kc.createUser({ email, password: EPHEMERAL_PASSWORD, emailVerified: false }).then((user) => {
+          cy.signInFresh({ username: email, password: EPHEMERAL_PASSWORD });
           cy.expectSignInProblem('cannot_join', 'email_not_verified');
           kc.deleteUser(user.id);
         });
@@ -81,11 +82,11 @@ describe('sign-up refused: signup rate limit spent', () => {
       const first = stampedEmail('rate-first');
       const second = stampedEmail('rate-second');
 
-      cy.signUp({ email: first, password: 'Sup3r-Secret-Passw0rd!', firstName: 'First', lastName: 'One' });
+      cy.signUp({ email: first, password: EPHEMERAL_PASSWORD, firstName: 'First', lastName: 'One' });
       cy.mailLinkFor(first, { subjectContains: 'Verify' }).then((link) => cy.consumeMailLink(link));
       cy.location('origin', { timeout: 30_000 }).should('eq', Cypress.config('baseUrl'));
 
-      cy.signUp({ email: second, password: 'Sup3r-Secret-Passw0rd!', firstName: 'Second', lastName: 'One' });
+      cy.signUp({ email: second, password: EPHEMERAL_PASSWORD, firstName: 'Second', lastName: 'One' });
       cy.mailLinkFor(second, { subjectContains: 'Verify' }).then((link) => cy.consumeMailLink(link));
       cy.expectSignInProblem('cannot_join_yet');
 

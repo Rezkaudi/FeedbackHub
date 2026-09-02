@@ -1,3 +1,4 @@
+import { EPHEMERAL_PASSWORD } from '../../support/fixtures/passwords';
 import { withAppSettings } from '../../support/fixtures/app-settings.fixture';
 import { withEphemeralUser } from '../../support/fixtures/ephemeral-user.fixture';
 import { kc } from '../../support/clients/keycloak-admin.client';
@@ -16,7 +17,7 @@ describe('sign-up under the "open" registration policy', () => {
   withAppSettings({ registrationPolicy: 'open' }, () => {
     it('a brand-new person registers, verifies by mail, and lands on the board as an ordinary member', () => {
       const email = stampedEmail('open-signup');
-      const password = 'Sup3r-Secret-Passw0rd!';
+      const password = EPHEMERAL_PASSWORD;
 
       cy.signUp({ email, password, firstName: 'Ola', lastName: 'Newcomer' });
 
@@ -40,7 +41,7 @@ describe('sign-up under the "open" registration policy', () => {
 
     it('a new member can immediately file a request and vote, once verified', () => {
       const email = stampedEmail('open-signup-active');
-      const password = 'Sup3r-Secret-Passw0rd!';
+      const password = EPHEMERAL_PASSWORD;
 
       cy.signUp({ email, password, firstName: 'Ivy', lastName: 'Immediate' });
       cy.mailLinkFor(email, { subjectContains: 'Verify' }).then((link) => cy.consumeMailLink(link));

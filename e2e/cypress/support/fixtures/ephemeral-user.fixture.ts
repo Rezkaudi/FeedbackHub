@@ -1,6 +1,7 @@
 import { kc, type NewKcUser } from '../clients/keycloak-admin.client';
 import { mailpit } from '../clients/mailpit.client';
 import { stampedEmail } from '../utils/stamp';
+import { EPHEMERAL_PASSWORD } from './passwords';
 
 export interface EphemeralUser {
   email: string;
@@ -23,7 +24,7 @@ export function withEphemeralUser(
   body: (user: EphemeralUser) => void,
 ): void {
   const email = opts.email ?? stampedEmail(opts.emailPrefix ?? 'e2e');
-  const password = opts.password ?? 'Sup3r-Secret-Passw0rd!';
+  const password = opts.password ?? EPHEMERAL_PASSWORD;
   const firstName = opts.firstName ?? 'E2E';
   const lastName = opts.lastName ?? 'Person';
   let user: EphemeralUser | null = null;

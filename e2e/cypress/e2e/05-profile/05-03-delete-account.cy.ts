@@ -1,3 +1,4 @@
+import { EPHEMERAL_PASSWORD } from '../../support/fixtures/passwords';
 import { ADMIN, ADMIN2 } from '../../support/fixtures/accounts';
 import { withEphemeralUser } from '../../support/fixtures/ephemeral-user.fixture';
 import { withAppSettings } from '../../support/fixtures/app-settings.fixture';
@@ -42,7 +43,7 @@ describe('delete my account', () => {
   withAppSettings({ registrationPolicy: 'open' }, () => {
     it("the deleted person's request and vote: the request survives, the vote does not", () => {
       const email = stampedEmail('deletable-author');
-      const password = 'Sup3r-Secret-Passw0rd!';
+      const password = EPHEMERAL_PASSWORD;
       let requestId = '';
 
       kc.createUser({ email, password }).then(() => {
