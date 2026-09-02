@@ -101,6 +101,16 @@ deletes — so the database persists and accumulates across runs. The rule:
   from `support/fixtures/` for any spec that changes them — each snapshots the
   original state and restores it in an `after` that runs even on failure.
   Nothing outside those helpers calls `PATCH /v1/settings/app` directly.
+  `withTaxonomy` restores the *original default status first*, before it
+  deletes anything created during the spec — a spec proving "a new request
+  lands on the current default status" necessarily leaves its new status
+  `isDefault: true`, and deleting a status while it is still the default is
+  refused with 409 (R-48); restoring the default first is what makes it
+  deletable again. Getting this order backwards was a real bug the "run the
+  full suite twice back to back" check in the plan's own verification step
+  caught — the first run was 359/359 green, the second run then failed with
+  a polluted taxonomy count, because two orphan statuses from that exact
+  scenario had silently failed to delete.
 - **Ephemeral Keycloak users** (sign-up, reset-password, verify-email,
   delete-account specs) go through `withEphemeralUser`, which creates a
   throwaway Keycloak account and deletes it afterward. Their app-side row (if

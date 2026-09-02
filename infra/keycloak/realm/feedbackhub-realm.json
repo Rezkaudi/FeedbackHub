@@ -7,9 +7,9 @@
   "loginWithEmailAllowed": true,
   "resetPasswordAllowed": true,
   "verifyEmail": true,
-  "accessTokenLifespan": 300,
-  "ssoSessionIdleTimeout": 1800,
-  "ssoSessionMaxLifespan": 36000,
+  "accessTokenLifespan": 86400,
+  "ssoSessionIdleTimeout": 604800,
+  "ssoSessionMaxLifespan": 604800,
   "revokeRefreshToken": true,
   "refreshTokenMaxReuse": 0,
   "smtpServer": {
@@ -96,6 +96,22 @@
       "emailVerified": true,
       "firstName": "Rae",
       "lastName": "Reader",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "44444444-4444-4444-8444-444444444444",
+      "username": "bo@feedbackhub.local",
+      "email": "bo@feedbackhub.local",
+      "emailVerified": true,
+      "firstName": "Bo",
+      "lastName": "Boss",
       "enabled": true,
       "credentials": [
         {

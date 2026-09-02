@@ -10,16 +10,17 @@ The goal: stop the same idea arriving five times by email, and make it visible
 what is actually being worked on.
 
 > **Status: the backend and the front end are built, and the eleven journeys
-> from the brief run end to end.** `npm run verify` passes 297 backend tests
-> against a real PostgreSQL and a real Redis; the front end has 240. The front
+> from the brief run end to end.** `npm run verify` passes 329 backend tests
+> against a real PostgreSQL and a real Redis; the front end has 285. The front
 > end's whole presentation layer was rebuilt on Material Design 3 (blue) with
-> full English and Arabic text and RTL, right after this line was written — the
-> Cypress suite below is the *old* UI's suite and has **not** been re-run or
-> updated against the new one yet, so it is not proof of anything until it is.
-> Outgoing mail now works into the local catcher: comment, status-change and
-> invitation emails have all been watched landing in Mailpit. What is still
-> *not* proven is a real external SMTP server. The two lists below say exactly
-> which is which.
+> full English and Arabic text and RTL. The Cypress suite (`e2e/`) was rewritten
+> from scratch for that redesign and for the coverage the brief asks for —
+> **359 tests across 47 files, all passing**, twice back to back on a freshly
+> seeded stack — see [`e2e/README.md`](e2e/README.md) for what it covers and
+> the known gaps table below for what it does not. Outgoing mail now works into
+> the local catcher: comment, status-change and invitation emails have all been
+> watched landing in Mailpit. What is still *not* proven is a real external
+> SMTP server. The two lists below say exactly which is which.
 
 ---
 
@@ -577,9 +578,10 @@ queue are built and driven end to end:
   icon that should flip and does not could still be there. `[dir='rtl']
   .rtl-flip svg { transform: scaleX(-1) }` mirrors the pagination chevrons on
   purpose; nothing else was checked by eye.
-- **The Cypress suite (`e2e/`) was not touched in this redesign** and was not
-  run against it either — see the end-to-end tests section above. It is not
-  evidence for or against the new UI right now.
+- **The Cypress suite (`e2e/`) was not touched *by* this redesign** — it was
+  rewritten afterward, on `data-testid` selectors instead of the old text/CSS
+  ones this redesign would otherwise have broken. See the end-to-end tests
+  section above; it now runs 359 tests, all green, against exactly this UI.
 - **The old design system (`tokens.css`, the old `state-panels.ts`, the raw
   Tailwind utility classes on hand-written `<button>`/`<select>` elements) is
   gone.** Every screen was rebuilt; nothing was reskinned in place. Anything not
@@ -871,17 +873,19 @@ message about Node, not about the code.
 
 These run a real browser (Cypress) against the whole stack from
 `docker-compose.yml`: the real Angular build served by nginx, the real API, the
-real Postgres, the real Redis and the real Keycloak. Nothing is mocked, and
-sign-in goes through the real Keycloak login form with a seeded account
-(R-160) — a faked cookie would remove the one thing these tests exist to prove.
+real Postgres, the real Redis, the real Keycloak, and the real local mail
+catcher (Mailpit). Nothing is mocked, and sign-in goes through the real
+Keycloak login form with a seeded account (R-160) — a faked cookie would
+remove the one thing these tests exist to prove.
 
-**These specs target the pre-redesign UI and have not been run since.** The
-redesign kept the ids and structure most of them depend on — `#board-search`,
-`#board-sort`, the `<fieldset>` filter groups, `<article>` cards — on purpose,
-but the header (a user menu instead of loose buttons), the new-request flow (a
-popup instead of a page), and the confirm dialogs in front of delete/approve/
-reject are all new, and specs written against the old versions of those will
-need updating before this suite means anything again.
+**The suite was rewritten from scratch** (D-100 to D-103) for the Material 3
+redesign and for the coverage the brief asks for that the old suite never had:
+sign-up, re-sign-up after account deletion, password reset, email
+verification, session/refresh-token behaviour, and admin-vs-admin cases.
+Every selector is a `data-testid` or a keyed `data-*-id` attribute — never
+English text or a CSS class — so the same suite proves the English and the
+Arabic UI equally, and a future visual redesign that keeps the same
+interactions breaks nothing here.
 
 ```bash
 docker compose up --build -d --wait   # from the root; --wait holds until healthy
@@ -893,38 +897,52 @@ npm test            # the whole suite, headless
 npm run test:open   # the Cypress runner, for writing or debugging one
 ```
 
-**80 tests across 15 spec files, about nine minutes.** Sign-in cost is real —
-each persona signs in once per spec through Keycloak — but a `cy.session` cache
-keeps it to one login per persona per file. What they cover:
+**359 tests across 47 spec files, about 14 minutes, organised by journey
+rather than by screen.** Full details, the selector strategy, and the test
+data hygiene rules live in [`e2e/README.md`](e2e/README.md); the short version:
 
-| File | What it proves |
+| Domain | What it proves |
 |---|---|
-| `00-smoke-and-navigation` | Every route loads: board, request, new-request form, settings, not-found, not-allowed, deep links, a retired taxonomy value still labelled on an old request. |
-| `01-authentication` | U-1: sign-in through Keycloak, no token in `localStorage`/`sessionStorage` (R-3c), both cookies HttpOnly with the right `SameSite` and path (R-3d, R-3e), exactly one `/bootstrap` call (H-4), sign-out clears the session, a signed-out call is 401. |
-| `02-board` | R-16 to R-25: search by title and description, sort and its URL, a category filter that survives reload, pinned-first ordering, an honest empty state, a bookmarked empty page. |
-| `03-requests` | R-10 to R-14: validation, create, owner edit, no owner controls on someone else's, and the API refusing a cross-user edit or delete with 403. |
-| `04-comments` | R-32 to R-42: publish when approval is off, the author editing their own at the API, admin moderation, approve and reject a waiting comment, and the feature switch removing the thread **and** making the server refuse a comment with `FEATURE_DISABLED`. |
-| `05-votes-and-interactions` | R-26 to R-31: vote and un-vote in the UI, idempotent double-vote at `POST /v1/requests/:id/vote`, and the vote rate limit with `retryAt`. |
-| `06-settings` | R-54 to R-60: display name persists, an explicit theme survives reload, a notification toggle saves. |
-| `07-admin-taxonomy` | R-43 to R-49, R-64, R-65: usage counts, add/retire/restore/delete an unused category, no Delete for one in use, the first status protected from retirement, status change and pin. |
-| `08-admin-settings-and-invitations` | R-66 to R-70, R-130: a limit that takes effect with no restart, a zero refused in the UI, invite-only, create and cancel an invitation, and 403 for an ordinary user. |
-| `09-authorization` | R-70, R-66 from the other side: an ordinary session calling every admin endpoint by hand and being refused. Plus the origin check (R-3g). |
-| `10-rate-limits` | R-130 to R-132: the submission limit refuses the one past it, says when to try again, and applies to an admin too. |
-| `11-errors-and-resilience` | SRS 15.8: a failed start-up shows an error with a working Try again, no stack leaks, a board error does not trigger the auth refresh, and a 401 does not loop. |
-| `12-api-contracts-and-state` | The real `/bootstrap` and request-detail shapes, and payload validation on comments and requests. |
-| `13-admin-comments-and-workflow` | The review board filter, an admin inspecting a comment without an inline rewrite control (R-36), and the waiting-comments nav appearing only with approval on. |
-| `14-complete-critical-journeys` | The two headline journeys end to end: a user creating, voting, commenting, editing and signing out; an admin reviewing, changing status, pinning and touching settings and taxonomy. |
+| `00-smoke` | The stack is up, seeded, reachable, and an anonymous call is refused. |
+| `01-auth` | Sign in/out, sign up (open, refused for every reason, invitation-gated), password reset including a single-use link, email verification, session refresh and refresh-token rotation, the Google IdP button's documented limits, re-sign-up after account deletion, route guards. |
+| `02-board` | Listing, search, filters, sort, paging, URL round-trip, empty and error states. |
+| `03-requests` | Create, edit, delete, pin, status, votes, and a pure API contract spec. |
+| `04-comments` | Write/read, edit/delete, moderation, the comments-off switch. |
+| `05-profile` | Display name/avatar, personal preferences, account deletion, the last-admin invariant. |
+| `06-admin` | Categories, statuses, app settings, registration policy, invitations, admin access control. |
+| `07-cross-role` | An admin's change observed from a member's session, the full author/admin/stranger matrix, an admin acting on their own content, one admin acting on another admin's content, notification email content and opt-outs. |
+| `08-hardening` | A full permission matrix, the Origin guard on every write, validation and id handling, all three rate limits, the error envelope shape. |
+| `09-experience` | No leaked translation keys and `dir="rtl"` in Arabic, navigation on every route. |
+
+**Real defects the rewrite found and fixed in the product, not just the
+tests:** a dead `takeReturnUrl()` call meant a deep link never actually
+returned you to the page you were headed for after signing in (now wired up
+in `app.ts`); several templates had a stable `id` but no `data-testid`
+(search, sort, the profile form's fields, registration policy's fields, the
+invite form's email field); a circular module dependency
+(`identity -> invitations -> notifications -> identity`) that NestJS's
+`forwardRef` papered over at the DI level but `depcruise` rightly still
+flagged in the static import graph.
+
+**Left as a documented, deliberate gap, not a fix:** the vote rate limit
+counts vote rows that currently exist in the window, and withdrawing a vote
+deletes its row — so a vote immediately followed by an un-vote on the *same*
+request never trips the limit, no matter how many times it happens. Voting on
+*different* requests still hits the real limit exactly as intended. See
+SCOPE.md for the full write-up and the other documented gaps (a real Google
+sign-in, comment-edit UI, a route to promote a user to admin).
 
 Two things worth knowing before you read the code:
 
-- **One run, no retries.** These tests share one database, so parallel runs
-  would make failures that depend on the order things happened to run. A retry
-  would hide a flake, and a flake in a suite this small is a real defect.
-- **Some specs change an application setting and put it back.** The comment
-  specs toggle the approval and feature switches; the rate-limit specs set a
-  limit of their own. Each restores the value it read at the start, so a
-  half-finished run can leave a setting changed — re-seeding (`docker compose
-  up`) resets it.
+- **`retries: { runMode: 2, openMode: 0 }`, not zero — see D-103** for why
+  that is not flake-hiding here: the sign-in chain alone crosses four real
+  origins, and every spec is written to be idempotent by design specifically
+  so a retry after a genuine transient timing gap re-runs cleanly.
+- **Some specs change an application setting, the taxonomy, or the realm, and
+  put it back.** Each restores the value it read at the start, in an `after`
+  that runs even on failure. A half-finished run can still leave state
+  changed — re-seeding does not always fix it; see the test data hygiene
+  section of `e2e/README.md`.
 
 If the stack is not up, sign-in fails on the first spec with a Keycloak
 connection error.

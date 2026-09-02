@@ -30,30 +30,39 @@ export function withTaxonomy(body: () => void): void {
     const originalActiveCategoryIds = new Set(before_.categories.filter((c) => c.isActive).map((c) => c.id));
     const originalActiveStatusIds = new Set(before_.statuses.filter((s) => s.isActive).map((s) => s.id));
 
-    api.taxonomy.read().then((now) => {
-      const nowCategories = now.categories as unknown as AdminCategory[];
-      const nowStatuses = now.statuses as unknown as AdminStatus[];
-
-      for (const category of nowCategories) {
-        if (!originalCategoryIds.has(category.id)) {
-          api.taxonomy.categories.remove(category.id);
-        } else if (originalActiveCategoryIds.has(category.id) && !category.isActive) {
-          api.taxonomy.categories.update(category.id, { isActive: true });
-        }
-      }
-
-      for (const status of nowStatuses) {
-        if (!originalStatusIds.has(status.id)) {
-          api.taxonomy.statuses.remove(status.id);
-        } else if (originalActiveStatusIds.has(status.id) && !status.isActive) {
-          api.taxonomy.statuses.update(status.id, { isActive: true });
-        }
-      }
-
+    // Restore the original default FIRST. A spec that made a newly-created
+    // status the default (to prove "a new request lands on the current
+    // default status") leaves it `isDefault: true` when the test ends —
+    // deleting it while it is still the default is refused with 409
+    // (`DefaultStatusCannotBeRetiredError`, R-48), which would otherwise
+    // leak that status forever, one per such spec, every time it runs.
+    cy.wrap(null, { log: false }).then(() => {
       if (originalDefaultStatus) {
-        api.taxonomy.statuses.makeDefault(originalDefaultStatus.id);
+        return api.taxonomy.statuses.makeDefault(originalDefaultStatus.id);
       }
-    });
+      return null;
+    }).then(() =>
+      api.taxonomy.read().then((now) => {
+        const nowCategories = now.categories as unknown as AdminCategory[];
+        const nowStatuses = now.statuses as unknown as AdminStatus[];
+
+        for (const category of nowCategories) {
+          if (!originalCategoryIds.has(category.id)) {
+            api.taxonomy.categories.remove(category.id);
+          } else if (originalActiveCategoryIds.has(category.id) && !category.isActive) {
+            api.taxonomy.categories.update(category.id, { isActive: true });
+          }
+        }
+
+        for (const status of nowStatuses) {
+          if (!originalStatusIds.has(status.id)) {
+            api.taxonomy.statuses.remove(status.id);
+          } else if (originalActiveStatusIds.has(status.id) && !status.isActive) {
+            api.taxonomy.statuses.update(status.id, { isActive: true });
+          }
+        }
+      }),
+    );
   });
 
   body();

@@ -47,13 +47,21 @@ describe('error envelope and resilience', () => {
   });
 
   it('double-submitting the create-request form does not create two requests', () => {
+    // Hold the create response open so the first submit is provably still in
+    // flight when the second click lands — otherwise on a fast run the form
+    // navigates away and the second click has nothing to hit.
+    cy.intercept('POST', '**/v1/requests', (req) => {
+      req.on('response', (res) => res.setDelay(1500));
+    }).as('createRequest');
+
     cy.visitAs(ADMIN, '/requests/new');
     const title = `double-submit-${Date.now()}`;
     cy.byTestId(TID.form.title).type(title);
     cy.byTestId(TID.form.description).type('A description of reasonable length for a double-submit test.');
     cy.get(`[data-testid="${TID.form.category}"]`).first().click({ force: true });
     cy.byTestId(TID.form.submit).click();
-    cy.byTestId(TID.form.submit).click({ force: true }); // second click while the first is in flight, if still present
+    cy.byTestId(TID.form.submit).click({ force: true }); // second click while the first is in flight
+    cy.wait('@createRequest');
     cy.location('pathname', { timeout: 15_000 }).should('match', /^\/requests\/[0-9a-f-]{36}$/);
     api.requests.list({ search: title }).then((page) => {
       expect(page.items).to.have.length(1);
